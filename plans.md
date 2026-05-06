@@ -312,25 +312,24 @@ After move to `restart/`:
 - [x] Wire into theme Makefile (install, test, test-php, test-js targets)
 
 ### Phase 3: Plugin test gaps
-- [ ] Write `plugin/tests/integration/Controller/AccessControlTest.php` (P0)
-- [ ] Write `plugin/tests/integration/Controller/MarkItemPurchasedTest.php` + email spy (P0)
-- [ ] Write `plugin/tests/integration/LambdaClient/*` (P0)
+- [x] Write `plugin/tests/integration/Controller/AccessControlTest.php` (P0) (34a346d)
+- [x] Write `plugin/tests/integration/Controller/MarkItemPurchasedTest.php` + email spy (P0) (34a346d)
+- [x] Write `plugin/tests/integration/LambdaClient/*` (P0) (34a346d)
 - [ ] Write remaining P1 AJAX handler tests
 
 ### Phase 4: Lambda test gaps
-- [ ] Add `pytest-httpx` to dev deps
-- [ ] Write `lambda/tests/integration/test_wp_client_resilience.py` (P0)
-- [ ] Write `lambda/tests/validation/test_xss_inputs.py` (P0)
-- [ ] Write remaining P1 gaps
+- [x] Write `lambda/tests/integration/test_wp_client_resilience.py` (P0) (ae26761)
+- [x] Write `lambda/tests/validation/test_xss_inputs.py` (P0) (ae26761)
+- [ ] Write remaining P1 gaps (concurrent SQLite writes, orphaned items, env var validation, pagination cap)
 
 ### Phase 5: Documentation
-- [ ] Initialize MkDocs (`mkdocs.yml` + skeleton `docs/docs/`)
-- [ ] Write `getting-started.md` — prerequisites, first-time setup, running the full stack (`make up && make seed`), running each component standalone
-- [ ] Write `architecture.md`, `development.md`, `contributing.md`
-- [ ] Write per-project overview pages
-- [ ] Write `theme/screenshots.md` — capture screenshots of running theme (homepage, registry page, manage page, guest purchase flow, email notification example); add to `docs/docs/theme/screenshots/`
-- [ ] Set up GitHub Pages deploy (`make docs-deploy`)
-- [ ] Add `docs-screenshots` Makefile target — runs `make seed` if needed, then Playwright headless capture → `docs/docs/theme/screenshots/`
+- [x] Initialize MkDocs (`mkdocs.yml` + skeleton `docs/docs/`) (9db82ec)
+- [x] Write `getting-started.md` (9db82ec)
+- [x] Write `architecture.md`, `development.md`, `contributing.md` (9db82ec)
+- [x] Write per-project overview pages (9db82ec)
+- [x] Write `theme/screenshots.md` with Playwright capture script (9db82ec)
+- [x] `docs-screenshots` Makefile target + `docs/scripts/screenshots.js` (9db82ec)
+- [ ] Set up GitHub Pages (enable Pages on amneher/restart repo, run `make docs-deploy`)
 
 # Plan: Unified Dev Environment
 
