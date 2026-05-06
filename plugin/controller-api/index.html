@@ -1,0 +1,2148 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Gift registry platform for people restarting after divorce">
+      
+      
+      
+        <link rel="canonical" href="https://amneher.github.io/restart/plugin/controller-api/">
+      
+      
+        <link rel="prev" href="../shortcodes/">
+      
+      
+        <link rel="next" href="../lambda-client/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Controller API - Restart Registry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#controller-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Restart Registry" class="md-header__button md-logo" aria-label="Restart Registry" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Restart Registry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Controller API
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/amneher/restart" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    amneher/restart
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../development/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Development
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../overview/" class="md-tabs__link">
+          
+  
+  
+  Plugin
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../lambda/overview/" class="md-tabs__link">
+          
+  
+  
+  Lambda API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../theme/overview/" class="md-tabs__link">
+          
+  
+  
+  Theme
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Restart Registry" class="md-nav__button md-logo" aria-label="Restart Registry" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Restart Registry
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/amneher/restart" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    amneher/restart
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Plugin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shortcodes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shortcodes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controller API
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controller API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#registry-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registry read
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registry read">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_registryint-registry_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_registry(int $registry_id)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_registry_by_share_keystring-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_registry_by_share_key(string $key)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_user_registryint-user_id-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_registry(int $user_id): ?array
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registry-write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registry write
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registry write">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create_registryint-user_id-string-title-string-description-bool-is_public-false" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_registry(int $user_id, string $title, string $description = '', bool $is_public = false)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update_registryint-registry_id-array-data-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_registry(int $registry_id, array $data): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete_registryint-registry_id-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_registry(int $registry_id): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Items
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Items">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_registry_itemsint-registry_id-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_registry_items(int $registry_id): array
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_itemint-item_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_item(int $item_id)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add_itemint-registry_id-array-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_item(int $registry_id, array $data)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update_itemint-item_id-array-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_item(int $item_id, array $data)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete_itemint-item_id-int-registry_id-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_item(int $item_id, int $registry_id): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mark_item_purchasedint-item_id-int-quantity-1-string-purchaser_name-string-purchaser_email-string-purchaser_note-bool-is_anonymous-false" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mark_item_purchased(int $item_id, int $quantity = 1, string $purchaser_name = '', string $purchaser_email = '', string $purchaser_note = '', bool $is_anonymous = false)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#invites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invites
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Invites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#send_inviteint-registry_id-string-invitee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        send_invite(int $registry_id, string $invitee)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_registry_invitesint-registry_id-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_registry_invites(int $registry_id): array
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#access-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access control
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Access control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#can_view_registryint-registry_id-int-user_id-null-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        can_view_registry(int $registry_id, ?int $user_id = null): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#can_edit_registryint-registry_id-int-user_id-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        can_edit_registry(int $registry_id, int $user_id): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#private-helpers-worth-knowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Private helpers worth knowing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Private helpers worth knowing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#truncate_namestring-name-string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        truncate_name(string $name): string
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#send_purchase_notificationarray-item-string-purchaser_name-string-purchaser_note-void" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        send_purchase_notification(array $item, string $purchaser_name, string $purchaser_note): void
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lambda-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lambda Client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../affiliate-converter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Affiliate Converter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lambda API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Lambda API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lambda/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lambda/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Endpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lambda/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lambda/database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lambda/deploy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lambda/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theme
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theme
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../theme/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../theme/screenshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Screenshots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../theme/shortcodes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shortcodes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../theme/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../theme/js/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JavaScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../theme/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#registry-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registry read
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registry read">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_registryint-registry_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_registry(int $registry_id)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_registry_by_share_keystring-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_registry_by_share_key(string $key)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_user_registryint-user_id-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_registry(int $user_id): ?array
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registry-write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registry write
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registry write">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create_registryint-user_id-string-title-string-description-bool-is_public-false" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_registry(int $user_id, string $title, string $description = '', bool $is_public = false)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update_registryint-registry_id-array-data-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_registry(int $registry_id, array $data): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete_registryint-registry_id-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_registry(int $registry_id): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Items
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Items">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_registry_itemsint-registry_id-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_registry_items(int $registry_id): array
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_itemint-item_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_item(int $item_id)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add_itemint-registry_id-array-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_item(int $registry_id, array $data)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update_itemint-item_id-array-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_item(int $item_id, array $data)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete_itemint-item_id-int-registry_id-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_item(int $item_id, int $registry_id): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mark_item_purchasedint-item_id-int-quantity-1-string-purchaser_name-string-purchaser_email-string-purchaser_note-bool-is_anonymous-false" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mark_item_purchased(int $item_id, int $quantity = 1, string $purchaser_name = '', string $purchaser_email = '', string $purchaser_note = '', bool $is_anonymous = false)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#invites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invites
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Invites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#send_inviteint-registry_id-string-invitee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        send_invite(int $registry_id, string $invitee)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_registry_invitesint-registry_id-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_registry_invites(int $registry_id): array
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#access-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access control
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Access control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#can_view_registryint-registry_id-int-user_id-null-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        can_view_registry(int $registry_id, ?int $user_id = null): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#can_edit_registryint-registry_id-int-user_id-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        can_edit_registry(int $registry_id, int $user_id): bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#private-helpers-worth-knowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Private helpers worth knowing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Private helpers worth knowing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#truncate_namestring-name-string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        truncate_name(string $name): string
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#send_purchase_notificationarray-item-string-purchaser_name-string-purchaser_note-void" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        send_purchase_notification(array $item, string $purchaser_name, string $purchaser_note): void
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="controller-api">Controller API<a class="headerlink" href="#controller-api" title="Permanent link">&para;</a></h1>
+<p><code>Restart_Registry_Controller</code>
+(<code>plugin/includes/class-restart-registry-controller.php</code>) is the single façade
+through which all registry and item operations flow. The shortcode and AJAX
+handlers in <code>Restart_Registry_Public</code> only ever touch this class — never the
+Lambda or post-meta directly.</p>
+<p>The controller has two collaborators, both injectable via the constructor:</p>
+<div class="highlight"><pre><span></span><code><span class="x">public function __construct(</span>
+<span class="x">    ?Restart_Registry_Lambda_Client $lambda = null,</span>
+<span class="x">    ?Restart_Registry_Affiliate_Converter $affiliate_converter = null</span>
+<span class="x">) { /* ... */ }</span>
+</code></pre></div>
+<p>This is the seam the integration test suite uses to swap in <code>LambdaClientFake</code>.</p>
+<h2 id="registry-read">Registry read<a class="headerlink" href="#registry-read" title="Permanent link">&para;</a></h2>
+<h3 id="get_registryint-registry_id"><code>get_registry(int $registry_id)</code><a class="headerlink" href="#get_registryint-registry_id" title="Permanent link">&para;</a></h3>
+<p>Loads a registry by WP post ID. Returns the registry array
+(post_to_registry-shaped, with <code>items</code> populated from the Lambda) or a
+<code>WP_Error('not_found', ...)</code> if the post is missing or not a <code>restart-registry</code>.</p>
+<h3 id="get_registry_by_share_keystring-key"><code>get_registry_by_share_key(string $key)</code><a class="headerlink" href="#get_registry_by_share_keystring-key" title="Permanent link">&para;</a></h3>
+<p>Looks up by either the numeric post ID (the canonical share key) or the post
+slug. Used by the <code>?registry=&lt;key&gt;</code> URL param flow. Returns the same shape as
+<code>get_registry()</code> or a <code>WP_Error('not_found', ...)</code>.</p>
+<h3 id="get_user_registryint-user_id-array"><code>get_user_registry(int $user_id): ?array</code><a class="headerlink" href="#get_user_registryint-user_id-array" title="Permanent link">&para;</a></h3>
+<p>The first registry owned by <code>$user_id</code>, or <code>null</code> if they have none. Searches
+across <code>publish</code>, <code>private</code>, and <code>draft</code> statuses. Used by <code>[restart_registry]</code>
+to find the logged-in user's manage page.</p>
+<h2 id="registry-write">Registry write<a class="headerlink" href="#registry-write" title="Permanent link">&para;</a></h2>
+<h3 id="create_registryint-user_id-string-title-string-description-bool-is_public-false"><code>create_registry(int $user_id, string $title, string $description = '', bool $is_public = false)</code><a class="headerlink" href="#create_registryint-user_id-string-title-string-description-bool-is_public-false" title="Permanent link">&para;</a></h3>
+<p>Creates a <code>restart-registry</code> CPT post for the user. Returns:</p>
+<div class="highlight"><pre><span></span><code><span class="x">[&#39;id&#39; =&gt; int, &#39;share_key&#39; =&gt; int]   // share_key === id</span>
+</code></pre></div>
+<p>Returns <code>WP_Error('registry_exists', ...)</code> if the user already has one
+(enforced single-registry-per-user). Initializes the four post-meta keys to
+empty defaults.</p>
+<h3 id="update_registryint-registry_id-array-data-bool"><code>update_registry(int $registry_id, array $data): bool</code><a class="headerlink" href="#update_registryint-registry_id-array-data-bool" title="Permanent link">&para;</a></h3>
+<p>Updates fields. Accepted keys:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td><code>wp_update_post(post_title = ...)</code> (sanitized)</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><code>wp_update_post(post_content = ...)</code> (textarea-sanitized)</td>
+</tr>
+<tr>
+<td><code>is_public</code></td>
+<td>Sets <code>post_status</code> to <code>publish</code> (true) or <code>private</code> (false)</td>
+</tr>
+<tr>
+<td><code>event_type</code></td>
+<td>Sets <code>restart_event_type</code> post meta</td>
+</tr>
+<tr>
+<td><code>event_date</code></td>
+<td>Sets <code>restart_event_date</code> post meta</td>
+</tr>
+</tbody>
+</table>
+<p>Always returns <code>true</code>.</p>
+<h3 id="delete_registryint-registry_id-bool"><code>delete_registry(int $registry_id): bool</code><a class="headerlink" href="#delete_registryint-registry_id-bool" title="Permanent link">&para;</a></h3>
+<p>Deletes the WP post <strong>and</strong> every Lambda item linked via <code>restart_item_ids</code>
+(best-effort). Forces deletion (skips trash). Returns the result of
+<code>wp_delete_post</code>.</p>
+<h2 id="items">Items<a class="headerlink" href="#items" title="Permanent link">&para;</a></h2>
+<h3 id="get_registry_itemsint-registry_id-array"><code>get_registry_items(int $registry_id): array</code><a class="headerlink" href="#get_registry_itemsint-registry_id-array" title="Permanent link">&para;</a></h3>
+<p>Reads <code>restart_item_ids</code> and fans out to <code>Lambda_Client::get_items()</code>. Order
+is preserved from the meta array. IDs that 404 in the Lambda are silently
+skipped (the controller treats them as deleted).</p>
+<h3 id="get_itemint-item_id"><code>get_item(int $item_id)</code><a class="headerlink" href="#get_itemint-item_id" title="Permanent link">&para;</a></h3>
+<p>Pass-through to <code>Lambda_Client::get_item()</code>.</p>
+<h3 id="add_itemint-registry_id-array-data"><code>add_item(int $registry_id, array $data)</code><a class="headerlink" href="#add_itemint-registry_id-array-data" title="Permanent link">&para;</a></h3>
+<p>Required keys: <code>name</code>, <code>url</code>. Optional: <code>description</code>, <code>price</code>, <code>quantity</code>,
+<code>image_url</code>.</p>
+<p>Steps:</p>
+<ol>
+<li>Run the URL through <code>Affiliate_Converter::convert_url()</code> — sets <code>retailer</code>,
+   <code>affiliate_url</code>, <code>affiliate_status</code> on the Lambda payload when applicable.</li>
+<li>Truncate the name to 100 chars on a smart separator (<code>truncate_name()</code>
+   tries <code>-</code>, <code>|</code>, <code>:</code>, en/em-dashes, then <code>,</code>, then a word boundary).</li>
+<li>POST to the Lambda.</li>
+<li>Append the new item ID to <code>restart_item_ids</code> post meta.</li>
+</ol>
+<p>Returns:</p>
+<div class="highlight"><pre><span></span><code><span class="x">[&#39;id&#39; =&gt; int, &#39;is_affiliate&#39; =&gt; bool, &#39;retailer&#39; =&gt; string, &#39;html_item&#39; =&gt; array]</span>
+</code></pre></div>
+<p>Or a <code>WP_Error</code> if the Lambda call fails.</p>
+<h3 id="update_itemint-item_id-array-data"><code>update_item(int $item_id, array $data)</code><a class="headerlink" href="#update_itemint-item_id-array-data" title="Permanent link">&para;</a></h3>
+<p>Accepted keys: <code>name</code>, <code>url</code>, <code>description</code>, <code>price</code>, <code>quantity</code> (mapped to
+<code>quantity_needed</code>), <code>image_url</code>. Empty <code>update</code> payload returns
+<code>WP_Error('no_data', ...)</code>.</p>
+<h3 id="delete_itemint-item_id-int-registry_id-bool"><code>delete_item(int $item_id, int $registry_id): bool</code><a class="headerlink" href="#delete_itemint-item_id-int-registry_id-bool" title="Permanent link">&para;</a></h3>
+<p>Deletes from Lambda <strong>and</strong> removes the ID from <code>restart_item_ids</code>.</p>
+<h3 id="mark_item_purchasedint-item_id-int-quantity-1-string-purchaser_name-string-purchaser_email-string-purchaser_note-bool-is_anonymous-false"><code>mark_item_purchased(int $item_id, int $quantity = 1, string $purchaser_name = '', string $purchaser_email = '', string $purchaser_note = '', bool $is_anonymous = false)</code><a class="headerlink" href="#mark_item_purchasedint-item_id-int-quantity-1-string-purchaser_name-string-purchaser_email-string-purchaser_note-bool-is_anonymous-false" title="Permanent link">&para;</a></h3>
+<p>Increments <code>quantity_purchased</code> on the Lambda item, then sends an email
+notification to the registry owner via <code>send_purchase_notification()</code>.</p>
+<ul>
+<li>Returns <code>WP_Error('not_found', ...)</code> if the item is missing.</li>
+<li>Returns <code>WP_Error('quantity_exceeded', ...)</code> if the request would push
+  <code>quantity_purchased</code> above <code>quantity_needed</code>.</li>
+<li>Honors the owner's <code>restart_notify_on_purchase</code> user meta — if set to <code>'0'</code>,
+  the email is skipped.</li>
+</ul>
+<p>The notification email is plain text and includes the purchaser name (or
+"Someone" for anonymous), the item name, an optional note from the purchaser,
+and a link back to the registry. <code>From:</code> uses the <code>restart_registry_email_from</code>
+and <code>restart_registry_email_name</code> options when set.</p>
+<h2 id="invites">Invites<a class="headerlink" href="#invites" title="Permanent link">&para;</a></h2>
+<h3 id="send_inviteint-registry_id-string-invitee"><code>send_invite(int $registry_id, string $invitee)</code><a class="headerlink" href="#send_inviteint-registry_id-string-invitee" title="Permanent link">&para;</a></h3>
+<p>Adds <code>$invitee</code> (a username or an email) to <code>restart_invitees</code>. Returns
+<code>WP_Error('already_invited', ...)</code> if it is already there. If <code>$invitee</code>
+parses as an email, sends an invite email via <code>wp_mail</code>.</p>
+<p>Returns:</p>
+<div class="highlight"><pre><span></span><code><span class="x">[&#39;invite_id&#39; =&gt; int]   // index into the invitees array</span>
+</code></pre></div>
+<h3 id="get_registry_invitesint-registry_id-array"><code>get_registry_invites(int $registry_id): array</code><a class="headerlink" href="#get_registry_invitesint-registry_id-array" title="Permanent link">&para;</a></h3>
+<p>Returns the invitees as <code>[['id' =&gt; 0, 'email' =&gt; '...'], ['id' =&gt; 1, 'email' =&gt;
+'...'], ...]</code> for easy iteration in templates.</p>
+<h2 id="access-control">Access control<a class="headerlink" href="#access-control" title="Permanent link">&para;</a></h2>
+<h3 id="can_view_registryint-registry_id-int-user_id-null-bool"><code>can_view_registry(int $registry_id, ?int $user_id = null): bool</code><a class="headerlink" href="#can_view_registryint-registry_id-int-user_id-null-bool" title="Permanent link">&para;</a></h3>
+<p>True when <strong>any</strong> of:</p>
+<ul>
+<li>The registry's post status is <code>publish</code> (public).</li>
+<li><code>$user_id</code> is the post author.</li>
+<li><code>$user_id</code> has the <code>manage_restart_registry</code> capability (admins).</li>
+<li><code>$user_id</code>'s email or <code>user_login</code> appears in <code>restart_invitees</code>.</li>
+</ul>
+<p>False when the post does not exist or is not a <code>restart-registry</code> CPT.</p>
+<h3 id="can_edit_registryint-registry_id-int-user_id-bool"><code>can_edit_registry(int $registry_id, int $user_id): bool</code><a class="headerlink" href="#can_edit_registryint-registry_id-int-user_id-bool" title="Permanent link">&para;</a></h3>
+<p>True when <code>$user_id</code> is the post author <strong>or</strong> has
+<code>manage_restart_registry</code>. There is no invitee-level edit access.</p>
+<h2 id="private-helpers-worth-knowing">Private helpers worth knowing<a class="headerlink" href="#private-helpers-worth-knowing" title="Permanent link">&para;</a></h2>
+<h3 id="truncate_namestring-name-string"><code>truncate_name(string $name): string</code><a class="headerlink" href="#truncate_namestring-name-string" title="Permanent link">&para;</a></h3>
+<p>Caps an item name at 100 chars, preferring a clean break on common
+product-name separators (<code>-</code>, <code>|</code>, <code>:</code>, <code>–</code>, <code>—</code>, <code>,</code>) before falling
+back to a word-boundary cut. Used in <code>add_item()</code> and <code>update_item()</code>.</p>
+<p>This is what keeps Amazon-style "Brand X 12-piece Premium Knife Set with
+Wooden Block, Stainless Steel ..." titles from overflowing the UI.</p>
+<h3 id="send_purchase_notificationarray-item-string-purchaser_name-string-purchaser_note-void"><code>send_purchase_notification(array $item, string $purchaser_name, string $purchaser_note): void</code><a class="headerlink" href="#send_purchase_notificationarray-item-string-purchaser_name-string-purchaser_note-void" title="Permanent link">&para;</a></h3>
+<p>Internal — invoked from <code>mark_item_purchased()</code>. Composes the email body and
+sends with <code>wp_mail</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "content.code.copy", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
