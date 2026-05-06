@@ -1,7 +1,19 @@
 THEME_NAME := theRestart
 DIST_DIR   := $(CURDIR)/dist
 
-.PHONY: pack clean
+.PHONY: install test test-php test-js pack clean
+
+install:
+	composer install --no-interaction
+	npm ci
+
+test: test-php test-js
+
+test-php:
+	./vendor/bin/phpunit
+
+test-js:
+	npm test
 
 pack:
 	mkdir -p $(DIST_DIR)

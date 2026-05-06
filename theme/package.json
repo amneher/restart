@@ -1,0 +1,13 @@
+{
+    "name": "the-restart-theme",
+    "private": true,
+    "scripts": {
+        "test": "jest",
+        "test:watch": "jest --watch"
+    },
+    "devDependencies": {
+        "jest": "^29",
+        "jest-environment-jsdom": "^29",
+        "jquery": "^3.7"
+    }
+}
