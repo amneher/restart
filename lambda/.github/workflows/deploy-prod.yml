@@ -1,0 +1,40 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch or tag to deploy"
+        required: false
+        default: "main"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy → Restart_Registry_Lambda
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Deploy
+        run: make deploy-prod FORCE=yes

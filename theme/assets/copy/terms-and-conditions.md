@@ -1,0 +1,104 @@
+# Terms and Conditions
+
+*Last updated: May 3, 2026*
+
+Please read these Terms and Conditions carefully before using reStart. By creating an account or using this site, you agree to be bound by these terms.
+
+---
+
+## 1. Who We Are
+
+reStart ("we," "us," or "our") is a gift registry platform designed to support people rebuilding their lives after divorce. We are operated by The Restart Co. These terms govern your use of our website at the-restart.co (the "Site").
+
+---
+
+## 2. Acceptance of Terms
+
+By accessing or using the Site, you confirm that you are at least 18 years old, that you have read and understood these Terms, and that you agree to be bound by them. If you do not agree, please do not use the Site.
+
+---
+
+## 3. Your Account
+
+You must create an account to use certain features, including creating and managing registries. You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account. Please notify us immediately at hello@the-restart.co if you suspect unauthorized access to your account.
+
+We reserve the right to suspend or terminate accounts that violate these Terms or that have been inactive for an extended period.
+
+---
+
+## 4. Registries
+
+reStart allows you to create gift registries and share them with friends and family. By creating a registry, you agree that:
+
+- Registry information you make public (including your name and registry title) may be visible to anyone with a link.
+- You are responsible for the accuracy of items you add to your registry.
+- We may remove registry content that violates these Terms or that we determine is inappropriate.
+
+You can set your registry to private at any time from your account settings.
+
+---
+
+## 5. Purchases and Third-Party Retailers
+
+reStart is a registry platform — we do not sell products or process payments. Items on your registry link to third-party retailers (such as Amazon, Etsy, or others). All purchases are made directly through those retailers and are subject to their terms, return policies, and privacy practices. We have no control over and assume no responsibility for the content, policies, or practices of any third-party site.
+
+---
+
+## 6. User Content
+
+You retain ownership of any content you submit to the Site (profile information, registry details, comments). By submitting content, you grant us a non-exclusive, royalty-free license to display and use that content in connection with operating the Site.
+
+You agree not to submit content that is unlawful, defamatory, harassing, obscene, or that infringes any third-party rights. We reserve the right to remove content that violates these standards.
+
+---
+
+## 7. Privacy
+
+Your use of the Site is also governed by our Privacy Policy, which is incorporated into these Terms by reference. We do not sell your personal information to third parties.
+
+---
+
+## 8. Prohibited Uses
+
+You agree not to:
+
+- Use the Site for any unlawful purpose
+- Attempt to gain unauthorized access to any part of the Site or its systems
+- Scrape, crawl, or otherwise collect data from the Site without our written permission
+- Impersonate another person or misrepresent your affiliation with any entity
+- Transmit spam, malware, or other harmful code
+
+---
+
+## 9. Disclaimers
+
+The Site is provided "as is" and "as available" without warranties of any kind, express or implied. We do not warrant that the Site will be uninterrupted, error-free, or free of viruses or other harmful components.
+
+---
+
+## 10. Limitation of Liability
+
+To the fullest extent permitted by law, The Restart Co shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Site or inability to use it, even if we have been advised of the possibility of such damages.
+
+Our total liability to you for any claim arising from these Terms or your use of the Site shall not exceed the greater of $100 or the amount you paid us in the twelve months preceding the claim.
+
+---
+
+## 11. Changes to These Terms
+
+We may update these Terms from time to time. When we do, we will revise the "Last updated" date at the top of this page. Your continued use of the Site after any changes constitutes your acceptance of the updated Terms.
+
+---
+
+## 12. Governing Law
+
+These Terms are governed by the laws of the State of [Your State], without regard to its conflict of law provisions. Any disputes arising under these Terms shall be resolved in the courts of [Your State].
+
+---
+
+## 13. Contact Us
+
+If you have any questions about these Terms, please contact us at:
+
+**The Restart Co**
+hello@the-restart.co

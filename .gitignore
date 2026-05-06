@@ -1,0 +1,42 @@
+# ── Secrets & local config ────────────────────────────────────────────────────
+.env
+*.env
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+*/.DS_Store
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+*.db
+*.sqlite
+*.sqlite3
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+*.ipynb
+.ipynb_checkpoints/
+
+# ── PHP / Composer ────────────────────────────────────────────────────────────
+vendor/
+.phpunit.result.cache
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Build artifacts ───────────────────────────────────────────────────────────
+plugin/dist/
+theme/dist/
+lambda/build/
+lambda/iam/
+
+# ── MkDocs ────────────────────────────────────────────────────────────────────
+docs/site/
+
+# ── Editor / tooling ──────────────────────────────────────────────────────────
+.vscode/
+.claude/

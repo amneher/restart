@@ -1,0 +1,456 @@
+<?php
+
+$fonts_url = 'https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,400;0,500;0,700;0,900;1,400;1,500;1,700;1,900&display=swap';
+
+add_action('wp_enqueue_scripts', function () use ($fonts_url) {
+    wp_enqueue_style('therestart-fonts', $fonts_url, [], null);
+    wp_enqueue_style('therestart-style', get_stylesheet_uri(), ['therestart-fonts'], wp_get_theme()->get('Version'));
+});
+
+add_action('admin_enqueue_scripts', function () use ($fonts_url) {
+    wp_enqueue_style('therestart-fonts', $fonts_url, [], null);
+});
+
+// Enqueue the Start a Registry JS with localized credentials when on that page
+add_action('wp_enqueue_scripts', function () {
+    if (!is_page('start-a-registry') || !is_user_logged_in()) {
+        return;
+    }
+    $user    = wp_get_current_user();
+    $api_key = get_user_meta($user->ID, '_restart_api_key', true);
+
+    if (!$api_key && class_exists('WP_Application_Passwords')) {
+        $result = WP_Application_Passwords::create_new_application_password($user->ID, ['name' => 'Restart Registry']);
+        if (!is_wp_error($result)) {
+            $api_key = $result[0];
+            update_user_meta($user->ID, '_restart_api_key', $api_key);
+        }
+    }
+
+    if (!$api_key) {
+        return;
+    }
+
+    wp_enqueue_script(
+        'restart-start-registry',
+        get_stylesheet_directory_uri() . '/assets/js/start-registry.js',
+        [],
+        wp_get_theme()->get('Version'),
+        true
+    );
+    wp_localize_script('restart-start-registry', 'restartRegistry', [
+        'lambdaUrl'    => defined('RESTART_LAMBDA_URL') ? constant('RESTART_LAMBDA_URL') : 'http://localhost:5000',
+        'username'     => $user->user_login,
+        'apiKey'       => $api_key,
+        'myAccountUrl' => home_url('/my-account/'),
+    ]);
+});
+
+add_shortcode('restart_start_registry', function () {
+    if (!is_user_logged_in()) {
+        ob_start(); ?>
+        <div class="restart-login-prompt">
+            <p>You need to be logged in to create a registry.</p>
+            <a href="<?php echo esc_url(wp_login_url(get_permalink())); ?>" class="restart-btn">Log In</a>
+        </div>
+        <?php return ob_get_clean();
+    }
+
+    ob_start(); ?>
+    <form id="restart-registry-form" class="restart-form" novalidate>
+
+        <div class="restart-form__group">
+            <label class="restart-form__label" for="registry-title">Registry Name <span aria-hidden="true">*</span></label>
+            <input class="restart-form__input" type="text" id="registry-title" name="title" required maxlength="200" placeholder="e.g. My New Beginning">
+        </div>
+
+        <div class="restart-form__group">
+            <label class="restart-form__label" for="event-type">My Situation</label>
+            <select class="restart-form__select" id="event-type" name="event_type">
+                <option value="">— Select your situation —</option>
+                <option value="divorce">Divorce</option>
+                <option value="separation">Separation</option>
+                <option value="moving-on">Moving On</option>
+                <option value="getting-out">Getting Out</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="restart-form__group">
+            <label class="restart-form__label" for="event-date">My Date</label>
+            <input class="restart-form__input" type="date" id="event-date" name="event_date">
+        </div>
+
+        <div class="restart-form__group">
+            <label class="restart-form__label" for="registry-story">My Story</label>
+            <textarea class="restart-form__textarea" id="registry-story" name="story" rows="5" maxlength="2000" placeholder="Share what's brought you to this moment, and what this fresh start means to you…"></textarea>
+            <p class="restart-form__hint">This will appear on your public registry page.</p>
+        </div>
+
+        <div class="restart-form__group">
+            <span class="restart-form__label">Private Registry?</span>
+            <label class="restart-toggle">
+                <input type="checkbox" id="is-private" name="is_private">
+                <span class="restart-toggle__track"></span>
+                <span class="restart-toggle__label">Only visible to people I invite</span>
+            </label>
+        </div>
+
+        <div class="restart-form__group" id="invitees-group" hidden>
+            <label class="restart-form__label" for="invitees">Invite by Username</label>
+            <input class="restart-form__input" type="text" id="invitees" name="invitees" placeholder="username1, username2">
+            <p class="restart-form__hint">Enter WordPress usernames separated by commas.</p>
+        </div>
+
+        <div id="restart-form-error" class="restart-form__error" hidden></div>
+
+        <button type="submit" class="restart-btn">Create Registry</button>
+
+    </form>
+    <?php return ob_get_clean();
+});
+
+add_shortcode('restart_my_account', function () {
+    if (!is_user_logged_in()) {
+        return '<p>' . wp_kses_post(
+            sprintf(
+                'Please <a href="%s">log in</a> to manage your account.',
+                esc_url(wp_login_url(get_permalink()))
+            )
+        ) . '</p>';
+    }
+
+    $user = wp_get_current_user();
+
+    ob_start();
+    ?>
+    <div class="restart-my-account">
+
+        <p class="restart-my-account__greeting">Hello, <strong><?php echo esc_html($user->display_name); ?></strong>.</p>
+
+        <nav class="restart-my-account__nav" aria-label="Account navigation">
+            <ul>
+                <li><a href="<?php echo esc_url(home_url('/my-registries/')); ?>">My Registries</a></li>
+                <li><a href="#edit-profile" id="rr-edit-profile-toggle">Edit Profile</a></li>
+                <li><a href="<?php echo esc_url(wp_logout_url(home_url('/'))); ?>">Log Out</a></li>
+            </ul>
+        </nav>
+
+        <div id="rr-edit-profile-panel" class="restart-my-account__edit-panel" hidden>
+            <h2 class="restart-my-account__section-title">Edit Profile</h2>
+
+            <div id="rr-profile-message" class="restart-form__success" hidden></div>
+            <div id="rr-profile-error" class="restart-form__error" hidden></div>
+
+            <form id="rr-profile-form" class="restart-form" novalidate>
+                <input type="hidden" id="rr-profile-nonce" value="<?php echo esc_attr(wp_create_nonce('restart_update_profile_nonce')); ?>" />
+
+                <div class="restart-form__group">
+                    <label class="restart-form__label" for="rr-display-name">Display Name</label>
+                    <input class="restart-form__input" type="text" id="rr-display-name" name="display_name"
+                        value="<?php echo esc_attr($user->display_name); ?>" maxlength="100">
+                </div>
+
+                <div class="restart-form__group">
+                    <label class="restart-form__label" for="rr-email">Email Address</label>
+                    <input class="restart-form__input" type="email" id="rr-email" name="email"
+                        value="<?php echo esc_attr($user->user_email); ?>">
+                </div>
+
+                <div class="restart-form__group">
+                    <label class="restart-form__label" for="rr-new-password">New Password <span class="restart-form__hint" style="display:inline">(leave blank to keep current)</span></label>
+                    <input class="restart-form__input" type="password" id="rr-new-password" name="password"
+                        autocomplete="new-password" minlength="8">
+                </div>
+
+                <div class="restart-form__actions">
+                    <button type="submit" class="restart-btn" id="rr-profile-save">Save Changes</button>
+                    <button type="button" class="restart-btn restart-btn--ghost" id="rr-edit-profile-cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+    <?php
+    return ob_get_clean();
+});
+
+add_shortcode('restart_login_form', function () {
+    if (is_user_logged_in()) {
+        return '<p>' . wp_kses_post(
+            sprintf('You are already logged in. <a href="%s">Go to your account</a>.', esc_url(home_url('/my-account/')))
+        ) . '</p>';
+    }
+
+    $error = isset($_GET['login']) && $_GET['login'] === 'failed'
+        ? 'Incorrect username or password. Please try again.'
+        : '';
+
+    $redirect_to = isset($_GET['redirect_to']) ? esc_url(urldecode($_GET['redirect_to'])) : esc_url(home_url('/my-account/'));
+
+    ob_start();
+    ?>
+    <form class="restart-form" method="post" action="<?php echo esc_url(site_url('wp-login.php')); ?>">
+        <input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect_to); ?>" />
+        <input type="hidden" name="testcookie" value="1" />
+
+        <?php if ($error) : ?>
+        <div class="restart-form__error"><?php echo esc_html($error); ?></div>
+        <?php endif; ?>
+
+        <div class="restart-form__group">
+            <label class="restart-form__label" for="user_login">Username or Email</label>
+            <input class="restart-form__input" type="text" id="user_login" name="log" required autocomplete="username">
+        </div>
+
+        <div class="restart-form__group">
+            <label class="restart-form__label" for="user_pass">Password</label>
+            <input class="restart-form__input" type="password" id="user_pass" name="pwd" required autocomplete="current-password">
+        </div>
+
+        <div class="restart-form__actions">
+            <button type="submit" name="wp-submit" class="restart-btn">Log In</button>
+        </div>
+
+        <p class="restart-form__hint restart-form__footer-link">
+            Don't have an account? <a href="<?php echo esc_url(wp_registration_url()); ?>">Create one</a>.
+        </p>
+    </form>
+    <?php
+    return ob_get_clean();
+});
+
+add_shortcode('restart_register_form', function () {
+    if (is_user_logged_in()) {
+        return '<p>' . wp_kses_post(
+            sprintf('You already have an account. <a href="%s">Go to your account</a>.', esc_url(home_url('/my-account/')))
+        ) . '</p>';
+    }
+
+    if (!get_option('users_can_register')) {
+        return '<p>Account registration is currently closed.</p>';
+    }
+
+    ob_start();
+    ?>
+    <div id="rr-register-error" class="restart-form__error" hidden></div>
+
+    <form id="rr-register-form" class="restart-form" novalidate>
+        <div class="restart-form__group">
+            <label class="restart-form__label" for="rr-reg-username">Username <span aria-hidden="true">*</span></label>
+            <input class="restart-form__input" type="text" id="rr-reg-username" name="username"
+                required autocomplete="username" maxlength="60">
+        </div>
+
+        <div class="restart-form__group">
+            <label class="restart-form__label" for="rr-reg-email">Email Address <span aria-hidden="true">*</span></label>
+            <input class="restart-form__input" type="email" id="rr-reg-email" name="email"
+                required autocomplete="email">
+        </div>
+
+        <div class="restart-form__group">
+            <label class="restart-form__label" for="rr-reg-password">Password <span aria-hidden="true">*</span></label>
+            <input class="restart-form__input" type="password" id="rr-reg-password" name="password"
+                required autocomplete="new-password" minlength="8">
+            <p class="restart-form__hint">At least 8 characters.</p>
+        </div>
+
+        <div class="restart-form__actions">
+            <button type="submit" class="restart-btn" id="rr-register-submit">Create Account</button>
+        </div>
+
+        <p class="restart-form__hint restart-form__footer-link">
+            Already have an account? <a href="<?php echo esc_url(wp_login_url()); ?>">Log in</a>.
+        </p>
+    </form>
+    <?php
+    return ob_get_clean();
+});
+
+add_shortcode('restart_my_registries', function () {
+    if (!is_user_logged_in()) {
+        return '<p>' . wp_kses_post(
+            sprintf('Please <a href="%s">log in</a> to view your registries.', esc_url(wp_login_url(get_permalink())))
+        ) . '</p>';
+    }
+
+    $user    = wp_get_current_user();
+    $user_id = $user->ID;
+
+    $owned = get_posts([
+        'post_type'      => 'restart-registry',
+        'post_status'    => ['publish', 'private', 'draft'],
+        'author'         => $user_id,
+        'posts_per_page' => -1,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ]);
+
+    $invited = get_posts([
+        'post_type'      => 'restart-registry',
+        'post_status'    => ['publish', 'private'],
+        'author__not_in' => [$user_id],
+        'posts_per_page' => -1,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'meta_query'     => [
+            'relation' => 'OR',
+            [
+                'key'     => 'restart_invitees',
+                'value'   => $user->user_login,
+                'compare' => 'LIKE',
+            ],
+            [
+                'key'     => 'restart_invitees',
+                'value'   => $user->user_email,
+                'compare' => 'LIKE',
+            ],
+        ],
+    ]);
+
+    ob_start();
+    ?>
+    <div class="restart-my-registries">
+
+        <section class="restart-my-registries__section">
+            <h2 class="restart-my-registries__heading">My Registries</h2>
+            <?php if (empty($owned)) : ?>
+                <p class="restart-my-registries__empty">You haven't created any registries yet. <a href="<?php echo esc_url(home_url('/start-a-registry/')); ?>">Start one now</a>.</p>
+            <?php else : ?>
+                <ul class="restart-registry-list">
+                    <?php foreach ($owned as $post) :
+                        $status     = $post->post_status;
+                        $event_type = get_post_meta($post->ID, 'restart_event_type', true);
+                        ?>
+                        <li class="restart-registry-list__item">
+                            <a class="restart-registry-list__title" href="<?php echo esc_url(get_permalink($post->ID)); ?>"><?php echo esc_html($post->post_title); ?></a>
+                            <span class="restart-registry-list__meta">
+                                <?php if ($event_type) : ?><span class="restart-registry-list__type"><?php echo esc_html(ucfirst(str_replace('-', ' ', $event_type))); ?></span><?php endif; ?>
+                                <span class="restart-registry-list__status restart-registry-list__status--<?php echo esc_attr($status); ?>"><?php echo esc_html($status === 'publish' ? 'Public' : ucfirst($status)); ?></span>
+                            </span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </section>
+
+        <?php if (!empty($invited)) : ?>
+        <section class="restart-my-registries__section">
+            <h2 class="restart-my-registries__heading">Registries I'm Invited To</h2>
+            <ul class="restart-registry-list">
+                <?php foreach ($invited as $post) :
+                    $owner      = get_userdata($post->post_author);
+                    $event_type = get_post_meta($post->ID, 'restart_event_type', true);
+                    ?>
+                    <li class="restart-registry-list__item">
+                        <a class="restart-registry-list__title" href="<?php echo esc_url(get_permalink($post->ID)); ?>"><?php echo esc_html($post->post_title); ?></a>
+                        <span class="restart-registry-list__meta">
+                            <?php if ($event_type) : ?><span class="restart-registry-list__type"><?php echo esc_html(ucfirst(str_replace('-', ' ', $event_type))); ?></span><?php endif; ?>
+                            <?php if ($owner) : ?><span class="restart-registry-list__owner">by <?php echo esc_html($owner->display_name); ?></span><?php endif; ?>
+                        </span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </section>
+        <?php endif; ?>
+
+    </div>
+    <?php
+    return ob_get_clean();
+});
+
+// Enqueue auth JS on login, register, and account pages.
+add_action('wp_enqueue_scripts', function () {
+    if (!is_page(['login', 'register', 'my-account'])) {
+        return;
+    }
+
+    wp_enqueue_script(
+        'restart-auth',
+        get_stylesheet_directory_uri() . '/assets/js/auth.js',
+        ['jquery'],
+        wp_get_theme()->get('Version'),
+        true
+    );
+
+    wp_localize_script('restart-auth', 'restartAuth', [
+        'ajaxUrl'            => admin_url('admin-ajax.php'),
+        'registerNonce'      => wp_create_nonce('restart_register_nonce'),
+        'updateProfileNonce' => wp_create_nonce('restart_update_profile_nonce'),
+    ]);
+});
+
+// Contact modal — enqueue JS and inject modal HTML into every page footer.
+add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_script(
+        'restart-contact-modal',
+        get_stylesheet_directory_uri() . '/assets/js/contact-modal.js',
+        [],
+        wp_get_theme()->get('Version'),
+        true
+    );
+});
+
+add_action('wp_footer', function () {
+    ?>
+    <div id="rr-contact-modal" class="rr-modal" role="dialog" aria-modal="true" aria-labelledby="rr-contact-modal-title" hidden>
+        <div class="rr-modal__overlay"></div>
+        <div class="rr-modal__dialog">
+            <button class="rr-modal__close" aria-label="Close">&times;</button>
+            <h2 class="rr-modal__title" id="rr-contact-modal-title">Contact Us</h2>
+            <?php echo do_shortcode('[wpforms id="YOUR_FORM_ID"]'); ?>
+        </div>
+    </div>
+    <?php
+});
+
+// Inject category-specific single templates into the block theme hierarchy.
+// WP doesn't natively support single-category-{slug}.html, so we add them here.
+add_filter('block_template_hierarchy', function (array $templates): array {
+    if (!is_singular('post')) {
+        return $templates;
+    }
+
+    $categories = get_the_category();
+    if (empty($categories)) {
+        return $templates;
+    }
+
+    $category_slugs = array_map(
+        fn($cat) => 'single-category-' . $cat->slug,
+        $categories
+    );
+
+    $single_pos = array_search('single', $templates);
+    if ($single_pos !== false) {
+        array_splice($templates, $single_pos, 0, $category_slugs);
+    }
+
+    return $templates;
+});
+
+// Fix: WP strips inherit:true from query block context (it equals the default), so
+// category/taxonomy archives don't filter the query loop. Inject the term filter here.
+add_filter('query_loop_block_query_vars', function (array $query, WP_Block $block, int $page): array {
+    if (is_category()) {
+        $term = get_queried_object();
+        if ($term instanceof WP_Term) {
+            $query['cat'] = $term->term_id;
+        }
+    } elseif (is_tag()) {
+        $term = get_queried_object();
+        if ($term instanceof WP_Term) {
+            $query['tag_id'] = $term->term_id;
+        }
+    } elseif (is_tax()) {
+        $term = get_queried_object();
+        if ($term instanceof WP_Term) {
+            $query['tax_query'][] = [
+                'taxonomy' => $term->taxonomy,
+                'field'    => 'term_id',
+                'terms'    => [$term->term_id],
+            ];
+        }
+    }
+    return $query;
+}, 10, 3);

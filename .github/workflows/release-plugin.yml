@@ -1,0 +1,29 @@
+name: Release Plugin
+
+on:
+  push:
+    tags:
+      - 'plugin/v*'
+
+jobs:
+  build:
+    name: Build plugin zip
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugin
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build zip
+        run: |
+          VERSION="${GITHUB_REF_NAME#plugin/}"
+          ZIP_NAME="restart-registry-${VERSION}.zip"
+          rsync -a --delete --exclude-from=.distignore . /tmp/restart-registry/
+          cd /tmp && zip -r "$GITHUB_WORKSPACE/$ZIP_NAME" restart-registry/
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_NAME }}

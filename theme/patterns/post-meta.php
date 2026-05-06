@@ -1,0 +1,21 @@
+<?php
+/**
+ * Title: Post Meta
+ * Slug: therestart/post-meta
+ * Categories: query
+ * Keywords: post meta
+ * Block Types: core/template-part/post-meta
+ * Description: Post meta information.
+ */
+?>
+<!-- wp:post-terms {"term":"category","style":{"typography":{"fontFamily":"var(--wp--preset--font-family--montserrat)","fontWeight":"700","fontSize":"13px","letterSpacing":"0.1em","textTransform":"uppercase"},"color":{"text":"#47b4b0"}}} /-->
+
+<!-- wp:group {"layout":{"type":"flex","flexWrap":"wrap","justifyContent":"center","verticalAlignment":"center"},"style":{"spacing":{"blockGap":"1.5rem"}}} -->
+<div class="wp-block-group">
+
+    <!-- wp:post-author {"showAvatar":false,"showBio":false,"byline":"By","style":{"typography":{"fontFamily":"var(--wp--preset--font-family--montserrat)","fontSize":"13px"},"color":{"text":"#9fd4b3"}}} /-->
+
+    <!-- wp:post-date {"style":{"typography":{"fontFamily":"var(--wp--preset--font-family--montserrat)","fontSize":"13px"},"color":{"text":"#9fd4b3"}}} /-->
+
+</div>
+<!-- /wp:group -->

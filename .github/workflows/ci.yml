@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+
+  plugin-php:
+    name: Plugin — PHPUnit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugin
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+      - uses: actions/cache@v5
+        with:
+          path: plugin/vendor
+          key: plugin-composer-${{ hashFiles('plugin/composer.lock') }}
+          restore-keys: plugin-composer-
+      - run: composer install --no-interaction --prefer-dist
+      - run: vendor/bin/phpunit
+
+  plugin-js:
+    name: Plugin — Jest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugin
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: plugin/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  lambda:
+    name: Lambda — pytest + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lambda
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+      - run: uv sync
+      - run: uv run pytest tests/ -v
+      - run: make build-test
+
+  theme-php:
+    name: Theme — PHPUnit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: theme
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+      - uses: actions/cache@v5
+        with:
+          path: theme/vendor
+          key: theme-composer-${{ hashFiles('theme/composer.lock') }}
+          restore-keys: theme-composer-
+      - run: composer install --no-interaction --prefer-dist
+      - run: vendor/bin/phpunit
+
+  theme-js:
+    name: Theme — Jest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: theme
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: theme/package-lock.json
+      - run: npm ci
+      - run: npm test

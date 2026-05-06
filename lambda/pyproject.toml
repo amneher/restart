@@ -1,0 +1,40 @@
+[project]
+name = "restart_lambda"
+version = "1.0.3"
+description = "AWS Lambda providing the-restart.co Registry app."
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.109.0",
+    "mangum>=0.17.0",
+    "uvicorn>=0.27.0",
+    "httpx>=0.26.0",
+    "pydantic>=2.12.5",
+    "wp-python>=0.1.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+
+[dependency-groups]
+dev = [
+    "sphinx>=9.1.0",
+    "pytest>=9.0.2",
+    "pytest-mock>=3.15.1",
+]
+
+[project.scripts]
+tests = "pytest:main"
+run_dev = "app.main:app"
+run_prod = "app.main:app"
