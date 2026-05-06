@@ -1,0 +1,84 @@
+site_name: Restart Registry
+site_description: Gift registry platform for people restarting after divorce
+site_url: https://amneher.github.io/restart
+repo_url: https://github.com/amneher/restart
+repo_name: amneher/restart
+
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.suggest
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - ../lambda
+          options:
+            show_source: true
+            show_root_heading: true
+            docstring_style: google
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.highlight:
+      guess_lang: false
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+  - Development: development.md
+  - Contributing: contributing.md
+  - Plugin:
+      - Overview: plugin/overview.md
+      - Shortcodes: plugin/shortcodes.md
+      - Controller API: plugin/controller-api.md
+      - Lambda Client: plugin/lambda-client.md
+      - Affiliate Converter: plugin/affiliate-converter.md
+      - Testing: plugin/testing.md
+  - Lambda API:
+      - Overview: lambda/overview.md
+      - Endpoints: lambda/api.md
+      - Authentication: lambda/auth.md
+      - Database: lambda/database.md
+      - Deployment: lambda/deploy.md
+      - Testing: lambda/testing.md
+  - Theme:
+      - Overview: theme/overview.md
+      - Screenshots: theme/screenshots.md
+      - Shortcodes: theme/shortcodes.md
+      - Templates: theme/templates.md
+      - JavaScript: theme/js.md
+      - Testing: theme/testing.md

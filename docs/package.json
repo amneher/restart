@@ -1,0 +1,10 @@
+{
+  "name": "restart-docs-screenshots",
+  "private": true,
+  "scripts": {
+    "screenshots": "node scripts/screenshots.js"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0"
+  }
+}
