@@ -305,11 +305,11 @@ After move to `restart/`:
 - [x] Initial commit pushed to github.com/amneher/restart (e37324c)
 
 ### Phase 2: Theme test scaffold
-- [ ] Add `theme/composer.json`, `theme/package.json`, `theme/phpunit.xml.dist`, `theme/jest.config.js`
-- [ ] Write `theme/tests/bootstrap.php`
-- [ ] Write P0 theme PHP tests (shortcodes, App Password)
-- [ ] Write P0 theme JS tests (start-registry.js, auth.js)
-- [ ] Wire into theme Makefile
+- [x] Add `theme/composer.json`, `theme/package.json`, `theme/phpunit.xml.dist`, `theme/jest.config.js`
+- [x] Write `theme/tests/bootstrap.php` + `ThemeTestCase.php`
+- [x] Write P0 theme PHP tests — 23 tests: shortcodes ×5, AppPassword, Filters ×2 (46b0954)
+- [x] Write P0 theme JS tests — 18 tests: start-registry.js, auth.js, contact-modal.js (46b0954)
+- [x] Wire into theme Makefile (install, test, test-php, test-js targets)
 
 ### Phase 3: Plugin test gaps
 - [ ] Write `plugin/tests/integration/Controller/AccessControlTest.php` (P0)
