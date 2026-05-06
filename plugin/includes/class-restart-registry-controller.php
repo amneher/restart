@@ -21,11 +21,14 @@ class Restart_Registry_Controller {
     /** @var Restart_Registry_Affiliate_Converter */
     private $affiliate_converter;
 
-    public function __construct() {
+    public function __construct(
+        ?Restart_Registry_Lambda_Client $lambda = null,
+        ?Restart_Registry_Affiliate_Converter $affiliate_converter = null
+    ) {
         require_once plugin_dir_path(__FILE__) . 'class-lambda-api-client.php';
         require_once plugin_dir_path(__FILE__) . 'class-affiliate-converter.php';
-        $this->lambda              = new Restart_Registry_Lambda_Client();
-        $this->affiliate_converter = new Restart_Registry_Affiliate_Converter();
+        $this->lambda              = $lambda ?? new Restart_Registry_Lambda_Client();
+        $this->affiliate_converter = $affiliate_converter ?? new Restart_Registry_Affiliate_Converter();
     }
 
     // =========================================================================
