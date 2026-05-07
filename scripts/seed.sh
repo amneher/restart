@@ -159,11 +159,13 @@ ARTICLES_ID=$($WP term list category --slug=articles --field=term_id --format=cs
 echo "→ Creating blog posts..."
 if [ -n "$ARTICLES_ID" ]; then
     for i in 1 2 3 4 5; do
-        if ! $WP post list --post_type=post --post_status=publish --post_title="Demo Article ${i}" --format=count | grep -q '^[1-9]'; then
+        ARTICLE_TITLE="Demo Article ${i}: Registry Tips and Ideas"
+        EXISTING_ID=$($WP eval "global \$wpdb; echo \$wpdb->get_var(\$wpdb->prepare(\"SELECT ID FROM \$wpdb->posts WHERE post_type='post' AND post_status='publish' AND post_title=%s LIMIT 1\", '$ARTICLE_TITLE'));" 2>/dev/null | tr -d '[:space:]')
+        if [ -z "$EXISTING_ID" ]; then
             $WP post create \
                 --post_type=post \
                 --post_status=publish \
-                --post_title="Demo Article ${i}: Registry Tips and Ideas" \
+                --post_title="$ARTICLE_TITLE" \
                 --post_content="<p>Settling into a new chapter of life is exciting. Here are some thoughtful registry ideas to help you get started with your new beginning.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus congue eros id ligula sodales, a tincidunt mi fermentum. Sed euismod, nisl vel ultricies lacinia, nisl nisl aliquam nisl, nec aliquam nisl nisl sit amet nisl.</p>" \
                 --post_category="$ARTICLES_ID" \
                 --porcelain
