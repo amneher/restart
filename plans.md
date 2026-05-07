@@ -284,8 +284,8 @@ After move to `restart/`:
 - [x] Push archival commits to GitHub for restart-registry and restart_lambda
 - [x] Archive `amneher/restart-registry` on GitHub
 - [x] Archive `amneher/restart_lambda` on GitHub
-- [ ] Add GitHub Actions secrets to new repo after Phase 1 (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, LAMBDA_FUNCTION_NAME, API_GATEWAY_KEY, etc.)
-- [ ] Update IAM role trust policy if using GitHub OIDC (repo path: amneher/restart-registry → amneher/restart)
+- [x] Add `AWS_ROLE_ARN` secret to new repo (repo level + staging + prod environments)
+- [x] IAM role trust policy already pointed at `repo:amneher/restart:*` — no change needed
 
 ### Phase 1: Restructure
 - [x] Create `restart/` directory + `git init`
@@ -329,7 +329,10 @@ After move to `restart/`:
 - [x] Write per-project overview pages (9db82ec)
 - [x] Write `theme/screenshots.md` with Playwright capture script (9db82ec)
 - [x] `docs-screenshots` Makefile target + `docs/scripts/screenshots.js` (9db82ec)
-- [ ] Set up GitHub Pages (enable Pages on amneher/restart repo, run `make docs-deploy`)
+- [x] Set up GitHub Pages — `docs.yml` GHA workflow deploys on every `docs/**` push (3f2ea26)
+- [x] All CI workflows passing — staging auto-deploys on push, prod via `workflow_dispatch` (fd3fdf0)
+- [x] Bump all GHA actions to Node.js 24 compatible versions (6bab70e)
+- [x] Add `workflow_dispatch` to `deploy-staging.yml` for manual re-runs (ab0dae2)
 
 # Plan: Unified Dev Environment
 
