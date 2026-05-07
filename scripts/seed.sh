@@ -103,28 +103,24 @@ fi
 
 echo "→ Creating pages..."
 create_page() {
-    local title="$1" slug="$2" template="$3"
+    local title="$1" slug="$2" template="${3:-}"
     if ! $WP post list --post_type=page --post_status=publish --name="$slug" --format=count | grep -q '^[1-9]'; then
-        $WP post create \
-            --post_type=page \
-            --post_status=publish \
-            --post_title="$title" \
-            --post_name="$slug" \
-            --page_template="$template" \
-            --porcelain
+        local args=(--post_type=page --post_status=publish --post_title="$title" --post_name="$slug" --porcelain)
+        [ -n "$template" ] && args+=(--page_template="$template")
+        $WP post create "${args[@]}"
     else
         $WP post list --post_type=page --post_status=publish --name="$slug" --field=ID
     fi
 }
 
-HOME_ID=$(create_page "Home"                 "home"                "templates/front-page.html")
-create_page "Login"                          "login"               "templates/page-login.html"
-create_page "Register"                       "register"            "templates/page-register.html"
-create_page "My Account"                     "my-account"          "templates/page-my-account.html"
-create_page "My Registries"                  "my-registries"       "templates/page-my-registries.html"
-create_page "Start a Registry"               "start-a-registry"    "templates/page-start-a-registry.html"
-create_page "FAQ"                            "faq"                 "templates/page-faq.html"
-create_page "About Us"                       "about-us"            "templates/page-about-us.html"
+HOME_ID=$(create_page "Home" "home")
+create_page "Login"                          "login"               "page-login"
+create_page "Register"                       "register"            "page-register"
+create_page "My Account"                     "my-account"          "page-my-account"
+create_page "My Registries"                  "my-registries"       "page-my-registries"
+create_page "Start a Registry"               "start-a-registry"    "page-start-a-registry"
+create_page "FAQ"                            "faq"                 "page-faq"
+create_page "About Us"                       "about-us"            "page-about-us"
 
 $WP option update show_on_front page
 $WP option update page_on_front "$HOME_ID"
