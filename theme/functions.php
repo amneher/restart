@@ -11,6 +11,10 @@ add_action('admin_enqueue_scripts', function () use ($fonts_url) {
     wp_enqueue_style('therestart-fonts', $fonts_url, [], null);
 });
 
+add_filter('show_admin_bar', function ($show) {
+    return $show && current_user_can('edit_posts');
+});
+
 // Enqueue the Start a Registry JS with localized credentials when on that page
 add_action('wp_enqueue_scripts', function () {
     if (!is_page('start-a-registry') || !is_user_logged_in()) {

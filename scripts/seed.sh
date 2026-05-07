@@ -99,6 +99,12 @@ if ! $WP user get admin 2>/dev/null | grep -q admin; then
         --display_name="Admin"
 fi
 
+# ── Permalinks ────────────────────────────────────────────────────────────────
+
+echo "→ Setting permalink structure..."
+$WP rewrite structure '/%postname%/' --hard >/dev/null
+$WP rewrite flush >/dev/null
+
 # ── Pages ─────────────────────────────────────────────────────────────────────
 
 echo "→ Creating pages..."
@@ -131,7 +137,7 @@ echo "→ Creating categories..."
 for cat in articles gifts favorites; do
     $WP term create category "$cat" --slug="$cat" 2>/dev/null || true
 done
-ARTICLES_ID=$($WP term get category articles --field=term_id 2>/dev/null || echo "")
+ARTICLES_ID=$($WP term list category --slug=articles --field=term_id --format=csv 2>/dev/null | grep -v term_id | head -1 || echo "")
 
 # ── Blog posts ────────────────────────────────────────────────────────────────
 
@@ -164,10 +170,10 @@ create_registry() {
             --post_title="$title" \
             --post_author="$DEMO_ID" \
             --porcelain)
-        $WP post meta update "$post_id" restart_event_type "$event_type"
-        $WP post meta update "$post_id" restart_event_date "$event_date"
-        $WP post meta update "$post_id" restart_invitees '[]'
-        $WP post meta update "$post_id" restart_item_ids '[]'
+        $WP post meta update "$post_id" restart_event_type "$event_type" >/dev/null
+        $WP post meta update "$post_id" restart_event_date "$event_date" >/dev/null
+        $WP post meta update "$post_id" restart_invitees '[]' >/dev/null
+        $WP post meta update "$post_id" restart_item_ids '[]' >/dev/null
     else
         post_id=$($WP post list --post_type=restart-registry --post_status=publish --post_title="$title" --field=ID)
     fi

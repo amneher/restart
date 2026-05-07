@@ -142,7 +142,8 @@ a {
 a:hover { color: var(--wp--preset--color--primary); }
 
 /* ── Hero ── */
-.hero-cover {
+.hero-cover,
+.hero-page {
     background-image: url('assets/hero-sunrise.png');
     background-size: cover;
     background-position: center top;
@@ -708,17 +709,11 @@ a:hover { color: var(--wp--preset--color--primary); }
 }
 
 /* ── Contact Modal ── */
-.rr-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Base .rr-modal visibility (display:none default, .is-open to show) is
+   owned by the plugin stylesheet. Only layout overrides belong here. */
+.rr-modal.is-open {
     padding: 1rem;
 }
-
-.rr-modal[hidden] { display: none; }
 
 .rr-modal__overlay {
     position: absolute;
