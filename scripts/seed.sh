@@ -99,6 +99,21 @@ if ! $WP user get admin 2>/dev/null | grep -q admin; then
         --display_name="Admin"
 fi
 
+# ── Lambda client credentials ─────────────────────────────────────────────────
+
+echo "→ Configuring Lambda client credentials..."
+if ! $WP option get restart_lambda_app_password >/dev/null 2>&1; then
+    ADMIN_ID=$($WP user get admin --field=ID)
+    LAMBDA_PWD=$($WP user application-password create "$ADMIN_ID" "Lambda Client" --porcelain 2>/dev/null)
+    if [ -n "$LAMBDA_PWD" ]; then
+        $WP option update restart_lambda_username "admin" >/dev/null
+        $WP option update restart_lambda_app_password "$LAMBDA_PWD" >/dev/null
+        echo "  Lambda credentials configured."
+    fi
+else
+    echo "  Lambda credentials already configured."
+fi
+
 # ── Permalinks ────────────────────────────────────────────────────────────────
 
 echo "→ Setting permalink structure..."
@@ -162,20 +177,26 @@ echo "→ Creating demo registries..."
 
 create_registry() {
     local title="$1" event_type="$2" event_date="$3"
-    local post_id
-    if ! $WP post list --post_type=restart-registry --post_status=publish --post_title="$title" --format=count | grep -q '^[1-9]'; then
+    local slug post_id
+    # Derive slug matching WordPress sanitize_title: remove punctuation, lowercase, spaces→hyphens
+    slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed "s/'//g" | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//g')
+    # Use wp eval for exact slug match — wp post list --post_name uses LIKE, not =
+    post_id=$($WP eval "
+        \$posts = get_posts(['post_type'=>'restart-registry','post_status'=>'publish','name'=>'$slug','fields'=>'ids','numberposts'=>1]);
+        echo empty(\$posts) ? '' : \$posts[0];
+    " 2>/dev/null | tr -d '[:space:]')
+    if [ -z "$post_id" ]; then
         post_id=$($WP post create \
             --post_type=restart-registry \
             --post_status=publish \
             --post_title="$title" \
+            --post_name="$slug" \
             --post_author="$DEMO_ID" \
             --porcelain)
         $WP post meta update "$post_id" restart_event_type "$event_type" >/dev/null
         $WP post meta update "$post_id" restart_event_date "$event_date" >/dev/null
         $WP post meta update "$post_id" restart_invitees '[]' >/dev/null
         $WP post meta update "$post_id" restart_item_ids '[]' >/dev/null
-    else
-        post_id=$($WP post list --post_type=restart-registry --post_status=publish --post_title="$title" --field=ID)
     fi
     echo "$post_id"
 }
