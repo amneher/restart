@@ -1,169 +1,104 @@
-# Plan: Theme branding + layout pass
+# Plan: Layout / alignment audit + visual nit-picking
 
-Branch: `theme/branding-and-layout`
-
-## Goal
-Standardize the brand on **"the ReStart"** with a single hand-built SVG logo (matching the user-supplied PNG: a circle with a refresh-arrow notch at the top and a lowercase serif "r" inside), replace ad-hoc logo references throughout the theme, ship favicon and Open Graph variants, and do a one-pass layout/alignment audit across all 21 templates.
-
-## Source of truth for the logo
-`~/Pictures/Screenshots/Screenshot From 2026-05-07 20-47-07.png`. Hand-rebuilt as SVG (geometric primitives, no trace).
-
-## Out of scope
-- New illustrations or photography. Existing `hero-sunrise.png`, `content-*.jpg` stay as-is.
-- Color-palette changes. The current mint / teal / dark-navy palette holds.
-- Typography changes. Libre Caslon + Montserrat stay.
-- Lambda or plugin code.
-# Plan: Bake wp-cli into the dev WordPress image
+Branch suggestion: `theme/visual-polish`
 
 ## Goal
-`make up && make seed` works end-to-end on a fresh checkout without anyone manually installing wp-cli inside the running container. Seeding currently fails with `exec: "wp": executable file not found in $PATH` because `wordpress:6.9.1-fpm-alpine` (the upstream image) doesn't ship wp-cli.
+One disciplined pass across all 21 templates at desktop and mobile widths. Catch alignment, spacing, vertical rhythm, hierarchy, and obvious visual nits. Fix the high-impact issues; log the rest as follow-ups so the audit stays bounded.
 
-## Constraints / context
-- `scripts/seed.sh` invokes `wp` via `docker compose exec -T wordpress wp --allow-root` — many calls per seed run, so latency per call matters. `docker compose run` is ~10× slower than `exec` per invocation; rules out a one-shot service.
-- Existing `wordpress` named volume already has the running site state. The fix must not require a volume reset.
-- Keep the WordPress version pin (`6.9.1-fpm-alpine`) stable; this PR is only about adding wp-cli, not bumping WP.
-- `docker/` already houses dev-stack config (e.g. `docker/nginx.conf`), so a Dockerfile fits there.
+This is the descoped Phase 4 from the branding PR (`94e986e`), now run on its own.
+
+## Scope
+- All 21 templates in `theme/templates/` plus shared `theme/parts/{header,footer}.html`.
+- Two viewports: **1280 px (desktop)** and **375 px (mobile)**. Add **768 px (tablet)** spot-check only if desktop and mobile disagree on a given page.
+- Both unauthenticated and authenticated states (auth-only pages: `page-my-account`, `page-my-registries`, and the "edit my registry" view of `single-restart-registry`).
 
 ## Out of scope
-- Production / staging deploys (those don't run wp-cli at runtime).
-- Bumping the WordPress version.
-- Adding a Composer-managed `roave/wp-cli` or other PHP-package approach — image-level install is simpler.
+- Color / palette changes (mint / teal / dark-navy holds).
+- Typography swaps (Libre Caslon + Montserrat hold).
+- New illustrations, new copy, new sections.
+- Component / pattern refactors. We're polishing what's there, not rebuilding.
+- Lambda, plugin, or seed logic.
+- A11y deep-dive (logged separately if found, not fixed here).
 
-## Approach (recommended)
+## Severity rubric
+Score each issue 0–10. Fix-bar is **≥ 7**.
+- **9–10**: broken layout, overlap, off-screen content, unreadable contrast.
+- **7–8**: clear visual error a user would notice (misaligned CTA, wrong padding step, busted grid).
+- **4–6**: nits — uneven optical centering, slightly inconsistent gap, minor rhythm drift. Logged in `TODO.md`, not fixed.
+- **0–3**: taste calls. Ignored.
 
-## Confirmed decisions
-- OG description: "Gift registries for life's fresh starts."
-- Mobile (≤ 480 px): wordmark hidden, icon-only.
+Drift-prevention: cap at **one fix pass per template**. No recursing on stylistic taste calls.
 
-## Phase 1 — Hand-built logo SVG + variants
+## Approach
 
-Build the logo from primitives so it's crisp at any size and tiny in bytes:
-- **Outer ring**: `<circle>` with stroke.
-- **Refresh arrow**: short `<path>` at ~10–11 o'clock with a chevron head, breaking the ring.
-- **Glyph**: serif lowercase "r" centered, drawn as a `<path>` (not `<text>`) so it renders identically without webfonts.
+Use the `/design-review` skill against the live dev stack. It captures before/after screenshots and commits atomically per fix, which keeps the diff reviewable and lets us bail out early if the audit balloons.
 
-Files in `theme/assets/`:
-- `logo.svg` — dark on transparent (replaces existing).
-- `logo-light.svg` — white on transparent (replaces existing).
-- `logo-mark.svg` / `logo-mark-light.svg` — same artwork at icon size with no padding (replaces existing).
-- `favicon.svg` — modern browsers; same artwork, `viewBox="0 0 32 32"`.
-- `favicon-32.png`, `favicon-16.png`, `apple-touch-icon.png` (180×180) — rendered from `favicon.svg` via `rsvg-convert` at build/commit time.
-- `og-image.png` (1200×630) — composed: logo on the left, "the ReStart" wordmark on the right, tagline beneath. Rendered from a generator SVG via `rsvg-convert`.
+Working order — front-page first, deepest templates last, so global issues surface before per-page ones:
 
-Delete now-unused: `logo-white.png`, `logo.jpg`.
-
-Quick visual sanity check: open each SVG in a browser at 16/32/64/256 px before wiring them in.
-
-## Phase 2 — Site title + brand text
-
-- `scripts/seed.sh`: set `blogname` to "the ReStart" and `blogdescription` to "Gift registries for life's fresh starts." via `wp option update`. Idempotent (only set if differs).
-- `theme/parts/footer.html`: change `© reStart` → `© the ReStart`.
-- `theme/style.css` `Theme Name` stays `theRestart` (it's the slug; not user-facing).
-- `theme/patterns/*.php`: grep for "reStart"/"Restart" prose and unify casing. Email addresses (`hello@the-restart.co`) stay as the literal domain — not changed.
-
-## Phase 3 — Wire logo into theme
-
-- `theme/parts/header.html`: replace the inline SVG block with a `<!-- wp:html -->` block referencing `assets/logo-light.svg` via stylesheet URL. Site-title text block stays alongside it (logo + wordmark side-by-side at desktop; collapses to mark-only at mobile via CSS).
-- `theme/parts/footer.html`: same pattern (light variant on dark footer).
-- `theme/functions.php`:
-  - `add_theme_support('custom-logo', [...])` so the Customizer can swap if needed.
-  - `add_action('wp_head', ...)` that emits `<link rel="icon" type="image/svg+xml" href=".../favicon.svg">`, the PNG fallback, `<link rel="apple-touch-icon">`, and OG tags (`og:title`, `og:description`, `og:image`, `og:type`, `og:url`, `twitter:card`).
-- Stylesheet: rules to size the logo (`.site-logo-mark img { height: 36px; width: auto; }`) and a media query that hides the wordmark below ~480 px so the bar doesn't crowd.
-
-## Phase 4 — Layout / alignment audit
-
-Single pass via the `/design-review` skill, in the live dev stack, working through the 21 templates in this order (front-page first, deepest pages last):
-
-1. `front-page.html`
-2. `page-about-us.html`
-3. `page-faq.html`
+1. `parts/header.html`, `parts/footer.html` (global — fix once, propagates)
+2. `front-page.html`
+3. `page-about-us.html`, `page-faq.html`
 4. `page-login.html`, `page-register.html`
-5. `page-my-account.html`, `page-my-registries.html`
-6. `page-start-a-registry.html`
+5. `page-start-a-registry.html`
+6. `page-my-account.html`, `page-my-registries.html` *(authed)*
 7. `archive-restart-registry.html`
-8. `single-restart-registry.html`
-9. `index.html`, `single.html`, `page.html`
+8. `single-restart-registry.html` *(public + edit views)*
+9. `index.html`, `page.html`, `single.html`
 10. `category-articles.html`, `category-favorites.html`, `category-gifts.html`
 11. `single-category-articles.html`, `single-category-favorites.html`, `single-category-gifts.html`
 12. `taxonomy-category.html`
 13. `404.html`
 
-For each template: screenshot at desktop (1280) and mobile (375); check header/footer alignment, hero spacing, CTA buttons, list-vs-grid consistency, vertical rhythm, focus states. Fix only issues that score ≥ 7/10 importance — log lower-impact nits as follow-ups.
+For each template, the checklist:
+- Header / footer alignment with page content (gutters match).
+- Hero spacing (top padding, image crop, headline leading).
+- CTA buttons: same height, same padding, same hover/focus state across pages.
+- List vs grid consistency on archives and category pages.
+- Vertical rhythm — no orphan single-line gaps, no double-margin stacking from adjacent block patterns.
+- Focus rings present and visible on all interactive elements (logged if missing — not fixed in this pass beyond trivial CSS).
+- Mobile: nothing horizontally scrolling, tap targets ≥ 44 px, wordmark hides under 480 px (already shipped, just verify).
 
-## Phase 5 — Verify + ship
+## Phases
 
-- `make theme-test` (PHP + JS) green.
-- `make seed-reset` and visually confirm the new title + logo + favicon appear.
-- `make qa` (or at least a manual smoke pass of the front page + login + start-a-registry + an existing registry).
-- Commit per phase with conventional prefixes (`feat(theme): ...`, `fix(theme): ...`).
-- Open a PR titled "theme: branding pass + logo + layout audit."
+### Phase 1 — Stand up the dev stack
+- `make up && make seed-reset` to land on known seed state.
+- Confirm authed flows work: log in as `admin` and `demo`, hit `my-account` and `my-registries`.
+- **Pre-capture skipped** — `/design-review` captures per-template before/after as part of Phase 3, so a separate baseline pass would be redundant. PR will use design-review evidence for visual proof.
 
----
+### Phase 2 — Global parts (header / footer)
+- Audit + fix issues in `parts/header.html`, `parts/footer.html`, and any header/footer CSS in `theme/style.css` / `theme/assets/css/*`.
+- Re-screenshot every template after the fix (cheap — header/footer change has site-wide blast radius, so we re-baseline once before the per-template pass).
+
+### Phase 3 — Per-template pass
+- Walk the working order above. For each template:
+  - `/design-review` at desktop + mobile.
+  - Triage issues against the severity rubric.
+  - Fix ≥ 7s in place; commit atomically (`fix(theme): <template> — <what>`).
+  - Append < 7 nits to `TODO.md` under a new "Visual nits — deferred" section with the template name.
+- Hard cap: **one pass per template.** Do not loop.
+
+### Phase 4 — Verify + ship
+- `make theme-test` green (PHP + JS).
+- Manual smoke: front page, login → my-registries, start-a-registry, an existing registry public view.
+- Open PR titled "theme: layout + visual polish pass."
+- PR body: link to before/after screenshots, list of templates touched, list of deferred nits with severity scores.
 
 ## Risk / rollout
-- The header SVG-via-block approach can render before the stylesheet loads, causing FOUC on first paint. Mitigate with a hard-coded `width`/`height` attr on the `<img>` so layout doesn't shift.
-- Favicon caches aggressively in browsers; document `Ctrl-Shift-R` in the PR body if reviewers don't see the new icon.
-- "all templates" is open-ended. Cap audit at one pass; don't recurse on stylistic taste calls.
+- Header/footer changes have site-wide blast radius — that's why Phase 2 happens first and re-baselines before per-template work. A regression caught in Phase 3 attributed to Phase 2 means we revert the header/footer commit, not the per-template commit.
+- "21 templates × 2 viewports × visual judgment" is the kind of scope that grows. The severity rubric and the one-pass cap exist specifically to prevent it.
+- `/design-review` commits atomically per fix. If a fix turns out wrong, revert that single commit — don't unwind the whole branch.
+
+## Decisions locked in
+- **Auth accounts**: use the two users `scripts/seed.sh` already creates — `admin/admin` (administrator) and `demo/demo` (regular subscriber). No new user needed.
+- **Deferred nits**: appended to `TODO.md` under a new "Visual nits — deferred" section, one bullet per nit with template name and severity score.
+- **Tablet (768 px)**: spot-check only, used when desktop and mobile disagree on a given page. Not a first-class viewport.
 
 ---
 
 ## Todo
 
-- [x] Phase 1: Hand-build `logo.svg` + variants, generate PNG fallbacks, delete dead assets. (555612f, 62edc4f, 08201b3)
-- [x] Phase 2: Update `blogname`/`blogdescription` via seed; align footer text. (67c3f5f)
-- [x] Phase 3: Swap header SVG to file-based; add favicon + OG meta in `functions.php`. (fe70b39)
-- [~] Phase 4: Layout/alignment audit — **descoped** by user; no changes. Branding work didn't require it.
-- [ ] Phase 5: Run tests, QA, open PR.
-**Multi-stage Dockerfile** that pulls the official `wordpress:cli` image as a builder stage and copies just the `wp` binary into the existing `wordpress:fpm-alpine` runtime. No `apk add` calls, no curl, no shell drift.
-
-```dockerfile
-# docker/Dockerfile.wordpress
-ARG WP_VERSION=6.9.1
-FROM wordpress:cli-2.12.0 AS cli
-FROM wordpress:${WP_VERSION}-fpm-alpine
-COPY --from=cli /usr/local/bin/wp /usr/local/bin/wp
-```
-
-The `wordpress:cli` image (officially published by WordPress) ships `wp` as a phar at `/usr/local/bin/wp`. Copying it preserves the phar's executable bit; no extra setup needed. The fpm-alpine runtime already has PHP installed, which is all the phar needs.
-
-`docker-compose.yml` change: replace `image: wordpress:6.9.1-fpm-alpine` with:
-```yaml
-build:
-  context: ./docker
-  dockerfile: Dockerfile.wordpress
-  args:
-    WP_VERSION: 6.9.1
-image: restart-wordpress:dev
-```
-The named `image:` line tells compose to tag the build, so re-runs use the cached layer.
-
-## Alternative (rejected)
-
-Add a separate `wpcli` compose service using `wordpress:cli` directly, mounting the wordpress volume, and rewrite `seed.sh` to call `docker compose run --rm wpcli wp ...` instead of exec'ing into the wordpress container. Pros: zero Dockerfile, standard WP-Docker pattern. Con: each `wp` call spawns a fresh container — adds 1–2 minutes to a seed that currently takes ~10 seconds. Not worth it for our setup.
-
-## Changes per file
-
-1. **`docker/Dockerfile.wordpress`** (new) — the three-line Dockerfile above.
-2. **`docker-compose.yml`** — swap the `wordpress` service's `image:` directive for a `build:` block as shown.
-3. **No `seed.sh` change** — the script keeps using `exec` with the same `wp` invocation; it just works once wp-cli is in the image.
-4. **No README change required** — `make up` already builds when needed; the build step is transparent.
-
-## Risk / rollout
-- First `make up` after this lands triggers a one-time image build (~30–60 s on cold pull, faster on warm). Subsequent runs use the cache.
-- Pinning `wordpress:cli-2.12.0` means we control when wp-cli updates. If left as `wordpress:cli` (no tag) it follows latest, which is fine but less reproducible.
-- The two stages should be on the same WordPress major to avoid db-schema drift between the cli phar's expectations and the runtime. wp-cli 2.12 supports WP 6.9 — confirmed.
-- `make reset` (which does `docker compose down -v`) still works the same way; the Dockerfile builds a new image, but volumes behave identically.
-
-## Verification
-After implementing:
-1. `make down -v` to reset.
-2. `make up` — confirm WP container builds without error.
-3. `docker exec restart-wordpress-1 wp --version --allow-root --path=/var/www/html` — should print `WP-CLI 2.12.0`.
-4. `make seed` from a clean stack — should run end-to-end without the "exec: wp: file not found" error.
-5. Existing `make theme-test` and `make lambda-test` still pass.
-
-## Todo
-- [ ] Add `docker/Dockerfile.wordpress` with the multi-stage definition.
-- [ ] Update `docker-compose.yml` `wordpress` service to `build:` instead of `image:`.
-- [ ] Verify on a `down -v` / `up` cycle and a `seed` run.
-- [ ] Commit on a new branch (e.g. `dev/wp-cli-in-image`).
+- [x] Phase 1a: `make up && make seed-reset`; verify `admin` and `demo` log in. (4807fda, 46d16b8 — fixed two latent seed bugs en route)
+- [~] Phase 1b: **Skipped** — relying on `/design-review`'s built-in per-template before/after captures instead of a separate baseline pass.
+- [ ] Phase 2: Audit + fix `parts/header.html`, `parts/footer.html`, related CSS.
+- [ ] Phase 3: Per-template pass in working order (header/footer → front-page → … → 404). One pass per template. ≥ 7 fixed, 4–6 logged to `theme/TODO.md`, < 4 ignored.
+- [ ] Phase 4: `make theme-test` green, manual smoke (front-page / login / start-a-registry / existing registry), open PR with design-review evidence and deferred-nits list.
