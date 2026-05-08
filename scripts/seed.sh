@@ -3,8 +3,21 @@
 # Requires the full stack to be running: make up
 set -euo pipefail
 
+# Load .env if present so WP_LOCAL_USERNAME / WP_LOCAL_PASSWORD (admin creds)
+# are available. Values default to admin/admin if .env is absent.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "${SCRIPT_DIR}/../.env" ]; then
+    set -a
+    # shellcheck disable=SC1091
+    . "${SCRIPT_DIR}/../.env"
+    set +a
+fi
+
 LAMBDA_URL="${LAMBDA_URL:-http://localhost:5000}"
 WP_URL="${WP_URL:-http://localhost:8083}"
+ADMIN_USER="${WP_LOCAL_USERNAME:-admin}"
+ADMIN_PASSWORD="${WP_LOCAL_PASSWORD:-admin}"
+ADMIN_EMAIL="${ADMIN_USER}@example.com"
 WP="docker compose exec -T wordpress wp --allow-root"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -91,11 +104,11 @@ fi
 
 # ── Admin user ────────────────────────────────────────────────────────────────
 
-echo "→ Ensuring admin user exists..."
-if ! $WP user get admin 2>/dev/null | grep -q admin; then
-    $WP user create admin admin@example.com \
+echo "→ Ensuring admin user '${ADMIN_USER}' exists..."
+if ! $WP user get "$ADMIN_USER" 2>/dev/null | grep -q "$ADMIN_USER"; then
+    $WP user create "$ADMIN_USER" "$ADMIN_EMAIL" \
         --role=administrator \
-        --user_pass=admin \
+        --user_pass="$ADMIN_PASSWORD" \
         --display_name="Admin"
 fi
 
@@ -103,10 +116,10 @@ fi
 
 echo "→ Configuring Lambda client credentials..."
 if ! $WP option get restart_lambda_app_password >/dev/null 2>&1; then
-    ADMIN_ID=$($WP user get admin --field=ID)
+    ADMIN_ID=$($WP user get "$ADMIN_USER" --field=ID)
     LAMBDA_PWD=$($WP user application-password create "$ADMIN_ID" "Lambda Client" --porcelain 2>/dev/null)
     if [ -n "$LAMBDA_PWD" ]; then
-        $WP option update restart_lambda_username "admin" >/dev/null
+        $WP option update restart_lambda_username "$ADMIN_USER" >/dev/null
         $WP option update restart_lambda_app_password "$LAMBDA_PWD" >/dev/null
         echo "  Lambda credentials configured."
     fi
@@ -262,5 +275,5 @@ echo "  WordPress:  ${WP_URL}"
 echo "  Lambda API: ${LAMBDA_URL}"
 echo ""
 echo "  Demo login: demo / demo"
-echo "  Admin login: admin / admin"
+echo "  Admin login: ${ADMIN_USER} / ${ADMIN_PASSWORD}"
 echo ""
