@@ -1,94 +1,101 @@
-# Plan: Test coverage checking in GitHub CI
+# Plan: Theme branding + layout pass
+
+Branch: `theme/branding-and-layout`
 
 ## Goal
-Measure and enforce test coverage for all five test suites in CI (`plugin-php`, `plugin-js`, `lambda`, `theme-php`, `theme-js`), surface coverage on every PR, and fail the build when coverage regresses below an agreed floor.
+Standardize the brand on **"the ReStart"** with a single hand-built SVG logo (matching the user-supplied PNG: a circle with a refresh-arrow notch at the top and a lowercase serif "r" inside), replace ad-hoc logo references throughout the theme, ship favicon and Open Graph variants, and do a one-pass layout/alignment audit across all 21 templates.
 
-## Constraints / context
-- CI is `.github/workflows/ci.yml` — five jobs, each scoped to one suite.
-- PHPUnit jobs currently use `coverage: none` on `shivammathur/setup-php@v2` (no driver installed → can't generate reports).
-- Lambda uses `uv` + pytest; no `pytest-cov` dep yet.
-- Jest is stock; coverage is a `--coverage` flag away.
-- No coverage service (Codecov, Coveralls) wired up. Decide whether to add one.
+## Source of truth for the logo
+`~/Pictures/Screenshots/Screenshot From 2026-05-07 20-47-07.png`. Hand-rebuilt as SVG (geometric primitives, no trace).
 
 ## Out of scope
-- Mutation testing.
-- Coverage for end-to-end tests against staging/prod (only unit + integration suites).
-- Coverage badges in README (can follow once thresholds hold).
+- New illustrations or photography. Existing `hero-sunrise.png`, `content-*.jpg` stay as-is.
+- Color-palette changes. The current mint / teal / dark-navy palette holds.
+- Typography changes. Libre Caslon + Montserrat stay.
+- Lambda or plugin code.
 
 ---
 
-## Decisions (confirmed)
+## Confirmed decisions
+- OG description: "Gift registries for life's fresh starts."
+- Mobile (≤ 480 px): wordmark hidden, icon-only.
 
-1. **Coverage driver for PHPUnit:** **pcov**.
-2. **Coverage reporter:** **artifacts-only** — each job uploads its coverage report via `actions/upload-artifact@v4`. No third-party service.
-3. **Floor thresholds:** **0% on first land** to observe baselines; ratchet in a follow-up.
-4. **Failure mode:** hard-fail at the threshold (currently 0%, so it never fires).
+## Phase 1 — Hand-built logo SVG + variants
 
----
+Build the logo from primitives so it's crisp at any size and tiny in bytes:
+- **Outer ring**: `<circle>` with stroke.
+- **Refresh arrow**: short `<path>` at ~10–11 o'clock with a chevron head, breaking the ring.
+- **Glyph**: serif lowercase "r" centered, drawn as a `<path>` (not `<text>`) so it renders identically without webfonts.
 
-## Changes
+Files in `theme/assets/`:
+- `logo.svg` — dark on transparent (replaces existing).
+- `logo-light.svg` — white on transparent (replaces existing).
+- `logo-mark.svg` / `logo-mark-light.svg` — same artwork at icon size with no padding (replaces existing).
+- `favicon.svg` — modern browsers; same artwork, `viewBox="0 0 32 32"`.
+- `favicon-32.png`, `favicon-16.png`, `apple-touch-icon.png` (180×180) — rendered from `favicon.svg` via `rsvg-convert` at build/commit time.
+- `og-image.png` (1200×630) — composed: logo on the left, "the ReStart" wordmark on the right, tagline beneath. Rendered from a generator SVG via `rsvg-convert`.
 
-### 1. Lambda (pytest)
-- Add `pytest-cov` to `[dependency-groups].dev` in `lambda/pyproject.toml`.
-- Add `[tool.coverage.run]` (`source = ["app"]`, omit tests) and `[tool.coverage.report]` (exclude `if TYPE_CHECKING:` and `if __name__ == "__main__":`).
-- Update CI step: `uv run pytest tests/ -v --cov=app --cov-report=xml --cov-report=term --cov-fail-under=70`.
-- Update local `make lambda-test` and `lambda/Makefile` `test` target so dev parity holds.
+Delete now-unused: `logo-white.png`, `logo.jpg`.
 
-### 2. Plugin — PHPUnit
-- Add `<coverage>` block to `plugin/phpunit.xml` declaring `<include><directory>includes</directory><directory>public</directory><directory>admin</directory></include>` and reporters (Clover XML + text).
-- Change CI `setup-php` `coverage: none` → `coverage: pcov`.
-- CI step: `vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-text` then enforce the floor via PHPUnit 12's `--min-coverage` flag (or, if absent in our minor version, a small Clover-XML-parsing post-step).
-- Document the threshold in `plugin/phpunit.xml` so local runs respect it too.
+Quick visual sanity check: open each SVG in a browser at 16/32/64/256 px before wiring them in.
 
-### 3. Plugin — Jest
-- In `plugin/jest.config.js`: add `collectCoverageFrom: ['public/js/**/*.js', 'admin/js/**/*.js']` (verify paths) and `coverageThreshold: { global: { lines: 40 } }`.
-- CI step: `npm test -- --coverage --coverageReporters=lcov --coverageReporters=text`. Threshold failure is automatic.
-- Keep local `npm test` snappy by only producing coverage when invoked with `--coverage` (no config-level `collectCoverage: true`).
+## Phase 2 — Site title + brand text
 
-### 4. Theme — PHPUnit
-- Same shape as plugin-php with thresholds at 30%. `<include>` covers `functions.php`, `parts/`, `templates/`, `patterns/` as appropriate (verify which directories actually contain testable PHP).
+- `scripts/seed.sh`: set `blogname` to "the ReStart" and `blogdescription` to "Gift registries for life's fresh starts." via `wp option update`. Idempotent (only set if differs).
+- `theme/parts/footer.html`: change `© reStart` → `© the ReStart`.
+- `theme/style.css` `Theme Name` stays `theRestart` (it's the slug; not user-facing).
+- `theme/patterns/*.php`: grep for "reStart"/"Restart" prose and unify casing. Email addresses (`hello@the-restart.co`) stay as the literal domain — not changed.
 
-### 5. Theme — Jest
-- Same shape as plugin-js with 30% threshold. Verify `collectCoverageFrom` glob matches the real source dirs.
+## Phase 3 — Wire logo into theme
 
-### 6. Coverage reporting (if Codecov chosen)
-- Add `codecov/codecov-action@v5` step after each suite, uploading the report file with a `flags:` tag (`plugin-php`, `plugin-js`, `lambda`, `theme-php`, `theme-js`).
-- Add `codecov.yml` at repo root with per-flag targets matching the floors above and `comment.layout: "reach,diff,flags"`.
-- Add `CODECOV_TOKEN` repo secret (one-time, manual).
+- `theme/parts/header.html`: replace the inline SVG block with a `<!-- wp:html -->` block referencing `assets/logo-light.svg` via stylesheet URL. Site-title text block stays alongside it (logo + wordmark side-by-side at desktop; collapses to mark-only at mobile via CSS).
+- `theme/parts/footer.html`: same pattern (light variant on dark footer).
+- `theme/functions.php`:
+  - `add_theme_support('custom-logo', [...])` so the Customizer can swap if needed.
+  - `add_action('wp_head', ...)` that emits `<link rel="icon" type="image/svg+xml" href=".../favicon.svg">`, the PNG fallback, `<link rel="apple-touch-icon">`, and OG tags (`og:title`, `og:description`, `og:image`, `og:type`, `og:url`, `twitter:card`).
+- Stylesheet: rules to size the logo (`.site-logo-mark img { height: 36px; width: auto; }`) and a media query that hides the wordmark below ~480 px so the bar doesn't crowd.
 
-### 6-alt. Artifacts-only fallback
-- Each job uses `actions/upload-artifact@v4` to publish its coverage report. No PR comment, no trend graph.
+## Phase 4 — Layout / alignment audit
 
-### 7. Local-dev parity
-- Add brief notes to root `Makefile` help text on running coverage locally (`pytest --cov=app`, `vendor/bin/phpunit --coverage-text`, `npm test -- --coverage`). No new `make` targets unless requested.
+Single pass via the `/design-review` skill, in the live dev stack, working through the 21 templates in this order (front-page first, deepest pages last):
+
+1. `front-page.html`
+2. `page-about-us.html`
+3. `page-faq.html`
+4. `page-login.html`, `page-register.html`
+5. `page-my-account.html`, `page-my-registries.html`
+6. `page-start-a-registry.html`
+7. `archive-restart-registry.html`
+8. `single-restart-registry.html`
+9. `index.html`, `single.html`, `page.html`
+10. `category-articles.html`, `category-favorites.html`, `category-gifts.html`
+11. `single-category-articles.html`, `single-category-favorites.html`, `single-category-gifts.html`
+12. `taxonomy-category.html`
+13. `404.html`
+
+For each template: screenshot at desktop (1280) and mobile (375); check header/footer alignment, hero spacing, CTA buttons, list-vs-grid consistency, vertical rhythm, focus states. Fix only issues that score ≥ 7/10 importance — log lower-impact nits as follow-ups.
+
+## Phase 5 — Verify + ship
+
+- `make theme-test` (PHP + JS) green.
+- `make seed-reset` and visually confirm the new title + logo + favicon appear.
+- `make qa` (or at least a manual smoke pass of the front page + login + start-a-registry + an existing registry).
+- Commit per phase with conventional prefixes (`feat(theme): ...`, `fix(theme): ...`).
+- Open a PR titled "theme: branding pass + logo + layout audit."
 
 ---
 
 ## Risk / rollout
-- First CI run after adding thresholds will likely fail until floors are tuned. Recommend: land the wiring with `--cov-fail-under=0` / no thresholds in the same PR, observe the actual numbers, then ratchet thresholds in a follow-up PR.
-- pcov is line-coverage-only. If we ever want branch coverage we'll switch to xdebug.
-- Codecov outage shouldn't fail the build — set `fail_ci_if_error: false` on the upload action.
+- The header SVG-via-block approach can render before the stylesheet loads, causing FOUC on first paint. Mitigate with a hard-coded `width`/`height` attr on the `<img>` so layout doesn't shift.
+- Favicon caches aggressively in browsers; document `Ctrl-Shift-R` in the PR body if reviewers don't see the new icon.
+- "all templates" is open-ended. Cap audit at one pass; don't recurse on stylistic taste calls.
 
 ---
 
-## Local baselines observed before push
-
-| Suite       | Lines  | Notes                                              |
-| ----------- | ------ | -------------------------------------------------- |
-| lambda      | 91 %   | Strong; routes/registry.py is the only weak spot.  |
-| plugin-js   | ~31 %  | Public JS at 34 %, admin JS at 0 %.                |
-| theme-js    | 90 %   | All three asset modules well covered.              |
-| plugin-php  | n/a    | No local pcov; will surface in CI run.             |
-| theme-php   | n/a    | No local pcov; will surface in CI run.             |
-
 ## Todo
 
-- [x] Confirm decisions: pcov, artifacts-only, 0% floor.
-- [x] Lambda: add `pytest-cov`, update `pyproject.toml` coverage config, update CI + Makefile. (f25c7f3)
-- [x] Plugin-php: enable pcov in CI, add `<source>` block to `phpunit.xml`, run with `--coverage-clover`. (f25c7f3)
-- [x] Plugin-js: add `collectCoverageFrom` to `jest.config.js`, run `npm test -- --coverage` in CI. (f25c7f3)
-- [x] Theme-php: same as plugin-php (in `phpunit.xml.dist`). (f25c7f3)
-- [x] Theme-js: same as plugin-js. (f25c7f3)
-- [x] Upload coverage reports as CI artifacts in each job. (f25c7f3)
-- [ ] Push branch + open PR; observe CI baselines for plugin-php and theme-php.
-- [ ] Follow-up PR: ratchet `--cov-fail-under` (lambda), `coverageThreshold` (Jest), and `--min-coverage` (PHPUnit) to agreed floors.
+- [ ] Phase 1: Hand-build `logo.svg` + variants, generate PNG fallbacks, delete dead assets.
+- [ ] Phase 2: Update `blogname`/`blogdescription` via seed; align footer text.
+- [ ] Phase 3: Swap header/footer SVG to file-based; add favicon + OG meta in `functions.php`.
+- [ ] Phase 4: Run `/design-review` over all 21 templates; fix high-impact issues.
+- [ ] Phase 5: Run tests, QA, open PR.
