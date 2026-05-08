@@ -801,8 +801,8 @@ body.rr-modal-open { overflow: hidden; }
     .rr-item-row,
     .rr-item-card {
         display: flex;
-        flex-wrap: nowrap;
-        gap: 12px;
+        flex-wrap: wrap;
+        gap: 8px 12px;
         padding: 12px 16px;
         border-bottom: 1px solid #f0f7f4;
         background: #fff;
@@ -821,13 +821,15 @@ body.rr-modal-open { overflow: hidden; }
     .rr-item-row__thumb img,
     .rr-item-card__thumb img { width: 48px; height: 48px; }
     .rr-item-row__name,
-    .rr-item-card__name { flex: 1; min-width: 0; }
-    .rr-item-row__qty-desired,
-    .rr-item-row__fulfilled,
-    .rr-item-card__qty,
-    .rr-item-card__fulfilled { display: none; }
+    .rr-item-card__name { flex: 1; min-width: 0; align-self: center; }
+    .rr-item-name-btn { white-space: normal; overflow: visible; text-overflow: clip; }
+    .rr-item-row > .rr-item-row__qty-desired,
+    .rr-item-row > .rr-item-row__fulfilled,
+    .rr-item-card > .rr-item-card__qty,
+    .rr-item-card > .rr-item-card__fulfilled { display: none; }
+    /* Actions wrap below thumbnail+name; padding-left aligns them under the name */
     .rr-item-row__actions,
-    .rr-item-card__actions { flex: 0 0 auto; padding-right: 0; white-space: nowrap; }
+    .rr-item-card__actions { flex: 0 0 100%; padding-left: 60px; padding-right: 0; white-space: nowrap; }
     /* Reset vertical-stack overrides on mobile */
     .rr-item-card__actions .rr-purchase-btn,
     .rr-item-card__actions .rr-mark-purchased { display: inline-block; width: auto; margin-bottom: 0; }
