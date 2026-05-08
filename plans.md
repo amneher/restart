@@ -94,8 +94,8 @@ For each template: screenshot at desktop (1280) and mobile (375); check header/f
 
 ## Todo
 
-- [ ] Phase 1: Hand-build `logo.svg` + variants, generate PNG fallbacks, delete dead assets.
-- [ ] Phase 2: Update `blogname`/`blogdescription` via seed; align footer text.
-- [ ] Phase 3: Swap header/footer SVG to file-based; add favicon + OG meta in `functions.php`.
-- [ ] Phase 4: Run `/design-review` over all 21 templates; fix high-impact issues.
+- [x] Phase 1: Hand-build `logo.svg` + variants, generate PNG fallbacks, delete dead assets. (555612f, 62edc4f, 08201b3)
+- [x] Phase 2: Update `blogname`/`blogdescription` via seed; align footer text. (67c3f5f)
+- [x] Phase 3: Swap header SVG to file-based; add favicon + OG meta in `functions.php`. (fe70b39)
+- [~] Phase 4: Layout/alignment audit — **descoped** by user; no changes. Branding work didn't require it.
 - [ ] Phase 5: Run tests, QA, open PR.
