@@ -15,6 +15,46 @@ add_filter('show_admin_bar', function ($show) {
     return $show && current_user_can('edit_posts');
 });
 
+// Favicon + Open Graph meta. Theme assets serve as fallback when no
+// site icon is set in the Customizer.
+add_action('wp_head', function () {
+    $assets = get_stylesheet_directory_uri() . '/assets';
+    echo '<link rel="icon" type="image/svg+xml" href="' . esc_url($assets . '/favicon.svg') . '">' . "\n";
+    echo '<link rel="icon" type="image/png" sizes="32x32" href="' . esc_url($assets . '/favicon-32.png') . '">' . "\n";
+    echo '<link rel="icon" type="image/png" sizes="16x16" href="' . esc_url($assets . '/favicon-16.png') . '">' . "\n";
+    echo '<link rel="apple-touch-icon" sizes="180x180" href="' . esc_url($assets . '/apple-touch-icon.png') . '">' . "\n";
+
+    if (is_singular()) {
+        $title = wp_get_document_title();
+        $description = get_bloginfo('description');
+        $url = get_permalink();
+    } else {
+        $title = get_bloginfo('name');
+        $description = get_bloginfo('description');
+        $url = home_url('/');
+    }
+    $og_image = $assets . '/og-image.png';
+
+    echo '<meta property="og:title" content="' . esc_attr($title) . '">' . "\n";
+    echo '<meta property="og:description" content="' . esc_attr($description) . '">' . "\n";
+    echo '<meta property="og:url" content="' . esc_url($url) . '">' . "\n";
+    echo '<meta property="og:type" content="website">' . "\n";
+    echo '<meta property="og:image" content="' . esc_url($og_image) . '">' . "\n";
+    echo '<meta property="og:image:width" content="1200">' . "\n";
+    echo '<meta property="og:image:height" content="630">' . "\n";
+    echo '<meta name="twitter:card" content="summary_large_image">' . "\n";
+});
+
+// Allow uploading the brand mark via Customizer → Site Identity.
+add_action('after_setup_theme', function () {
+    add_theme_support('custom-logo', [
+        'height'      => 50,
+        'width'       => 220,
+        'flex-height' => true,
+        'flex-width'  => true,
+    ]);
+});
+
 // Enqueue the Start a Registry JS with localized credentials when on that page
 add_action('wp_enqueue_scripts', function () {
     if (!is_page('start-a-registry') || !is_user_logged_in()) {

@@ -11,14 +11,14 @@
 <div class="wp-block-group">
 
 <!-- wp:details -->
-<details class="wp-block-details"><summary>What is reStart?</summary>
+<details class="wp-block-details"><summary>What is the ReStart?</summary>
 <!-- wp:paragraph -->
-<p>reStart is a gift registry platform built for people rebuilding their lives after divorce. Whether you need a new toaster, a set of sheets, or a couch to call your own, reStart makes it easy for the people who love you to help you start fresh.</p>
+<p>The ReStart is a gift registry platform built for people rebuilding their lives after divorce. Whether you need a new toaster, a set of sheets, or a couch to call your own, the ReStart makes it easy for the people who love you to help you start fresh.</p>
 <!-- /wp:paragraph --></details>
 <!-- /wp:details -->
 
 <!-- wp:details -->
-<details class="wp-block-details"><summary>Is reStart free?</summary>
+<details class="wp-block-details"><summary>Is the ReStart free?</summary>
 <!-- wp:paragraph -->
 <p>Yes. Creating an account and building a registry is completely free. We don't take a cut of purchases — all transactions happen directly between your gift-givers and the retailers you choose.</p>
 <!-- /wp:paragraph --></details>
@@ -34,7 +34,7 @@
 <!-- wp:details -->
 <details class="wp-block-details"><summary>How do I add items to my registry?</summary>
 <!-- wp:paragraph -->
-<p>From your registry dashboard, paste in a link to any product from any online retailer. reStart pulls in the product name, image, and price automatically. You can also add a note to let gift-givers know why you want it.</p>
+<p>From your registry dashboard, paste in a link to any product from any online retailer. the ReStart pulls in the product name, image, and price automatically. You can also add a note to let gift-givers know why you want it.</p>
 <!-- /wp:paragraph --></details>
 <!-- /wp:details -->
 
@@ -55,14 +55,14 @@
 <!-- wp:details -->
 <details class="wp-block-details"><summary>How do people buy things from my registry?</summary>
 <!-- wp:paragraph -->
-<p>When someone clicks an item on your registry, they're taken directly to the retailer to complete the purchase. reStart doesn't handle payments. After purchasing, they can mark the item as purchased so others know it's taken care of.</p>
+<p>When someone clicks an item on your registry, they're taken directly to the retailer to complete the purchase. the ReStart doesn't handle payments. After purchasing, they can mark the item as purchased so others know it's taken care of.</p>
 <!-- /wp:paragraph --></details>
 <!-- /wp:details -->
 
 <!-- wp:details -->
 <details class="wp-block-details"><summary>What if an item is marked purchased but never arrives?</summary>
 <!-- wp:paragraph -->
-<p>We recommend that gift-givers keep their order confirmation from the retailer. If something goes wrong with a delivery, the issue is between the buyer and the retailer — reStart isn't part of the transaction. You can un-mark an item as purchased from your registry dashboard if needed.</p>
+<p>We recommend that gift-givers keep their order confirmation from the retailer. If something goes wrong with a delivery, the issue is between the buyer and the retailer — the ReStart isn't part of the transaction. You can un-mark an item as purchased from your registry dashboard if needed.</p>
 <!-- /wp:paragraph --></details>
 <!-- /wp:details -->
 

@@ -127,6 +127,16 @@ else
     echo "  Lambda credentials already configured."
 fi
 
+# ── Site identity ─────────────────────────────────────────────────────────────
+
+echo "→ Setting site title and tagline..."
+SITE_TITLE="the ReStart"
+SITE_TAGLINE="Gift registries for life's fresh starts."
+[ "$($WP option get blogname 2>/dev/null)" = "$SITE_TITLE" ] || \
+    $WP option update blogname "$SITE_TITLE" >/dev/null
+[ "$($WP option get blogdescription 2>/dev/null)" = "$SITE_TAGLINE" ] || \
+    $WP option update blogdescription "$SITE_TAGLINE" >/dev/null
+
 # ── Permalinks ────────────────────────────────────────────────────────────────
 
 echo "→ Setting permalink structure..."
