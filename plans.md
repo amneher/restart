@@ -84,11 +84,11 @@ Measure and enforce test coverage for all five test suites in CI (`plugin-php`, 
 ## Todo
 
 - [x] Confirm decisions: pcov, artifacts-only, 0% floor.
-- [x] Lambda: add `pytest-cov`, update `pyproject.toml` coverage config, update CI + Makefile.
-- [x] Plugin-php: enable pcov in CI, add `<source>` block to `phpunit.xml`, run with `--coverage-clover`.
-- [x] Plugin-js: add `collectCoverageFrom` to `jest.config.js`, run `npm test -- --coverage` in CI.
-- [x] Theme-php: same as plugin-php (in `phpunit.xml.dist`).
-- [x] Theme-js: same as plugin-js.
-- [x] Upload coverage reports as CI artifacts in each job.
+- [x] Lambda: add `pytest-cov`, update `pyproject.toml` coverage config, update CI + Makefile. (f25c7f3)
+- [x] Plugin-php: enable pcov in CI, add `<source>` block to `phpunit.xml`, run with `--coverage-clover`. (f25c7f3)
+- [x] Plugin-js: add `collectCoverageFrom` to `jest.config.js`, run `npm test -- --coverage` in CI. (f25c7f3)
+- [x] Theme-php: same as plugin-php (in `phpunit.xml.dist`). (f25c7f3)
+- [x] Theme-js: same as plugin-js. (f25c7f3)
+- [x] Upload coverage reports as CI artifacts in each job. (f25c7f3)
 - [ ] Push branch + open PR; observe CI baselines for plugin-php and theme-php.
 - [ ] Follow-up PR: ratchet `--cov-fail-under` (lambda), `coverageThreshold` (Jest), and `--min-coverage` (PHPUnit) to agreed floors.
