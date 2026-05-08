@@ -1,94 +1,71 @@
-# Plan: Test coverage checking in GitHub CI
+# Plan: Bake wp-cli into the dev WordPress image
 
 ## Goal
-Measure and enforce test coverage for all five test suites in CI (`plugin-php`, `plugin-js`, `lambda`, `theme-php`, `theme-js`), surface coverage on every PR, and fail the build when coverage regresses below an agreed floor.
+`make up && make seed` works end-to-end on a fresh checkout without anyone manually installing wp-cli inside the running container. Seeding currently fails with `exec: "wp": executable file not found in $PATH` because `wordpress:6.9.1-fpm-alpine` (the upstream image) doesn't ship wp-cli.
 
 ## Constraints / context
-- CI is `.github/workflows/ci.yml` — five jobs, each scoped to one suite.
-- PHPUnit jobs currently use `coverage: none` on `shivammathur/setup-php@v2` (no driver installed → can't generate reports).
-- Lambda uses `uv` + pytest; no `pytest-cov` dep yet.
-- Jest is stock; coverage is a `--coverage` flag away.
-- No coverage service (Codecov, Coveralls) wired up. Decide whether to add one.
+- `scripts/seed.sh` invokes `wp` via `docker compose exec -T wordpress wp --allow-root` — many calls per seed run, so latency per call matters. `docker compose run` is ~10× slower than `exec` per invocation; rules out a one-shot service.
+- Existing `wordpress` named volume already has the running site state. The fix must not require a volume reset.
+- Keep the WordPress version pin (`6.9.1-fpm-alpine`) stable; this PR is only about adding wp-cli, not bumping WP.
+- `docker/` already houses dev-stack config (e.g. `docker/nginx.conf`), so a Dockerfile fits there.
 
 ## Out of scope
-- Mutation testing.
-- Coverage for end-to-end tests against staging/prod (only unit + integration suites).
-- Coverage badges in README (can follow once thresholds hold).
+- Production / staging deploys (those don't run wp-cli at runtime).
+- Bumping the WordPress version.
+- Adding a Composer-managed `roave/wp-cli` or other PHP-package approach — image-level install is simpler.
 
----
+## Approach (recommended)
 
-## Decisions (confirmed)
+**Multi-stage Dockerfile** that pulls the official `wordpress:cli` image as a builder stage and copies just the `wp` binary into the existing `wordpress:fpm-alpine` runtime. No `apk add` calls, no curl, no shell drift.
 
-1. **Coverage driver for PHPUnit:** **pcov**.
-2. **Coverage reporter:** **artifacts-only** — each job uploads its coverage report via `actions/upload-artifact@v4`. No third-party service.
-3. **Floor thresholds:** **0% on first land** to observe baselines; ratchet in a follow-up.
-4. **Failure mode:** hard-fail at the threshold (currently 0%, so it never fires).
+```dockerfile
+# docker/Dockerfile.wordpress
+ARG WP_VERSION=6.9.1
+FROM wordpress:cli-2.12.0 AS cli
+FROM wordpress:${WP_VERSION}-fpm-alpine
+COPY --from=cli /usr/local/bin/wp /usr/local/bin/wp
+```
 
----
+The `wordpress:cli` image (officially published by WordPress) ships `wp` as a phar at `/usr/local/bin/wp`. Copying it preserves the phar's executable bit; no extra setup needed. The fpm-alpine runtime already has PHP installed, which is all the phar needs.
 
-## Changes
+`docker-compose.yml` change: replace `image: wordpress:6.9.1-fpm-alpine` with:
+```yaml
+build:
+  context: ./docker
+  dockerfile: Dockerfile.wordpress
+  args:
+    WP_VERSION: 6.9.1
+image: restart-wordpress:dev
+```
+The named `image:` line tells compose to tag the build, so re-runs use the cached layer.
 
-### 1. Lambda (pytest)
-- Add `pytest-cov` to `[dependency-groups].dev` in `lambda/pyproject.toml`.
-- Add `[tool.coverage.run]` (`source = ["app"]`, omit tests) and `[tool.coverage.report]` (exclude `if TYPE_CHECKING:` and `if __name__ == "__main__":`).
-- Update CI step: `uv run pytest tests/ -v --cov=app --cov-report=xml --cov-report=term --cov-fail-under=70`.
-- Update local `make lambda-test` and `lambda/Makefile` `test` target so dev parity holds.
+## Alternative (rejected)
 
-### 2. Plugin — PHPUnit
-- Add `<coverage>` block to `plugin/phpunit.xml` declaring `<include><directory>includes</directory><directory>public</directory><directory>admin</directory></include>` and reporters (Clover XML + text).
-- Change CI `setup-php` `coverage: none` → `coverage: pcov`.
-- CI step: `vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-text` then enforce the floor via PHPUnit 12's `--min-coverage` flag (or, if absent in our minor version, a small Clover-XML-parsing post-step).
-- Document the threshold in `plugin/phpunit.xml` so local runs respect it too.
+Add a separate `wpcli` compose service using `wordpress:cli` directly, mounting the wordpress volume, and rewrite `seed.sh` to call `docker compose run --rm wpcli wp ...` instead of exec'ing into the wordpress container. Pros: zero Dockerfile, standard WP-Docker pattern. Con: each `wp` call spawns a fresh container — adds 1–2 minutes to a seed that currently takes ~10 seconds. Not worth it for our setup.
 
-### 3. Plugin — Jest
-- In `plugin/jest.config.js`: add `collectCoverageFrom: ['public/js/**/*.js', 'admin/js/**/*.js']` (verify paths) and `coverageThreshold: { global: { lines: 40 } }`.
-- CI step: `npm test -- --coverage --coverageReporters=lcov --coverageReporters=text`. Threshold failure is automatic.
-- Keep local `npm test` snappy by only producing coverage when invoked with `--coverage` (no config-level `collectCoverage: true`).
+## Changes per file
 
-### 4. Theme — PHPUnit
-- Same shape as plugin-php with thresholds at 30%. `<include>` covers `functions.php`, `parts/`, `templates/`, `patterns/` as appropriate (verify which directories actually contain testable PHP).
-
-### 5. Theme — Jest
-- Same shape as plugin-js with 30% threshold. Verify `collectCoverageFrom` glob matches the real source dirs.
-
-### 6. Coverage reporting (if Codecov chosen)
-- Add `codecov/codecov-action@v5` step after each suite, uploading the report file with a `flags:` tag (`plugin-php`, `plugin-js`, `lambda`, `theme-php`, `theme-js`).
-- Add `codecov.yml` at repo root with per-flag targets matching the floors above and `comment.layout: "reach,diff,flags"`.
-- Add `CODECOV_TOKEN` repo secret (one-time, manual).
-
-### 6-alt. Artifacts-only fallback
-- Each job uses `actions/upload-artifact@v4` to publish its coverage report. No PR comment, no trend graph.
-
-### 7. Local-dev parity
-- Add brief notes to root `Makefile` help text on running coverage locally (`pytest --cov=app`, `vendor/bin/phpunit --coverage-text`, `npm test -- --coverage`). No new `make` targets unless requested.
-
----
+1. **`docker/Dockerfile.wordpress`** (new) — the three-line Dockerfile above.
+2. **`docker-compose.yml`** — swap the `wordpress` service's `image:` directive for a `build:` block as shown.
+3. **No `seed.sh` change** — the script keeps using `exec` with the same `wp` invocation; it just works once wp-cli is in the image.
+4. **No README change required** — `make up` already builds when needed; the build step is transparent.
 
 ## Risk / rollout
-- First CI run after adding thresholds will likely fail until floors are tuned. Recommend: land the wiring with `--cov-fail-under=0` / no thresholds in the same PR, observe the actual numbers, then ratchet thresholds in a follow-up PR.
-- pcov is line-coverage-only. If we ever want branch coverage we'll switch to xdebug.
-- Codecov outage shouldn't fail the build — set `fail_ci_if_error: false` on the upload action.
+- First `make up` after this lands triggers a one-time image build (~30–60 s on cold pull, faster on warm). Subsequent runs use the cache.
+- Pinning `wordpress:cli-2.12.0` means we control when wp-cli updates. If left as `wordpress:cli` (no tag) it follows latest, which is fine but less reproducible.
+- The two stages should be on the same WordPress major to avoid db-schema drift between the cli phar's expectations and the runtime. wp-cli 2.12 supports WP 6.9 — confirmed.
+- `make reset` (which does `docker compose down -v`) still works the same way; the Dockerfile builds a new image, but volumes behave identically.
 
----
-
-## Local baselines observed before push
-
-| Suite       | Lines  | Notes                                              |
-| ----------- | ------ | -------------------------------------------------- |
-| lambda      | 91 %   | Strong; routes/registry.py is the only weak spot.  |
-| plugin-js   | ~31 %  | Public JS at 34 %, admin JS at 0 %.                |
-| theme-js    | 90 %   | All three asset modules well covered.              |
-| plugin-php  | n/a    | No local pcov; will surface in CI run.             |
-| theme-php   | n/a    | No local pcov; will surface in CI run.             |
+## Verification
+After implementing:
+1. `make down -v` to reset.
+2. `make up` — confirm WP container builds without error.
+3. `docker exec restart-wordpress-1 wp --version --allow-root --path=/var/www/html` — should print `WP-CLI 2.12.0`.
+4. `make seed` from a clean stack — should run end-to-end without the "exec: wp: file not found" error.
+5. Existing `make theme-test` and `make lambda-test` still pass.
 
 ## Todo
-
-- [x] Confirm decisions: pcov, artifacts-only, 0% floor.
-- [x] Lambda: add `pytest-cov`, update `pyproject.toml` coverage config, update CI + Makefile. (f25c7f3)
-- [x] Plugin-php: enable pcov in CI, add `<source>` block to `phpunit.xml`, run with `--coverage-clover`. (f25c7f3)
-- [x] Plugin-js: add `collectCoverageFrom` to `jest.config.js`, run `npm test -- --coverage` in CI. (f25c7f3)
-- [x] Theme-php: same as plugin-php (in `phpunit.xml.dist`). (f25c7f3)
-- [x] Theme-js: same as plugin-js. (f25c7f3)
-- [x] Upload coverage reports as CI artifacts in each job. (f25c7f3)
-- [ ] Push branch + open PR; observe CI baselines for plugin-php and theme-php.
-- [ ] Follow-up PR: ratchet `--cov-fail-under` (lambda), `coverageThreshold` (Jest), and `--min-coverage` (PHPUnit) to agreed floors.
+- [ ] Add `docker/Dockerfile.wordpress` with the multi-stage definition.
+- [ ] Update `docker-compose.yml` `wordpress` service to `build:` instead of `image:`.
+- [ ] Verify on a `down -v` / `up` cycle and a `seed` run.
+- [ ] Commit on a new branch (e.g. `dev/wp-cli-in-image`).
