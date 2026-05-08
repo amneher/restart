@@ -25,11 +25,24 @@ WP="docker compose exec -T wordpress wp --allow-root"
 wait_for_wp() {
     echo "→ Waiting for WordPress..."
     local i=0
-    until $WP core is-installed 2>/dev/null; do
+    # Probe DB connectivity via WP's internal PHP MySQL connection — `wp db *`
+    # commands shell out to the `mysql` binary, which isn't in the WP image.
+    until [ "$($WP eval 'global $wpdb; echo $wpdb->get_var("SELECT 1");' 2>/dev/null)" = "1" ]; do
         sleep 3
         i=$((i + 1))
         [ $i -gt 20 ] && echo "WordPress did not become ready in time." && exit 1
     done
+
+    if ! $WP core is-installed 2>/dev/null; then
+        echo "  Installing WordPress core..."
+        $WP core install \
+            --url="$WP_URL" \
+            --title="the ReStart" \
+            --admin_user="$ADMIN_USER" \
+            --admin_password="$ADMIN_PASSWORD" \
+            --admin_email="$ADMIN_EMAIL" \
+            --skip-email >/dev/null
+    fi
     echo "  WordPress ready."
 }
 
