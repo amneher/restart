@@ -11,4 +11,12 @@
             <directory>tests/integration</directory>
         </testsuite>
     </testsuites>
+    <source>
+        <include>
+            <directory>includes</directory>
+            <directory>public</directory>
+            <directory>admin</directory>
+            <directory>mu-plugins</directory>
+        </include>
+    </source>
 </phpunit>

@@ -18,14 +18,20 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          coverage: none
+          coverage: pcov
       - uses: actions/cache@v5
         with:
           path: plugin/vendor
           key: plugin-composer-${{ hashFiles('plugin/composer.lock') }}
           restore-keys: plugin-composer-
       - run: composer install --no-interaction --prefer-dist
-      - run: vendor/bin/phpunit
+      - run: vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-text
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-plugin-php
+          path: plugin/coverage.xml
+          if-no-files-found: warn
 
   plugin-js:
     name: Plugin — Jest
@@ -41,7 +47,13 @@ jobs:
           cache: npm
           cache-dependency-path: plugin/package-lock.json
       - run: npm ci
-      - run: npm test
+      - run: npm test -- --coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-plugin-js
+          path: plugin/coverage/
+          if-no-files-found: warn
 
   lambda:
     name: Lambda — pytest + build
@@ -58,7 +70,13 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync
-      - run: uv run pytest tests/ -v
+      - run: uv run pytest tests/ -v --cov=app --cov-report=term --cov-report=xml --cov-fail-under=0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-lambda
+          path: lambda/coverage.xml
+          if-no-files-found: warn
       - run: make build-test
 
   theme-php:
@@ -72,14 +90,20 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          coverage: none
+          coverage: pcov
       - uses: actions/cache@v5
         with:
           path: theme/vendor
           key: theme-composer-${{ hashFiles('theme/composer.lock') }}
           restore-keys: theme-composer-
       - run: composer install --no-interaction --prefer-dist
-      - run: vendor/bin/phpunit
+      - run: vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-text
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-theme-php
+          path: theme/coverage.xml
+          if-no-files-found: warn
 
   theme-js:
     name: Theme — Jest
@@ -95,4 +119,10 @@ jobs:
           cache: npm
           cache-dependency-path: theme/package-lock.json
       - run: npm ci
-      - run: npm test
+      - run: npm test -- --coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-theme-js
+          path: theme/coverage/
+          if-no-files-found: warn

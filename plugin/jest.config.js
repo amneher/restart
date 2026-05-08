@@ -5,4 +5,9 @@ module.exports = {
     // jQuery doesn't export as a CommonJS module cleanly; transform is not needed
     // but we do need to tell Jest where to look for test files.
     globals: {},
+    collectCoverageFrom: [
+        'public/js/**/*.js',
+        'admin/js/**/*.js',
+    ],
+    coverageReporters: ['text', 'lcov', 'cobertura'],
 };

@@ -21,6 +21,11 @@ htmlcov/
 *.ipynb
 .ipynb_checkpoints/
 
+# ── Test coverage reports ─────────────────────────────────────────────────────
+coverage/
+coverage.xml
+clover.xml
+
 # ── PHP / Composer ────────────────────────────────────────────────────────────
 vendor/
 .phpunit.result.cache

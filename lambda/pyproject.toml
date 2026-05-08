@@ -27,11 +27,23 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 
+[tool.coverage.run]
+source = ["app"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+
 [dependency-groups]
 dev = [
     "sphinx>=9.1.0",
     "pytest>=9.0.2",
     "pytest-mock>=3.15.1",
+    "pytest-cov>=5.0.0",
 ]
 
 [project.scripts]
