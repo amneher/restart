@@ -163,7 +163,7 @@ create_page "Register"                       "register"            "page-registe
 create_page "My Account"                     "my-account"          "page-my-account"
 create_page "My Registries"                  "my-registries"       "page-my-registries"
 create_page "Start a Registry"               "start-a-registry"    "page-start-a-registry"
-create_page "Find a Registry"                "find-a-registry"     "page-find-a-registry"
+create_page "Find a Registry"                "find-a-registry"
 create_page "FAQ"                            "faq"                 "page-faq"
 create_page "About Us"                       "about-us"            "page-about-us"
 

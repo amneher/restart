@@ -27,3 +27,4 @@
 ## Other TODOs
 
 - Write and publish a Privacy Policy page (referenced in T&C section 7). Slug: `/privacy-policy/`. Link in footer bottom bar alongside T&C.
+- Build `theme/templates/page-find-a-registry.html`. The "Find a Registry" page exists (created in seed at `scripts/seed.sh`) but currently falls back to `page.html` because the dedicated template was never built. The seed previously tried to assign `--page_template=page-find-a-registry` and failed; that arg was dropped to unblock seeding. Add a real template when the search/lookup UX is designed.
