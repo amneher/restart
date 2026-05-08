@@ -21,12 +21,29 @@ body {
 }
 
 /* ── Header ── */
-.site-logo-mark {
+.site-branding {
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
     text-decoration: none;
-    color: var(--wp--preset--color--primary);
+    color: inherit;
+}
+
+.site-logo-lockup {
+    display: block;
+    height: 50px;
+    width: auto;
+}
+
+.site-logo-mark {
+    display: none;
+    height: 41px;
+    width: auto;
+}
+
+@media (max-width: 600px) {
+    .site-logo-lockup { display: none; }
+    .site-logo-mark { display: block; }
 }
 
 .site-header__bar {
