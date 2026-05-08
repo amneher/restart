@@ -1,4 +1,6 @@
-.PHONY: up down logs reset seed seed-reset \
+.DEFAULT_GOAL := help
+
+.PHONY: help up down logs reset seed seed-reset \
         test plugin-test plugin-test-php plugin-test-js \
         lambda-test lambda-test-staging lambda-test-prod \
         theme-test theme-test-php theme-test-js \
@@ -183,3 +185,64 @@ bump-all-minor:
 
 bump-all-major:
 	./scripts/bump.sh all major
+
+# ── Help ──────────────────────────────────────────────────────────────────────
+
+help:
+	@echo ""
+	@echo "Dev environment:"
+	@echo "  up                   Start the local Docker stack"
+	@echo "  down                 Stop the local Docker stack"
+	@echo "  logs                 Follow logs from the local stack"
+	@echo "  reset                Tear down volumes and restart the stack"
+	@echo "  seed                 Run scripts/seed.sh against the local stack"
+	@echo "  seed-reset           Reset the stack and re-seed it"
+	@echo "  wp-snapshot          Capture local WordPress DB → lambda/tests/fixtures/wp-clean.sql"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test                 Run plugin, lambda, and theme test suites"
+	@echo "  plugin-test          Run plugin PHP + JS tests"
+	@echo "  plugin-test-php      Run plugin PHPUnit suite"
+	@echo "  plugin-test-js       Run plugin JS tests"
+	@echo "  lambda-test          Run lambda unit tests (in-memory SQLite)"
+	@echo "  lambda-test-staging  Run lambda WP integration/e2e tests against staging"
+	@echo "  lambda-test-prod     Run lambda WP integration/e2e tests against production"
+	@echo "  theme-test           Run theme PHP + JS tests"
+	@echo "  theme-test-php       Run theme PHPUnit suite"
+	@echo "  theme-test-js        Run theme JS tests"
+	@echo ""
+	@echo "Building:"
+	@echo "  plugin-build         Build the plugin distribution"
+	@echo "  lambda-build         Build the lambda zip"
+	@echo "  lambda-build-layer   Build the lambda deps layer zip"
+	@echo "  theme-pack           Pack the theme distribution"
+	@echo ""
+	@echo "Code quality:"
+	@echo "  install              Install plugin, lambda, and theme dependencies"
+	@echo "  lint                 Run PHPCS (plugin + theme) and ruff (lambda)"
+	@echo "  typecheck            Run mypy on lambda/app"
+	@echo "  clean                Remove build artifacts and vendored deps"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  docs                 Serve docs locally with mkdocs"
+	@echo "  docs-build           Build the docs site"
+	@echo "  docs-php-ref         Generate PHP API reference (plugin + theme)"
+	@echo "  docs-deploy          Deploy docs via mkdocs gh-deploy"
+	@echo "  docs-screenshots     Generate docs screenshots"
+	@echo ""
+	@echo "Deployment (delegates to lambda/Makefile):"
+	@echo "  deploy-staging       Deploy lambda to staging (FORCE=yes)"
+	@echo "  deploy-prod          Deploy lambda to production (FORCE=yes)"
+	@echo "  publish-layer        Publish lambda deps layer (ENV=prod|staging)"
+	@echo "  configure-layer      Attach stored layer ARN (ENV=prod|staging)"
+	@echo "  configure-efs        Attach EFS + VPC to a Lambda (ENV=prod|staging)"
+	@echo "  configure-env        Set runtime env vars on a Lambda (ENV=prod|staging)"
+	@echo ""
+	@echo "Versioning (scripts/bump.sh):"
+	@echo "  bump-plugin-{patch,minor,major}  Bump plugin version"
+	@echo "  bump-lambda-{patch,minor,major}  Bump lambda version"
+	@echo "  bump-theme-{patch,minor,major}   Bump theme version"
+	@echo "  bump-all-{patch,minor,major}     Bump all three versions"
+	@echo ""
+	@echo "For lambda-specific targets, run:  make -C lambda help"
+	@echo ""
