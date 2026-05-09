@@ -89,6 +89,10 @@
         <p class="has-text-color" style="color:#8a9ea0;font-family:var(--wp--preset--font-family--montserrat);font-size:12px"><a href="/terms-and-conditions/" style="color:#8a9ea0">Terms &amp; Conditions</a></p>
         <!-- /wp:paragraph -->
 
+        <!-- wp:paragraph {"style":{"typography":{"fontSize":"12px","fontFamily":"var(--wp--preset--font-family--montserrat)"},"color":{"text":"#8a9ea0"}}} -->
+        <p class="has-text-color" style="color:#8a9ea0;font-family:var(--wp--preset--font-family--montserrat);font-size:12px"><a href="/privacy-policy/" style="color:#8a9ea0">Privacy Policy</a></p>
+        <!-- /wp:paragraph -->
+
     </div>
     <!-- /wp:group -->
 
