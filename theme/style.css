@@ -4,7 +4,7 @@ Theme URI: https://the-restart.co
 Author: Andrew Neher
 Author URI: https://the-restart.co
 Description: Gift registry theme for people restarting after a divorce.
-Version: 1.0.9
+Version: 1.0.10
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: therestart
@@ -193,10 +193,29 @@ a:hover { color: var(--wp--preset--color--primary); }
     background-position: center top;
 }
 
+/* Per-page hero backgrounds. Each rule targets a wp:cover whose className
+   matches one of these. The dark-dim overlay (has-background-dim-65) on
+   the inner cover__background span sits on top, so the image reads through
+   at ~35% — readable text + visible scenery. */
+.hero-bg-articles { background-image: url('assets/background_images/kari-shea-JaWhDrtNlXw-unsplash-1024x683.jpg'); }
+.hero-bg-favorites { background-image: url('assets/background_images/amy-humphries-vXMziXHXseo-unsplash-1024x739.jpg'); }
+.hero-bg-gifts { background-image: url('assets/background_images/vitaly-gariev-ihyo6ih7Fro-unsplash-1024x576.jpg'); }
+.hero-bg-registry-archive { background-image: url('assets/background_images/sunrise-mountains-scaled-1-1024x576.jpg'); }
+.hero-bg-about { background-image: url('assets/background_images/mountaintop-819x1024.jpg'); }
+.hero-bg-start { background-image: url('assets/background_images/sun-fog-full-scaled-1-768x1086.jpg'); }
+.hero-bg-terms { background-image: url('assets/background_images/sky-bg-scaled-1-1024x683.jpg'); }
+.hero-bg-privacy { background-image: url('assets/background_images/ocean-bg-scaled-1-1024x576.jpg'); }
+
+[class*="hero-bg-"] {
+    background-size: cover;
+    background-position: center;
+}
+
 /* Mint body copy on the hero loses contrast where the photo is brightest.
    A subtle drop-shadow restores legibility without darkening the photo. */
 .hero-cover p,
-.hero-page p {
+.hero-page p,
+[class*="hero-bg-"] p {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
