@@ -4,7 +4,7 @@ Theme URI: https://the-restart.co
 Author: Andrew Neher
 Author URI: https://the-restart.co
 Description: Gift registry theme for people restarting after a divorce.
-Version: 1.0.7
+Version: 1.0.8
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: therestart
@@ -118,10 +118,17 @@ body {
     text-decoration: none;
 }
 
+/* Render the logo via CSS mask so the multi-color SVG becomes a single-color
+   silhouette tinted to match the footer body text. Sized at ~2/3 of the
+   header logo for visual hierarchy: brand reads as a quiet credit, not a
+   second header. */
 .site-footer__logo {
     display: block;
-    height: 50px;
-    width: auto;
+    width: 168px;
+    height: 38px;
+    background-color: var(--wp--preset--color--mint);
+    -webkit-mask: url('assets/logo-light.svg') left center / contain no-repeat;
+            mask: url('assets/logo-light.svg') left center / contain no-repeat;
 }
 
 .site-footer .wp-block-navigation a {

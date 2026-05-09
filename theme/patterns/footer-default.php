@@ -19,7 +19,7 @@
 
             <!-- wp:html -->
             <a href="/" class="site-footer__brand" aria-label="the ReStart home">
-                <img class="site-footer__logo" src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/logo-light.svg' ); ?>" alt="the ReStart" width="220" height="50">
+                <span class="site-footer__logo" aria-hidden="true"></span>
             </a>
             <!-- /wp:html -->
 
