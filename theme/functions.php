@@ -433,20 +433,92 @@ add_action('wp_enqueue_scripts', function () {
         wp_get_theme()->get('Version'),
         true
     );
+    wp_localize_script('restart-contact-modal', 'restartContact', [
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+    ]);
 });
 
 add_action('wp_footer', function () {
+    $nonce = wp_create_nonce('restart_contact_submit');
     ?>
     <div id="rr-contact-modal" class="rr-modal" role="dialog" aria-modal="true" aria-labelledby="rr-contact-modal-title" hidden>
         <div class="rr-modal__overlay"></div>
         <div class="rr-modal__dialog">
             <button class="rr-modal__close" aria-label="Close">&times;</button>
-            <h2 class="rr-modal__title" id="rr-contact-modal-title">Contact Us</h2>
-            <?php echo do_shortcode('[wpforms id="YOUR_FORM_ID"]'); ?>
+            <h2 class="rr-modal__title" id="rr-contact-modal-title"><?php esc_html_e('Contact Us', 'therestart'); ?></h2>
+            <form id="rr-contact-form" class="rr-contact-form" novalidate>
+                <div class="rr-contact-form__field">
+                    <label for="rr-contact-name"><?php esc_html_e('Name', 'therestart'); ?></label>
+                    <input type="text" id="rr-contact-name" name="name" required autocomplete="name">
+                </div>
+                <div class="rr-contact-form__field">
+                    <label for="rr-contact-email"><?php esc_html_e('Email', 'therestart'); ?></label>
+                    <input type="email" id="rr-contact-email" name="email" required autocomplete="email">
+                </div>
+                <div class="rr-contact-form__field">
+                    <label for="rr-contact-subject"><?php esc_html_e('Subject', 'therestart'); ?> <span class="rr-contact-form__optional"><?php esc_html_e('(optional)', 'therestart'); ?></span></label>
+                    <input type="text" id="rr-contact-subject" name="subject" autocomplete="off">
+                </div>
+                <div class="rr-contact-form__field">
+                    <label for="rr-contact-message"><?php esc_html_e('Message', 'therestart'); ?></label>
+                    <textarea id="rr-contact-message" name="message" rows="5" required></textarea>
+                </div>
+                <div class="rr-contact-form__honeypot" aria-hidden="true">
+                    <label for="rr-contact-website">Website</label>
+                    <input type="text" id="rr-contact-website" name="website" tabindex="-1" autocomplete="off">
+                </div>
+                <input type="hidden" name="_nonce" value="<?php echo esc_attr($nonce); ?>">
+                <button type="submit" class="rr-button rr-contact-form__submit"><?php esc_html_e('Send', 'therestart'); ?></button>
+                <div class="rr-contact-form__status" role="status" aria-live="polite"></div>
+            </form>
         </div>
     </div>
     <?php
 });
+
+if (!function_exists('restart_handle_contact_submit')) {
+function restart_handle_contact_submit() {
+    $nonce = isset($_POST['_nonce']) ? sanitize_text_field(wp_unslash($_POST['_nonce'])) : '';
+    if (!wp_verify_nonce($nonce, 'restart_contact_submit')) {
+        wp_send_json_error(['message' => __('Invalid request.', 'therestart')], 403);
+    }
+
+    // Honeypot: if filled, return success silently so the bot thinks it worked.
+    if (!empty($_POST['website'])) {
+        wp_send_json_success(['message' => __('Thanks — we will get back to you.', 'therestart')]);
+    }
+
+    $name    = isset($_POST['name'])    ? sanitize_text_field(wp_unslash($_POST['name']))     : '';
+    $email   = isset($_POST['email'])   ? sanitize_email(wp_unslash($_POST['email']))         : '';
+    $subject = isset($_POST['subject']) ? sanitize_text_field(wp_unslash($_POST['subject']))  : '';
+    $message = isset($_POST['message']) ? sanitize_textarea_field(wp_unslash($_POST['message'])) : '';
+
+    $errors = [];
+    if ($name === '')                       { $errors['name']    = __('Name is required.', 'therestart'); }
+    if ($email === '' || !is_email($email)) { $errors['email']   = __('A valid email is required.', 'therestart'); }
+    if ($message === '')                    { $errors['message'] = __('Message is required.', 'therestart'); }
+
+    if (!empty($errors)) {
+        wp_send_json_error(['errors' => $errors], 400);
+    }
+
+    $to            = get_option('admin_email');
+    $email_subject = $subject !== ''
+        ? sprintf('[Contact] %s', $subject)
+        : sprintf(__('[Contact] Message from %s', 'therestart'), $name);
+    $body          = sprintf("Name: %s\nEmail: %s\n\n%s", $name, $email, $message);
+    $headers       = ['Reply-To: ' . sprintf('%s <%s>', $name, $email)];
+
+    $sent = wp_mail($to, $email_subject, $body, $headers);
+    if (!$sent) {
+        wp_send_json_error(['message' => __('Could not send. Please try again later.', 'therestart')], 500);
+    }
+
+    wp_send_json_success(['message' => __('Thanks — we will get back to you.', 'therestart')]);
+}
+}
+add_action('wp_ajax_restart_contact_submit',        'restart_handle_contact_submit');
+add_action('wp_ajax_nopriv_restart_contact_submit', 'restart_handle_contact_submit');
 
 // Inject category-specific single templates into the block theme hierarchy.
 // WP doesn't natively support single-category-{slug}.html, so we add them here.
