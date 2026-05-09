@@ -124,8 +124,8 @@ body {
    second header. */
 .site-footer__logo {
     display: block;
-    width: 168px;
-    height: 38px;
+    width: 198px;
+    height: 45px;
     background-color: var(--wp--preset--color--mint);
     -webkit-mask: url('assets/logo-light.svg') left center / contain no-repeat;
             mask: url('assets/logo-light.svg') left center / contain no-repeat;
@@ -441,12 +441,12 @@ a:hover { color: var(--wp--preset--color--primary); }
     width: 100%;
 }
 
-/* Equalize Explore (6 links) and Account (3 links) columns so they don't
-   visually drift apart at desktop widths. Brand column (first child) keeps
-   its content width. */
+/* All three columns share equal width at desktop. Earlier the brand column
+   was auto-width while Explore + Account were `flex: 1`, which left a
+   narrow brand on the left and two large columns on the right — visually
+   right-heavy. Equal flex restores the rhythm. */
 @media (min-width: 601px) {
-    .site-footer__columns > :nth-child(2),
-    .site-footer__columns > :nth-child(3) {
+    .site-footer__columns > * {
         flex: 1 1 0;
         min-width: 0;
     }
