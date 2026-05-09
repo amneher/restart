@@ -299,7 +299,7 @@ class Restart_Registry_Public {
             <!-- Items section -->
             <div class="rr-items-section">
                 <div class="rr-items-header">
-                    <span class="rr-items-heading"><?php _e('Your Items', 'restart-registry'); ?> <span class="rr-item-count">(<?php echo count($registry['items']); ?>)</span></span>
+                    <span class="rr-items-heading"><?php _e('My Items', 'restart-registry'); ?> <span class="rr-item-count">(<?php echo count($registry['items']); ?>)</span></span>
                     <button type="button" class="rr-btn-add" id="rr-add-item-toggle">+ <?php _e('Add Item', 'restart-registry'); ?></button>
                 </div>
 
