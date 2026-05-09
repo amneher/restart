@@ -17,7 +17,11 @@
         <!-- wp:group {"style":{"spacing":{"blockGap":"1rem"}}} -->
         <div class="wp-block-group">
 
-            <!-- wp:site-title {"style":{"typography":{"fontFamily":"var(--wp--preset--font-family--libre-caslon-display)","fontWeight":"700","fontSize":"28px","letterSpacing":"0"},"color":{"text":"#47b4b0"}}} /-->
+            <!-- wp:html -->
+            <a href="/" class="site-footer__brand" aria-label="the ReStart home">
+                <span class="site-footer__logo" aria-hidden="true"></span>
+            </a>
+            <!-- /wp:html -->
 
             <!-- wp:paragraph {"style":{"typography":{"fontFamily":"var(--wp--preset--font-family--libre-caslon-text)","fontSize":"14px","lineHeight":"1.6"},"color":{"text":"#9fd4b3"}}} -->
             <p class="has-text-color" style="color:#9fd4b3;font-family:var(--wp--preset--font-family--libre-caslon-text);font-size:14px;line-height:1.6">Gift registries for life's<br>fresh starts.</p>

@@ -4,7 +4,7 @@ Theme URI: https://the-restart.co
 Author: Andrew Neher
 Author URI: https://the-restart.co
 Description: Gift registry theme for people restarting after a divorce.
-Version: 1.0.6
+Version: 1.0.8
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: therestart
@@ -112,14 +112,23 @@ body {
 }
 
 /* ── Footer ── */
-.site-footer .wp-block-site-title a {
-    color: var(--wp--preset--color--primary) !important;
+.site-footer__brand {
+    display: inline-block;
+    line-height: 0;
     text-decoration: none;
-    font-family: var(--wp--preset--font-family--libre-caslon-display);
-    font-weight: 700;
-    font-size: 28px;
-    letter-spacing: 0;
-    text-transform: none;
+}
+
+/* Render the logo via CSS mask so the multi-color SVG becomes a single-color
+   silhouette tinted to match the footer body text. Sized at ~2/3 of the
+   header logo for visual hierarchy: brand reads as a quiet credit, not a
+   second header. */
+.site-footer__logo {
+    display: block;
+    width: 198px;
+    height: 45px;
+    background-color: var(--wp--preset--color--mint);
+    -webkit-mask: url('assets/logo-light.svg') left center / contain no-repeat;
+            mask: url('assets/logo-light.svg') left center / contain no-repeat;
 }
 
 .site-footer .wp-block-navigation a {
@@ -420,24 +429,28 @@ a:hover { color: var(--wp--preset--color--primary); }
 }
 
 /* Footer */
-/* Match header bar's container so columns + nav line up at the same viewport
-   gutters at desktop widths. Defaults to theme.json contentSize (780px) without
-   this override, leaving footer content visibly inset further than the header. */
-.site-footer__columns {
-    min-width: 0;
+/* All direct children (columns row, separator, copyright row) share the header
+   bar's max-width + padding so the columns, the hr beneath them, and the
+   copyright/Terms row at the bottom all line up at the same gutters at desktop
+   widths. Without this override, the constrained layout caps direct children
+   at theme.json's contentSize (780px) — narrower than the header. */
+.site-footer.is-layout-constrained > * {
     max-width: 1200px !important;
-    margin-inline: auto;
     padding-inline: clamp(16px, 4vw, 40px);
     box-sizing: border-box;
     width: 100%;
 }
 
-/* Equalize Explore (6 links) and Account (3 links) columns so they don't
-   visually drift apart at desktop widths. Brand column (first child) keeps
-   its content width. */
+.site-footer__columns {
+    min-width: 0;
+}
+
+/* All three columns share equal width at desktop. Earlier the brand column
+   was auto-width while Explore + Account were `flex: 1`, which left a
+   narrow brand on the left and two large columns on the right — visually
+   right-heavy. Equal flex restores the rhythm. */
 @media (min-width: 601px) {
-    .site-footer__columns > :nth-child(2),
-    .site-footer__columns > :nth-child(3) {
+    .site-footer__columns > * {
         flex: 1 1 0;
         min-width: 0;
     }
