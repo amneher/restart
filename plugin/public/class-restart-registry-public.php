@@ -260,9 +260,7 @@ class Restart_Registry_Public {
                 <label class="rr-toggle" title="<?php esc_attr_e('Toggle public / private', 'restart-registry'); ?>">
                     <input type="checkbox" id="rr-public-toggle" <?php checked($registry['is_public']); ?>>
                     <span class="rr-toggle__slider"></span>
-                    <span class="rr-toggle__label" data-on="<?php esc_attr_e('Public', 'restart-registry'); ?>" data-off="<?php esc_attr_e('Private', 'restart-registry'); ?>">
-                        <?php echo $registry['is_public'] ? __('Public', 'restart-registry') : __('Private', 'restart-registry'); ?>
-                    </span>
+                    <span class="rr-toggle__label" data-on="<?php esc_attr_e('Public', 'restart-registry'); ?>" data-off="<?php esc_attr_e('Private', 'restart-registry'); ?>"><?php echo $registry['is_public'] ? esc_html__('Public', 'restart-registry') : esc_html__('Private', 'restart-registry'); ?></span>
                 </label>
                 <button type="button" class="rr-btn-ghost" id="rr-share-toggle">&#8679; <?php _e('Share', 'restart-registry'); ?></button>
                 <button type="button" class="rr-btn-ghost" id="rr-edit-registry">&#9881; <?php _e('Settings', 'restart-registry'); ?></button>
@@ -273,8 +271,18 @@ class Restart_Registry_Public {
                 <h1 class="rr-registry-title"><?php echo esc_html($registry['title']); ?></h1>
                 <?php if ($event_type || $event_date): ?>
                     <p class="rr-event-meta">
-                        <?php if ($event_type): ?><span class="rr-event-type"><?php echo esc_html($event_type); ?></span><?php endif; ?>
-                        <?php if ($event_date): ?><span class="rr-event-date"><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($event_date))); ?></span><?php endif; ?>
+                        <?php if ($event_type): ?>
+                            <span class="rr-event-meta__group">
+                                <span class="rr-event-meta__label"><?php esc_html_e('Event:', 'restart-registry'); ?></span>
+                                <span class="rr-event-type"><?php echo esc_html($event_type); ?></span>
+                            </span>
+                        <?php endif; ?>
+                        <?php if ($event_date): ?>
+                            <span class="rr-event-meta__group">
+                                <span class="rr-event-meta__label"><?php esc_html_e('Date:', 'restart-registry'); ?></span>
+                                <span class="rr-event-date"><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($event_date))); ?></span>
+                            </span>
+                        <?php endif; ?>
                     </p>
                 <?php endif; ?>
             </div>
@@ -287,19 +295,21 @@ class Restart_Registry_Public {
                 </div>
             <?php endif; ?>
 
-            <?php if (!empty($registry['description'])): ?>
-                <section class="rr-story">
-                    <h2 class="rr-story__heading"><?php _e('My Story', 'restart-registry'); ?></h2>
+            <section class="rr-story">
+                <h2 class="rr-story__heading"><?php _e('My Story', 'restart-registry'); ?></h2>
+                <?php if (!empty($registry['description'])): ?>
                     <p class="rr-story__text"><?php echo nl2br(esc_html($registry['description'])); ?></p>
-                </section>
-            <?php endif; ?>
+                <?php else: ?>
+                    <p class="rr-story__text rr-story__text--placeholder"><?php esc_html_e('Tell visitors why this registry matters to you. Open Settings to add your story.', 'restart-registry'); ?></p>
+                <?php endif; ?>
+            </section>
 
             <hr class="rr-divider">
 
             <!-- Items section -->
             <div class="rr-items-section">
                 <div class="rr-items-header">
-                    <span class="rr-items-heading"><?php _e('Your Items', 'restart-registry'); ?> <span class="rr-item-count">(<?php echo count($registry['items']); ?>)</span></span>
+                    <span class="rr-items-heading"><?php _e('My Items', 'restart-registry'); ?> <span class="rr-item-count">(<?php echo count($registry['items']); ?>)</span></span>
                     <button type="button" class="rr-btn-add" id="rr-add-item-toggle">+ <?php _e('Add Item', 'restart-registry'); ?></button>
                 </div>
 
@@ -609,16 +619,28 @@ class Restart_Registry_Public {
                     ); ?></p>
                     <?php if ($event_type || $event_date): ?>
                         <p class="rr-event-meta">
-                            <?php if ($event_type): ?><span class="rr-event-type"><?php echo esc_html($event_type); ?></span><?php endif; ?>
-                            <?php if ($event_date): ?><span class="rr-event-date"><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($event_date))); ?></span><?php endif; ?>
+                            <?php if ($event_type): ?>
+                                <span class="rr-event-meta__group">
+                                    <span class="rr-event-meta__label"><?php esc_html_e('Event:', 'restart-registry'); ?></span>
+                                    <span class="rr-event-type"><?php echo esc_html($event_type); ?></span>
+                                </span>
+                            <?php endif; ?>
+                            <?php if ($event_date): ?>
+                                <span class="rr-event-meta__group">
+                                    <span class="rr-event-meta__label"><?php esc_html_e('Date:', 'restart-registry'); ?></span>
+                                    <span class="rr-event-date"><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($event_date))); ?></span>
+                                </span>
+                            <?php endif; ?>
                         </p>
                     <?php endif; ?>
-                    <?php if (!empty($registry['description'])): ?>
-                        <section class="rr-story">
-                            <h2 class="rr-story__heading"><?php _e('Their Story', 'restart-registry'); ?></h2>
+                    <section class="rr-story">
+                        <h2 class="rr-story__heading"><?php _e('Their Story', 'restart-registry'); ?></h2>
+                        <?php if (!empty($registry['description'])): ?>
                             <p class="rr-story__text"><?php echo nl2br(esc_html($registry['description'])); ?></p>
-                        </section>
-                    <?php endif; ?>
+                        <?php else: ?>
+                            <p class="rr-story__text rr-story__text--placeholder"><?php echo esc_html(sprintf(__('%s hasn\'t shared their story yet.', 'restart-registry'), $owner_name)); ?></p>
+                        <?php endif; ?>
+                    </section>
                 </div>
                 <?php if ($hero_url): ?>
                     <div class="rr-registry-top__hero">

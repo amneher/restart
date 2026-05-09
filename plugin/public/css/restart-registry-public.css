@@ -202,12 +202,25 @@
 /* ── Event metadata ─────────────────────────────────────────────────────── */
 .rr-event-meta {
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 16px;
     align-items: center;
     margin: 4px 0 0;
     font-size: 13px;
     color: var(--rr-mid);
     font-family: var(--rr-font-ui);
+}
+.rr-event-meta__group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.rr-event-meta__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--rr-muted);
 }
 .rr-event-type {
     background: var(--rr-mint);
@@ -280,6 +293,10 @@
     line-height: 1.65;
     color: var(--rr-mid);
     margin: 0;
+}
+.rr-story__text--placeholder {
+    font-style: italic;
+    color: var(--rr-muted);
 }
 
 /* ── Divider ────────────────────────────────────────────────────────────── */
@@ -865,11 +882,11 @@ body.rr-modal-open { overflow: hidden; }
     /* Reset vertical-stack overrides on mobile */
     .rr-item-card__actions .rr-purchase-btn,
     .rr-item-card__actions .rr-mark-purchased { display: inline-block; width: auto; margin-bottom: 0; }
-    /* Toolbar: keep on one row but let the two ghost buttons grow into
-       any leftover space so they don't end up at uneven 82px/100px widths
-       crammed next to the toggle. */
+    /* Toolbar: wrap when the toggle + buttons can't all fit. Buttons size
+       to their content (Share / Settings) so they don't fill the viewport
+       width when wrapped onto their own row. */
     .rr-toolbar { flex-wrap: wrap; gap: 8px; }
-    .rr-toolbar .rr-btn-ghost { flex: 1; justify-content: center; }
+    .rr-toolbar .rr-btn-ghost { flex: 0 0 auto; justify-content: center; }
     .rr-form-row { flex-direction: column; }
     .rr-add-item-fields { flex-direction: column; }
     .rr-add-item-fields input { width: 100% !important; flex: none !important; }
