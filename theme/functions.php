@@ -5,6 +5,13 @@ $fonts_url = 'https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&fami
 add_action('wp_enqueue_scripts', function () use ($fonts_url) {
     wp_enqueue_style('therestart-fonts', $fonts_url, [], null);
     wp_enqueue_style('therestart-style', get_stylesheet_uri(), ['therestart-fonts'], wp_get_theme()->get('Version'));
+    wp_enqueue_script(
+        'therestart-header-current-nav',
+        get_stylesheet_directory_uri() . '/assets/js/header-current-nav.js',
+        [],
+        wp_get_theme()->get('Version'),
+        true
+    );
 });
 
 add_action('admin_enqueue_scripts', function () use ($fonts_url) {
