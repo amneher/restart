@@ -367,20 +367,6 @@ class Restart_Registry_Public {
                 <?php endif; ?>
             </div>
 
-            <!-- Notification preferences -->
-            <?php
-            $notify_pref = get_user_meta(get_current_user_id(), 'restart_notify_on_purchase', true);
-            $notify_on   = $notify_pref !== '0';
-            ?>
-            <section class="rr-notification-prefs">
-                <h2 class="rr-notification-prefs__heading"><?php _e('Notification Preferences', 'restart-registry'); ?></h2>
-                <label class="rr-checkbox-label">
-                    <input type="checkbox" id="rr-notify-purchase" <?php checked($notify_on); ?>>
-                    <?php _e('Email me when items are purchased', 'restart-registry'); ?>
-                </label>
-                <p id="rr-notify-prefs-status" class="rr-notify-status" aria-live="polite"></p>
-            </section>
-
             <!-- Public-toggle help modal -->
             <div class="rr-modal" id="rr-public-help-modal" aria-hidden="true">
                 <div class="rr-modal__backdrop"></div>

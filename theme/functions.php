@@ -183,6 +183,7 @@ add_shortcode('restart_my_account', function () {
             <ul>
                 <li><a href="<?php echo esc_url(home_url('/my-registries/')); ?>">My Registries</a></li>
                 <li><a href="#edit-profile" id="rr-edit-profile-toggle">Edit Profile</a></li>
+                <li><a href="#notification-prefs" id="rr-notification-prefs-toggle">Notifications</a></li>
                 <li><a href="<?php echo esc_url(wp_logout_url(home_url('/'))); ?>">Log Out</a></li>
             </ul>
         </nav>
@@ -219,6 +220,24 @@ add_shortcode('restart_my_account', function () {
                     <button type="button" class="restart-btn restart-btn--ghost" id="rr-edit-profile-cancel">Cancel</button>
                 </div>
             </form>
+        </div>
+
+        <?php
+        $notify_pref = get_user_meta($user->ID, 'restart_notify_on_purchase', true);
+        $notify_on   = $notify_pref !== '0';
+        ?>
+        <div id="rr-notification-prefs-panel" class="restart-my-account__edit-panel" hidden>
+            <h2 class="restart-my-account__section-title">Notification Preferences</h2>
+
+            <label class="rr-checkbox-label">
+                <input type="checkbox" id="rr-notify-purchase" <?php checked($notify_on); ?>>
+                Email me when items are purchased from my registries
+            </label>
+            <p id="rr-notify-prefs-status" class="rr-notify-status" aria-live="polite"></p>
+
+            <div class="restart-form__actions" style="margin-top:1.5rem">
+                <button type="button" class="restart-btn restart-btn--ghost" id="rr-notification-prefs-close">Close</button>
+            </div>
         </div>
 
     </div>
