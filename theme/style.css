@@ -727,16 +727,28 @@ a:hover { color: var(--wp--preset--color--primary); }
 }
 
 /* ── Comments ── */
+/* Section as a whole reads as a small footnote under the article body, not
+   a second feature; constrained width + reduced inputs keep it compact. */
+.wp-block-comments {
+    max-width: 540px;
+    margin-inline: auto;
+    font-size: 13px;
+}
+
+.wp-block-comments .wp-block-comments-title {
+    font-size: 16px !important;
+}
+
 .wp-block-post-comments-form label {
     display: block;
     font-family: var(--wp--preset--font-family--montserrat);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #193540;
-    margin-bottom: 0.4rem;
-    margin-top: 1rem;
+    margin-bottom: 0.3rem;
+    margin-top: 0.6rem;
 }
 
 .wp-block-post-comments-form input[type="text"],
@@ -744,13 +756,13 @@ a:hover { color: var(--wp--preset--color--primary); }
 .wp-block-post-comments-form input[type="url"],
 .wp-block-post-comments-form textarea {
     width: 100%;
-    padding: 0.6rem 0.75rem;
+    padding: 0.4rem 0.6rem;
     font-family: var(--wp--preset--font-family--libre-caslon-text);
-    font-size: 15px;
+    font-size: 13px;
     color: #193540;
     background: #ffffff;
-    border: 1.5px solid #8a9ea0;
-    border-radius: 4px;
+    border: 1px solid #8a9ea0;
+    border-radius: 3px;
     outline: none;
     transition: border-color 0.15s;
 }
@@ -761,25 +773,25 @@ a:hover { color: var(--wp--preset--color--primary); }
 }
 
 .wp-block-post-comments-form textarea {
-    min-height: 140px;
+    min-height: 70px;
     resize: vertical;
-    line-height: 1.6;
+    line-height: 1.5;
 }
 
 .wp-block-post-comments-form .submit,
 .wp-block-post-comments-form input[type="submit"] {
     display: inline-block;
-    margin-top: 1rem;
+    margin-top: 0.6rem;
     background-color: #47b4b0;
     color: #ffffff;
     font-family: var(--wp--preset--font-family--montserrat);
     font-weight: 700;
-    font-size: 13px;
+    font-size: 11px;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    padding: 0.75rem 2rem;
+    padding: 0.45rem 1.1rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
     transition: background-color 0.2s;
 }
