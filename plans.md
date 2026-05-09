@@ -1,116 +1,129 @@
-# Plan: Layout / alignment audit + visual nit-picking
+# Plan: Plugin visual fixes — registry single + my-registries list
 
-Branch suggestion: `theme/visual-polish`
+Branch suggestion: `plugin/visual-polish`
 
 ## Goal
 
-One disciplined pass across all 21 templates at desktop and mobile widths. Catch alignment, spacing, vertical rhythm, hierarchy, and obvious visual nits. Fix the high-impact issues; log the rest as follow-ups so the audit stays bounded.
-
-This is the descoped Phase 4 from the branding PR (`94e986e`), now run on its own.
+Fix the four plugin-rendered visual issues we surfaced during the theme audit (PR #3) and logged in `theme/TODO.md` under "Phase 3 — out of scope (plugin-rendered)". These were intentionally deferred at the time because the theme PR scope ended at theme code; now we cross the boundary.
 
 ## Scope
 
-- All 21 templates in `theme/templates/` plus shared `theme/parts/{header,footer}.html`.
-- Two viewports: **1280 px (desktop)** and **375 px (mobile)**. Add **768 px (tablet)** spot-check only if desktop and mobile disagree on a given page.
-- Both unauthenticated and authenticated states (auth-only pages: `page-my-account`, `page-my-registries`, and the "edit my registry" view of `single-restart-registry`).
+In: `plugin/public/css/restart-registry-public.css`, `plugin/public/class-restart-registry-public.php`, and possibly `theme/style.css` for the my-registries list rule (the class name `restart-registry-list__*` is plugin-namespaced but the actual CSS rule lives in the theme — see Findings below).
 
-## Out of scope
+Out: lambda code, plugin admin views, plugin data model, theme templates.
 
-- Color / palette changes (mint / teal / dark-navy holds).
-- Typography swaps (Libre Caslon + Montserrat hold).
-- New illustrations, new copy, new sections.
-- Component / pattern refactors. We're polishing what's there, not rebuilding.
-- Lambda, plugin, or seed logic.
-- A11y deep-dive (logged separately if found, not fixed here).
+## The four issues
 
-## Severity rubric
+Severity scores against the project rubric (10 = broken, 7 = clear visual error, 4-6 = nit). Severities re-confirmed during the audit; not editorialized here.
 
-Score each issue 0–10. Fix-bar is **≥ 7**.
+### 1. Single registry — items table drops QTY DESIRED + FULFILLED on mobile (severity 7)
 
-- **9–10**: broken layout, overlap, off-screen content, unreadable contrast.
-- **7–8**: clear visual error a user would notice (misaligned CTA, wrong padding step, busted grid).
-- **4–6**: nits — uneven optical centering, slightly inconsistent gap, minor rhythm drift. Logged in `TODO.md`, not fixed.
-- **0–3**: taste calls. Ignored.
+File: `plugin/public/css/restart-registry-public.css:826-829`
 
-Drift-prevention: cap at **one fix pass per template**. No recursing on stylistic taste calls.
+```css
+.rr-item-row > .rr-item-row__qty-desired,
+.rr-item-row > .rr-item-row__fulfilled,
+.rr-item-card > .rr-item-card__qty,
+.rr-item-card > .rr-item-card__fulfilled { display: none; }
+```
+
+These two columns are explicitly hidden under `@media (max-width: 700px)`. The desktop view has them as table columns with QTY 1, FULFILLED ✓ / 0/1 / 1/2 etc. On mobile the registry owner can't see how many of each item are needed, how many have been fulfilled, or which items are already done — only a subtle 50% opacity on already-fulfilled rows hints at it.
+
+Compounding it: the PURCHASE button still renders on every row including fulfilled ones, with only opacity:0.5 on the parent row marking the difference. A guest viewing the registry on mobile could click PURCHASE on something that's already fulfilled and not realize it.
+
+**Fix path:** Don't hide the columns — surface their data inline below the item name on small viewports. The plugin already emits both `<span class="rr-item-row__qty-desired">N</span>` and `<span class="rr-item-row__fulfilled">M</span>` on every row. On mobile, restyle them as a compact metadata row under the name (e.g., "Needed: 1 · Fulfilled: 1/2") instead of hiding them. This is CSS-only — no markup change.
+
+For the "PURCHASE button on fulfilled items" sub-issue: hide the actions cell entirely when the row is `.rr-item-row--fulfilled` or `.rr-item-fulfilled`, or replace the button with a "✓ Fulfilled" pill. Also CSS-only.
+
+### 2. Single registry — toolbar row cramped on mobile (severity 5)
+
+File: `plugin/public/class-restart-registry-public.php:259-269`, plus `.rr-toolbar` rules in plugin CSS.
+
+The PUBLIC/PRIVATE toggle, Share button, and Settings button all sit in a single flex row inside `.rr-toolbar`. At 375px they squeeze tight. The plugin CSS already does `.rr-toolbar { flex-wrap: wrap; }` on mobile (line 836), but the elements still try to fit on one line when there's enough room.
+
+**Fix path:** Below ~480px, force the toggle onto its own line and let Share + Settings sit on a second line. Or push everything to vertical stack. Either is CSS-only via tightening the existing breakpoint.
+
+### 3. Single registry — "Notification Preferences" h2 too large on mobile (severity 5)
+
+File: `plugin/public/class-restart-registry-public.php:364`
+
+```php
+<h2 class="rr-notification-prefs__heading"><?php _e('Notification Preferences', 'restart-registry'); ?></h2>
+```
+
+The h2 inherits the global heading scale, which on mobile renders the two-word heading as a 28-32px title that wraps to two lines and dominates the page.
+
+**Fix path:** Add a `.rr-notification-prefs__heading` rule that overrides the inherited h2 scale — `font-size: 18px` or similar. CSS-only.
+
+### 4. My-registries list — metadata wraps inconsistently (severity 6)
+
+File: `theme/style.css:328-336` (the rule lives in the theme even though the class is plugin-namespaced — `restart-registry-list__item`).
+
+```css
+.restart-registry-list__item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.875rem 0;
+    border-bottom: 1px solid #e5eaea;
+    flex-wrap: wrap;
+}
+```
+
+`flex-wrap: wrap` causes short titles to keep meta inline on the same row, and longer titles push meta to a wrapped second row. Result: rows have visually inconsistent vertical heights and the "PUBLIC" badges end up at different x-positions per row.
+
+**Fix path:** Under `(max-width: 600px)`, force `flex-direction: column; align-items: flex-start;` so every item stacks identically. CSS-only.
 
 ## Approach
 
-Use the `/design-review` skill against the live dev stack. It captures before/after screenshots and commits atomically per fix, which keeps the diff reviewable and lets us bail out early if the audit balloons.
+All four are CSS-only fixes. None require touching PHP markup or JS. Pattern matches the theme audit: one atomic commit per fix, severity-gated decisions, theme version bumps in style.css to bust browser cache during verification.
 
-Working order — front-page first, deepest templates last, so global issues surface before per-page ones:
+The plugin doesn't have a per-asset version constant the way the theme does, so cache-busting requires a version bump in `restart-registry.php` (the plugin header) — `wp_enqueue_style` uses the plugin version as the `?ver=` query string. We'll bump it once at the start of the branch and rely on that for the run.
 
-1. `parts/header.html`, `parts/footer.html` (global — fix once, propagates)
-2. `front-page.html`
-3. `page-about-us.html`, `page-faq.html`
-4. `page-login.html`, `page-register.html`
-5. `page-start-a-registry.html`
-6. `page-my-account.html`, `page-my-registries.html` *(authed)*
-7. `archive-restart-registry.html`
-8. `single-restart-registry.html` *(public + edit views)*
-9. `index.html`, `page.html`, `single.html`
-10. `category-articles.html`, `category-favorites.html`, `category-gifts.html`
-11. `single-category-articles.html`, `single-category-favorites.html`, `single-category-gifts.html`
-12. `taxonomy-category.html`
-13. `404.html`
-
-For each template, the checklist:
-
-- Header / footer alignment with page content (gutters match).
-- Hero spacing (top padding, image crop, headline leading).
-- CTA buttons: same height, same padding, same hover/focus state across pages.
-- List vs grid consistency on archives and category pages.
-- Vertical rhythm — no orphan single-line gaps, no double-margin stacking from adjacent block patterns.
-- Focus rings present and visible on all interactive elements (logged if missing — not fixed in this pass beyond trivial CSS).
-- Mobile: nothing horizontally scrolling, tap targets ≥ 44 px, wordmark hides under 480 px (already shipped, just verify).
+For Issue 4 the rule lives in `theme/style.css`, not plugin CSS. Logically it's a plugin concern (the class is plugin-namespaced) but operationally it's a theme edit. Keep the fix in `theme/style.css` rather than duplicating the rule into plugin CSS — moving the rule across the boundary is a bigger refactor than this branch warrants.
 
 ## Phases
 
-### Phase 1 — Stand up the dev stack
+### Phase 1 — Stand up + verify reproduction
+- `make up` (or confirm running stack from prior session is healthy).
+- Login as `demo`, view `/registry/alexs-new-chapter/` at 375 and confirm the four issues reproduce.
+- Capture before-screenshots for the PR.
 
-- `make up && make seed-reset` to land on known seed state.
-- Confirm authed flows work: log in as `admin` and `demo`, hit `my-account` and `my-registries`.
-- **Pre-capture skipped** — `/design-review` captures per-template before/after as part of Phase 3, so a separate baseline pass would be redundant. PR will use design-review evidence for visual proof.
+### Phase 2 — Fixes (one atomic commit each)
+- **Issue 1** — surface qty/fulfilled inline on mobile + hide actions on fulfilled rows.
+- **Issue 2** — tighten toolbar layout at narrow widths.
+- **Issue 3** — scale down `.rr-notification-prefs__heading` on mobile.
+- **Issue 4** — force column stack on `.restart-registry-list__item` ≤ 600px.
 
-### Phase 2 — Global parts (header / footer)
+After each fix: reload the relevant page at 375px, verify the targeted issue is resolved, screenshot, commit.
 
-- Audit + fix issues in `parts/header.html`, `parts/footer.html`, and any header/footer CSS in `theme/style.css` / `theme/assets/css/*`.
-- Re-screenshot every template after the fix (cheap — header/footer change has site-wide blast radius, so we re-baseline once before the per-template pass).
-
-### Phase 3 — Per-template pass
-
-- Walk the working order above. For each template:
-  - `/design-review` at desktop + mobile.
-  - Triage issues against the severity rubric.
-  - Fix ≥ 7s in place; commit atomically (`fix(theme): <template> — <what>`).
-  - Append < 7 nits to `TODO.md` under a new "Visual nits — deferred" section with the template name.
-- Hard cap: **one pass per template.** Do not loop.
-
-### Phase 4 — Verify + ship
-
-- `make theme-test` green (PHP + JS).
-- Manual smoke: front page, login → my-registries, start-a-registry, an existing registry public view.
-- Open PR titled "theme: layout + visual polish pass."
-- PR body: link to before/after screenshots, list of templates touched, list of deferred nits with severity scores.
+### Phase 3 — Verify + ship
+- `make plugin-test` and `make theme-test` green.
+- Re-screenshot all four affected views at 375px and 1280px, confirm desktop is unchanged.
+- Manual smoke as `demo`: my-registries → single registry → toggle public, open share modal, open settings modal.
+- Open PR titled "plugin: visual fixes from theme audit follow-up".
+- PR body lists the four issues with severity, file:line of the fix, and before/after notes.
 
 ## Risk / rollout
 
-- Header/footer changes have site-wide blast radius — that's why Phase 2 happens first and re-baselines before per-template work. A regression caught in Phase 3 attributed to Phase 2 means we revert the header/footer commit, not the per-template commit.
-- "21 templates × 2 viewports × visual judgment" is the kind of scope that grows. The severity rubric and the one-pass cap exist specifically to prevent it.
-- `/design-review` commits atomically per fix. If a fix turns out wrong, revert that single commit — don't unwind the whole branch.
+- All four fixes are scoped to mobile media queries (`max-width: 600` or `700`). Desktop behavior should not change. Smoke step verifies that explicitly.
+- The "hide PURCHASE button on fulfilled rows" sub-fix in Issue 1 changes affordance for guests, not just owners. Need to confirm: on a guest view (no login, just `?registry=<key>` URL), does the actions cell still render PURCHASE for fulfilled items? If yes, the fix benefits guests too. If guests already see no PURCHASE on fulfilled items (different code path), the fix scope reduces.
+- Theme version is currently 1.0.3. Plugin version — TBD; check `restart-registry.php` header before the first commit.
 
 ## Decisions locked in
 
-- **Auth accounts**: use the two users `scripts/seed.sh` already creates — `admin/admin` (administrator) and `demo/demo` (regular subscriber). No new user needed.
-- **Deferred nits**: appended to `TODO.md` under a new "Visual nits — deferred" section, one bullet per nit with template name and severity score.
-- **Tablet (768 px)**: spot-check only, used when desktop and mobile disagree on a given page. Not a first-class viewport.
+- **Issue 1 sub-fix** — in scope. Hide the PURCHASE button on already-fulfilled rows so a guest viewing on mobile can't accidentally try to "purchase" something already done. Follow the bug end-to-end.
+- **One PR** for the audit follow-up. Issues 1-3 touch `plugin/public/css/restart-registry-public.css`; Issue 4 touches `theme/style.css`. Both come along in one branch with a single PR.
+- **Plugin version bump**: patch level, 1.0.12 → 1.0.13. Bump the `Version:` header in `plugin/restart-registry.php` and the `RESTART_REGISTRY_VERSION` constant on the same line. Done with the first commit on the branch (the way the theme version bump traveled with F1).
 
 ---
 
 ## Todo
 
-- [x] Phase 1a: `make up && make seed-reset`; verify `admin` and `demo` log in. (4807fda, 46d16b8 — fixed two latent seed bugs en route)
-- [~] Phase 1b: **Skipped** — relying on `/design-review`'s built-in per-template before/after captures instead of a separate baseline pass.
-- [x] Phase 2: Audit + fix `parts/header.html`, `parts/footer.html`, related CSS. (0e4f54d, e3feb00 — 2 fixes ≥7; f6cd3e0 — 5 nits 4-6 logged to `theme/TODO.md`)
-- [x] Phase 3: Per-template pass — covered all 21 templates (some via shared shells); 0 theme-CSS fixes met the ≥ 7 bar; 8 nits logged to `theme/TODO.md` split between theme scope and plugin scope. (3ba9db7)
-- [x] Phase 4: `make theme-test` green (PHP 23/23, JS 18/18), smoke verified F1/F2 hold and no desktop regressions, PR opened.
+- [x] Phase 1: stack up, reproduce all four at 375, capture before-screenshots; plugin version landed at 1.0.16 (cache surprises along the way).
+- [x] Phase 2.1: Issue 1 — qty/fulfilled inline on mobile + hide PURCHASE on fulfilled rows. (240e498)
+- [x] Phase 2.2: Issue 2 — toolbar buttons even out via `flex: 1` on mobile. (9401ec4)
+- [x] Phase 2.3: Issue 3 — notification prefs heading matches `.rr-story__heading` eyebrow pattern. (485423a)
+- [x] Phase 2.4: Issue 4 — `.restart-registry-list__item` stacks under 600px. (d55b329)
+- [x] Phase 3: tests green (plugin PHP 70/70, plugin JS 17/17, theme PHP 23/23, theme JS 18/18); smoke verified mobile + desktop; PR opened.

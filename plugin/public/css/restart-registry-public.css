@@ -257,7 +257,8 @@
 
 /* ── Story section ──────────────────────────────────────────────────────── */
 .rr-story { margin-top: 16px; }
-.rr-story__heading {
+.rr-story__heading,
+.rr-notification-prefs__heading {
     font-family: var(--rr-font-ui);
     font-size: 11px;
     font-weight: 700;
@@ -265,6 +266,13 @@
     letter-spacing: 0.08em;
     color: var(--rr-teal);
     margin: 0 0 8px;
+}
+
+/* ── Notification preferences section ───────────────────────────────────── */
+.rr-notification-prefs {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rr-border);
 }
 .rr-story__text {
     font-family: var(--rr-font-body);
@@ -353,6 +361,15 @@
 }
 .rr-item-row:hover, .rr-item-card:hover { background: #f8fcfa; }
 .rr-item-row--fulfilled, .rr-item-fulfilled { opacity: 0.5; }
+
+/* Suppress purchase affordances on already-fulfilled rows so a viewer
+   (owner or guest) can't try to "purchase" something already done. The
+   row already reads as completed via opacity 0.5; no interactive purchase
+   should remain. Edit/delete buttons stay visible for the owner. */
+.rr-item-row--fulfilled .rr-purchase-btn,
+.rr-item-fulfilled .rr-purchase-btn,
+.rr-item-row--fulfilled .rr-mark-purchased,
+.rr-item-fulfilled .rr-mark-purchased { display: none; }
 
 /* Data cells */
 .rr-item-row > span,
@@ -823,17 +840,36 @@ body.rr-modal-open { overflow: hidden; }
     .rr-item-row__name,
     .rr-item-card__name { flex: 1; min-width: 0; align-self: center; }
     .rr-item-name-btn { white-space: normal; overflow: visible; text-overflow: clip; }
+    /* Surface qty/fulfilled inline below the item name on mobile so the
+       registry owner can still see what's needed and what's done. Each on
+       its own row, indented past the 48px thumb + 12px gap. */
     .rr-item-row > .rr-item-row__qty-desired,
     .rr-item-row > .rr-item-row__fulfilled,
     .rr-item-card > .rr-item-card__qty,
-    .rr-item-card > .rr-item-card__fulfilled { display: none; }
+    .rr-item-card > .rr-item-card__fulfilled {
+        flex: 0 0 100%;
+        padding-left: 60px;
+        margin-top: -4px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--rr-mid);
+    }
+    .rr-item-row > .rr-item-row__qty-desired::before,
+    .rr-item-card > .rr-item-card__qty::before { content: "Needed: "; opacity: 0.7; }
+    .rr-item-row > .rr-item-row__fulfilled::before,
+    .rr-item-card > .rr-item-card__fulfilled::before { content: "Fulfilled: "; opacity: 0.7; }
     /* Actions wrap below thumbnail+name; padding-left aligns them under the name */
     .rr-item-row__actions,
     .rr-item-card__actions { flex: 0 0 100%; padding-left: 60px; padding-right: 0; white-space: nowrap; }
     /* Reset vertical-stack overrides on mobile */
     .rr-item-card__actions .rr-purchase-btn,
     .rr-item-card__actions .rr-mark-purchased { display: inline-block; width: auto; margin-bottom: 0; }
-    .rr-toolbar { flex-wrap: wrap; }
+    /* Toolbar: keep on one row but let the two ghost buttons grow into
+       any leftover space so they don't end up at uneven 82px/100px widths
+       crammed next to the toggle. */
+    .rr-toolbar { flex-wrap: wrap; gap: 8px; }
+    .rr-toolbar .rr-btn-ghost { flex: 1; justify-content: center; }
     .rr-form-row { flex-direction: column; }
     .rr-add-item-fields { flex-direction: column; }
     .rr-add-item-fields input { width: 100% !important; flex: none !important; }
