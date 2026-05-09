@@ -1,34 +1,13 @@
-## Pages to create in WordPress
+## Open TODOs
 
-### Terms & Conditions
-- Pages → Add New
-- Title: "Terms & Conditions"
-- Slug: `terms-and-conditions`
-- Template: Default (page.html — assigned automatically)
-- Content: paste from `assets/copy/terms-and-conditions.md`
-- Fill in `[Your State]` in section 12 before publishing
-
-### About Us
-- Pages → Add New
-- Title: "About Us"
-- Slug: `about-us`
-- Template: auto-assigned (page-about-us.html matches slug)
-- Content: build in editor — three-column photo grid, then body text paragraph (see screenshot for reference)
-
-### FAQ
-- Pages → Add New
-- Title: "FAQ"
-- Slug: `faq`
-- Template: auto-assigned (page-faq.html matches slug)
-- Content: insert the "FAQ Content" pattern from the block inserter (therestart/faq-content)
+- Build `theme/templates/page-find-a-registry.html`. The "Find a Registry" page exists (created in seed at `scripts/seed.sh`) but currently falls back to `page.html` because the dedicated template was never built. The seed previously tried to assign `--page_template=page-find-a-registry` and failed; that arg was dropped to unblock seeding. Add a real template when the search/lookup UX is designed.
+- Persist contact form submissions to a CPT (`rr_contact_message`) so admins can browse/audit them in WP admin even if outbound email bounces. Today the contact modal only emails `admin_email` via `wp_mail` — there's no record on the WP side. Add the CPT registration (private, not publicly queryable), write each submission as a post with name/email/subject/message in fields, and surface a basic admin list table. Keep the email path; add the CPT as a parallel sink.
 
 ---
 
-## Other TODOs
+## About Us — design follow-up
 
-- Write and publish a Privacy Policy page (referenced in T&C section 7). Slug: `/privacy-policy/`. Link in footer bottom bar alongside T&C.
-- Build `theme/templates/page-find-a-registry.html`. The "Find a Registry" page exists (created in seed at `scripts/seed.sh`) but currently falls back to `page.html` because the dedicated template was never built. The seed previously tried to assign `--page_template=page-find-a-registry` and failed; that arg was dropped to unblock seeding. Add a real template when the search/lookup UX is designed.
-- Persist contact form submissions to a CPT (`rr_contact_message`) so admins can browse/audit them in WP admin even if outbound email bounces. Today the contact modal only emails `admin_email` via `wp_mail` — there's no record on the WP side. Add the CPT registration (private, not publicly queryable), write each submission as a post with name/email/subject/message in fields, and surface a basic admin list table. Keep the email path; add the CPT as a parallel sink.
+The current About Us copy is a placeholder paragraph set, written in-house. The original TODO referenced a "three-column photo grid + body text" design that hasn't been built. When real photos and a final design exist, replace the placeholder via WP admin (or update `theme/assets/copy/about-us.html` and re-run `./scripts/seed.sh`).
 
 ---
 
@@ -48,12 +27,3 @@ Logged from the layout/alignment audit on `theme/visual-polish` (Phase 2 — hea
 - **archive-restart-registry — incomplete grid row left-heavy on desktop.** Severity 5. The 3-column post grid renders 2 cards side-by-side with the third column empty when fewer than 3 results exist (same effect on category-articles with 5 results in a 4-col grid). Fix path: `.rr-registry-grid { justify-content: center }` for incomplete rows, or switch to `auto-fit` minmax so the cards expand to fill.
 - **page-my-account — account menu is plain text.** Severity 5. "MY REGISTRIES / EDIT PROFILE / LOG OUT" render as bare uppercase mint links with no surrounding affordance. Tap targets are also small (text-height only). Fix path: style as button-like list items or pad the link rows so they're at least 44px tall.
 - **buttons — primary CTA color inconsistent across pages.** Severity 5. Front-page CTAs use gold (`var(--wp--preset--color--primary)`), but login `LOG IN`, start-a-registry `CREATE REGISTRY`, and the registry items `PURCHASE` buttons use teal/mint. Consider deciding whether teal is for "form submit" specifically or whether all primary actions should match — and document the rule.
-
-### Phase 3 — out of scope (plugin-rendered)
-
-These three findings live in the `restart-registry` plugin's rendered output (the `[restart_registry]` shortcode and the `restart-registry-list__*` BEM classes), which the audit plan put out of scope. Logged here so they don't get lost.
-
-- **single-restart-registry — items table drops QTY DESIRED + FULFILLED columns on mobile.** Severity 7. At 375px the responsive table hides everything except the item name + PURCHASE button, so a registry owner can't see how many of each item are needed or how many have been fulfilled. The PURCHASE button still renders even on already-fulfilled items, with only a subtle text-color cue distinguishing them. Fix path lives in the plugin's items-table renderer — surface qty/fulfilled inline below the item name on small viewports rather than hiding the columns.
-- **single-restart-registry — PUBLIC toggle + SHARE + SETTINGS row cramped on mobile.** Severity 5. The three controls compete for a 375px row and end up tightly packed. Plugin-rendered.
-- **single-restart-registry — "Notification Preferences" h2 too large on mobile.** Severity 5. The heading wraps to two lines and dominates the page. Plugin-rendered.
-- **page-my-registries — list-item metadata wraps inconsistently.** Severity 6. `.restart-registry-list__item` uses `flex-wrap: wrap` so short titles keep meta inline (`Alex's New Chapter / Divorce / PUBLIC` on one row) but longer titles push meta to a second row (`Alex's Fresh Start Registry` / `Relocation PUBLIC` below). Class lives in the plugin output but the rules in `theme/style.css:328`. Fix path: under `(max-width: 600px)` set `flex-direction: column; align-items: flex-start` so every item stacks identically.
