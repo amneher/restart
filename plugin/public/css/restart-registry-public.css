@@ -857,7 +857,11 @@ body.rr-modal-open { overflow: hidden; }
     /* Reset vertical-stack overrides on mobile */
     .rr-item-card__actions .rr-purchase-btn,
     .rr-item-card__actions .rr-mark-purchased { display: inline-block; width: auto; margin-bottom: 0; }
-    .rr-toolbar { flex-wrap: wrap; }
+    /* Toolbar: keep on one row but let the two ghost buttons grow into
+       any leftover space so they don't end up at uneven 82px/100px widths
+       crammed next to the toggle. */
+    .rr-toolbar { flex-wrap: wrap; gap: 8px; }
+    .rr-toolbar .rr-btn-ghost { flex: 1; justify-content: center; }
     .rr-form-row { flex-direction: column; }
     .rr-add-item-fields { flex-direction: column; }
     .rr-add-item-fields input { width: 100% !important; flex: none !important; }
