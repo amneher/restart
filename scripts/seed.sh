@@ -171,6 +171,19 @@ create_page() {
     fi
 }
 
+# Update a page's content if it's currently empty or holds a known stub paragraph
+# from an earlier seed. Preserves any real edits made in WP admin.
+upgrade_page_content_from_file() {
+    local slug="$1" file="$2"
+    local id current
+    id=$($WP post list --post_type=page --post_status=any --name="$slug" --field=ID 2>/dev/null | head -1)
+    [ -z "$id" ] && return
+    current=$($WP post get "$id" --field=post_content 2>/dev/null | tr -d '[:space:]')
+    if [ -z "$current" ] || echo "$current" | grep -q "contentcomingsoon"; then
+        $WP post update "$id" --post_content="$(cat "$file")" >/dev/null
+    fi
+}
+
 HOME_ID=$(create_page "Home" "home")
 create_page "Login"                          "login"               "page-login"
 create_page "Register"                       "register"            "page-register"
@@ -180,18 +193,25 @@ create_page "Start a Registry"               "start-a-registry"    "page-start-a
 create_page "Find a Registry"                "find-a-registry"
 create_page "FAQ"                            "faq"                 "page-faq"
 create_page "About Us"                       "about-us"            "page-about-us"
-create_page "Terms and Conditions"           "terms-and-conditions" ""                          "<!-- wp:paragraph --><p>Terms and Conditions content coming soon.</p><!-- /wp:paragraph -->"
+create_page "Terms and Conditions"           "terms-and-conditions"
 
 # WP installs a draft Privacy Policy page at slug `privacy-policy` automatically.
-# Publish that draft with stub content rather than creating a parallel page (which
-# would land at /privacy-policy-2/ due to the slug conflict).
+# Publish that draft rather than creating a parallel page (which would land at
+# /privacy-policy-2/ due to the slug conflict).
 PRIVACY_ID=$($WP post list --post_type=page --post_status=any --name=privacy-policy --field=ID 2>/dev/null | head -1)
 if [ -n "$PRIVACY_ID" ]; then
-    $WP post update "$PRIVACY_ID" --post_status=publish --post_title="Privacy Policy" \
-        --post_content='<!-- wp:paragraph --><p>Privacy Policy content coming soon.</p><!-- /wp:paragraph -->' >/dev/null
+    $WP post update "$PRIVACY_ID" --post_status=publish --post_title="Privacy Policy" >/dev/null
 else
-    create_page "Privacy Policy" "privacy-policy" "" "<!-- wp:paragraph --><p>Privacy Policy content coming soon.</p><!-- /wp:paragraph -->"
+    create_page "Privacy Policy" "privacy-policy"
 fi
+
+# Populate page content from the committed copy files. Only fills empty pages or
+# pages still on the previous "...coming soon" stub — never overwrites real edits.
+COPY_DIR="${SCRIPT_DIR}/../theme/assets/copy"
+upgrade_page_content_from_file "terms-and-conditions" "${COPY_DIR}/terms-and-conditions.html"
+upgrade_page_content_from_file "privacy-policy"       "${COPY_DIR}/privacy-policy.html"
+upgrade_page_content_from_file "faq"                  "${COPY_DIR}/faq.html"
+upgrade_page_content_from_file "about-us"             "${COPY_DIR}/about-us.html"
 
 $WP option update show_on_front page
 $WP option update page_on_front "$HOME_ID"
