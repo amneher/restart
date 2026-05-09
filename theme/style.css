@@ -4,7 +4,7 @@ Theme URI: https://the-restart.co
 Author: Andrew Neher
 Author URI: https://the-restart.co
 Description: Gift registry theme for people restarting after a divorce.
-Version: 1.0.3
+Version: 1.0.4
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: therestart
@@ -333,6 +333,14 @@ a:hover { color: var(--wp--preset--color--primary); }
     padding: 0.875rem 0;
     border-bottom: 1px solid #e5eaea;
     flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+    .restart-registry-list__item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
 }
 
 .restart-registry-list__title {
