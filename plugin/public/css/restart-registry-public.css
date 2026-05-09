@@ -202,12 +202,25 @@
 /* ── Event metadata ─────────────────────────────────────────────────────── */
 .rr-event-meta {
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 16px;
     align-items: center;
     margin: 4px 0 0;
     font-size: 13px;
     color: var(--rr-mid);
     font-family: var(--rr-font-ui);
+}
+.rr-event-meta__group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.rr-event-meta__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--rr-muted);
 }
 .rr-event-type {
     background: var(--rr-mint);

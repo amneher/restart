@@ -271,8 +271,18 @@ class Restart_Registry_Public {
                 <h1 class="rr-registry-title"><?php echo esc_html($registry['title']); ?></h1>
                 <?php if ($event_type || $event_date): ?>
                     <p class="rr-event-meta">
-                        <?php if ($event_type): ?><span class="rr-event-type"><?php echo esc_html($event_type); ?></span><?php endif; ?>
-                        <?php if ($event_date): ?><span class="rr-event-date"><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($event_date))); ?></span><?php endif; ?>
+                        <?php if ($event_type): ?>
+                            <span class="rr-event-meta__group">
+                                <span class="rr-event-meta__label"><?php esc_html_e('Event:', 'restart-registry'); ?></span>
+                                <span class="rr-event-type"><?php echo esc_html($event_type); ?></span>
+                            </span>
+                        <?php endif; ?>
+                        <?php if ($event_date): ?>
+                            <span class="rr-event-meta__group">
+                                <span class="rr-event-meta__label"><?php esc_html_e('Date:', 'restart-registry'); ?></span>
+                                <span class="rr-event-date"><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($event_date))); ?></span>
+                            </span>
+                        <?php endif; ?>
                     </p>
                 <?php endif; ?>
             </div>
@@ -607,8 +617,18 @@ class Restart_Registry_Public {
                     ); ?></p>
                     <?php if ($event_type || $event_date): ?>
                         <p class="rr-event-meta">
-                            <?php if ($event_type): ?><span class="rr-event-type"><?php echo esc_html($event_type); ?></span><?php endif; ?>
-                            <?php if ($event_date): ?><span class="rr-event-date"><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($event_date))); ?></span><?php endif; ?>
+                            <?php if ($event_type): ?>
+                                <span class="rr-event-meta__group">
+                                    <span class="rr-event-meta__label"><?php esc_html_e('Event:', 'restart-registry'); ?></span>
+                                    <span class="rr-event-type"><?php echo esc_html($event_type); ?></span>
+                                </span>
+                            <?php endif; ?>
+                            <?php if ($event_date): ?>
+                                <span class="rr-event-meta__group">
+                                    <span class="rr-event-meta__label"><?php esc_html_e('Date:', 'restart-registry'); ?></span>
+                                    <span class="rr-event-date"><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($event_date))); ?></span>
+                                </span>
+                            <?php endif; ?>
                         </p>
                     <?php endif; ?>
                     <?php if (!empty($registry['description'])): ?>
