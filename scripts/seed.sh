@@ -156,6 +156,10 @@ echo "→ Setting permalink structure..."
 $WP rewrite structure '/%postname%/' --hard >/dev/null
 $WP rewrite flush >/dev/null
 
+echo "→ Enabling user registration..."
+$WP option update users_can_register 1 >/dev/null
+$WP option update default_role subscriber >/dev/null
+
 # ── Pages ─────────────────────────────────────────────────────────────────────
 
 echo "→ Creating pages..."
