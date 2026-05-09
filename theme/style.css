@@ -429,16 +429,20 @@ a:hover { color: var(--wp--preset--color--primary); }
 }
 
 /* Footer */
-/* Match header bar's container so columns + nav line up at the same viewport
-   gutters at desktop widths. Defaults to theme.json contentSize (780px) without
-   this override, leaving footer content visibly inset further than the header. */
-.site-footer__columns {
-    min-width: 0;
+/* All direct children (columns row, separator, copyright row) share the header
+   bar's max-width + padding so the columns, the hr beneath them, and the
+   copyright/Terms row at the bottom all line up at the same gutters at desktop
+   widths. Without this override, the constrained layout caps direct children
+   at theme.json's contentSize (780px) — narrower than the header. */
+.site-footer.is-layout-constrained > * {
     max-width: 1200px !important;
-    margin-inline: auto;
     padding-inline: clamp(16px, 4vw, 40px);
     box-sizing: border-box;
     width: 100%;
+}
+
+.site-footer__columns {
+    min-width: 0;
 }
 
 /* All three columns share equal width at desktop. Earlier the brand column
