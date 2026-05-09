@@ -160,10 +160,11 @@ $WP rewrite flush >/dev/null
 
 echo "→ Creating pages..."
 create_page() {
-    local title="$1" slug="$2" template="${3:-}"
+    local title="$1" slug="$2" template="${3:-}" content="${4:-}"
     if ! $WP post list --post_type=page --post_status=publish --name="$slug" --format=count | grep -q '^[1-9]'; then
         local args=(--post_type=page --post_status=publish --post_title="$title" --post_name="$slug" --porcelain)
         [ -n "$template" ] && args+=(--page_template="$template")
+        [ -n "$content" ] && args+=(--post_content="$content")
         $WP post create "${args[@]}"
     else
         $WP post list --post_type=page --post_status=publish --name="$slug" --field=ID
@@ -179,6 +180,18 @@ create_page "Start a Registry"               "start-a-registry"    "page-start-a
 create_page "Find a Registry"                "find-a-registry"
 create_page "FAQ"                            "faq"                 "page-faq"
 create_page "About Us"                       "about-us"            "page-about-us"
+create_page "Terms and Conditions"           "terms-and-conditions" ""                          "<!-- wp:paragraph --><p>Terms and Conditions content coming soon.</p><!-- /wp:paragraph -->"
+
+# WP installs a draft Privacy Policy page at slug `privacy-policy` automatically.
+# Publish that draft with stub content rather than creating a parallel page (which
+# would land at /privacy-policy-2/ due to the slug conflict).
+PRIVACY_ID=$($WP post list --post_type=page --post_status=any --name=privacy-policy --field=ID 2>/dev/null | head -1)
+if [ -n "$PRIVACY_ID" ]; then
+    $WP post update "$PRIVACY_ID" --post_status=publish --post_title="Privacy Policy" \
+        --post_content='<!-- wp:paragraph --><p>Privacy Policy content coming soon.</p><!-- /wp:paragraph -->' >/dev/null
+else
+    create_page "Privacy Policy" "privacy-policy" "" "<!-- wp:paragraph --><p>Privacy Policy content coming soon.</p><!-- /wp:paragraph -->"
+fi
 
 $WP option update show_on_front page
 $WP option update page_on_front "$HOME_ID"

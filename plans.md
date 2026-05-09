@@ -1,81 +1,76 @@
-# Plan: Contact form modal — finish the half-built feature
+# Plan: Site-wide link + path audit
 
-Branch suggestion: continue on `audit/links-and-paths` (the contact link was flagged in the audit), or split off `theme/contact-modal-form`. Lean toward keeping it on the audit branch and amending the PR — it's the same logical work item.
-
-## Current state (already built)
-
-- `theme/assets/js/contact-modal.js` — intercepts `[href="#contact"]` clicks, opens/closes the modal, ESC + overlay close, focus management.
-- `theme/style.css:754+` — `.rr-modal` overlay/dialog/close-button styles.
-- `theme/functions.php:428-449` — enqueues the JS and injects the modal HTML in `wp_footer` on every page.
-- `theme/tests/js/contact-modal.test.js` — open/close behavior covered.
-
-The shell works. What ships today: clicking "Contact" in the nav opens an empty modal with a "Contact Us" heading and the literal text of an unrendered WPForms shortcode (`[wpforms id="YOUR_FORM_ID"]` — WPForms isn't installed, so it falls through as visible text).
+Branch suggestion: `audit/links-and-paths`
 
 ## Goal
 
-Replace the WPForms placeholder with a native contact form + server-side handler. Self-contained: no new plugin dependency, no third-party service.
+Walk every internal link, form action, and hardcoded path on the site, verify each one resolves to its intended destination (correct page, 200 response, no surprise redirect), and fix any that don't. Output: a clean PR with one atomic commit per fix and a manifest of every link checked.
+
+## Scope (locked in)
+
+In:
+- All theme templates, parts, and patterns under `theme/templates/`, `theme/parts/`, `theme/patterns/` — hardcoded `href="..."` attributes.
+- Plugin-emitted links in `plugin/public/` and `plugin/includes/` (registry pages, action URLs, share links, REST endpoints).
+- The nav surfaces a real visitor traverses: header, footer, front page, registry/account pages (`/registry/`, `/start-a-registry/`, `/my-registries/`, `/my-account/`, `/login/`, `/register/`, `/about-us/`, `/faq/`).
+- Form `action="..."` attributes and their handlers.
+- 404 + login redirects.
+- Logged-out **and** logged-in (`demo` user) traversals.
+- Plugin admin (`wp-admin/admin.php?page=restart-registry` and friends) — included by user request.
+- External links — spot-check a sample, not full validation.
+- Placeholder pages (`/terms-and-conditions/`, `/privacy-policy/`, etc.): if they 404, **create stub pages** as part of this PR AND flag them in the PR body so the user knows to fill them in.
+
+Out:
+- Lambda S3 storage URLs and image asset paths (different problem, different fix).
+- IA / nav structure changes ("should this link exist?") — fix means *make existing links resolve correctly*, not redesign navigation.
+
+Single PR for everything (audit + fixes + stub pages).
 
 ## Approach
 
-### Markup — replace the shortcode with a form
-In `theme/functions.php` `wp_footer` action, swap the `do_shortcode(...)` line for a native form:
-- `<input name="rr-contact-name" required>`
-- `<input type="email" name="rr-contact-email" required>`
-- `<textarea name="rr-contact-message" required>`
-- Hidden honeypot field (must stay empty — bot trap)
-- Hidden nonce field (`wp_nonce_field`)
-- Submit button
-- A `<div role="status" aria-live="polite">` for success/error messaging
+Two passes, in this order:
 
-### Handler — `wp_ajax_*` action
-Add in `theme/functions.php`:
-- `wp_ajax_restart_contact_submit` (logged-in users)
-- `wp_ajax_nopriv_restart_contact_submit` (logged-out)
+### Pass 1 — Static inventory (catches what's in the code)
+Grep every `href=`, `action=`, `home_url(`, `site_url(`, `get_permalink(`, `admin_url(`, `rest_url(`, and `wp_redirect(` across `theme/` and `plugin/`. Build a manifest:
 
-Both route to a single handler that:
-1. Verifies the nonce → reject if invalid.
-2. Checks the honeypot is empty → silently succeed if not (don't tip off the bot).
-3. Validates name/email/message are present and email is well-formed.
-4. Calls `wp_mail()` to `get_option('admin_email')` with `Reply-To: <user's email>`.
-5. Returns JSON success or field-level errors.
+| Source file:line | URL | Type (internal/external/dynamic) | Expected destination |
 
-### JS — extend `contact-modal.js`
-- On submit: `e.preventDefault()`, POST to `admin-ajax.php` via `fetch`, disable the submit button.
-- On success: replace the form with a "Thanks — we'll get back to you" message, auto-close after 3 seconds.
-- On error: show field-level errors inline; re-enable submit.
-- Localize the AJAX URL + nonce via `wp_localize_script`.
+This catches paths that exist in code but might never be linked from a rendered page (e.g., a footer link that's wrapped in a conditional).
 
-### CSS — form-in-modal styling
-- New rules under the existing `.rr-modal__dialog` block: `.rr-contact-form`, `.rr-contact-form__field`, `.rr-contact-form__error`, `.rr-contact-form__status`. Visual style consistent with existing theme inputs.
+### Pass 2 — Live crawl (catches what actually renders)
+For each "entry surface" (front page, each major template), use `/browse` to render the page, extract every `<a href>` and `<form action>`, and check each URL with `curl -I` to capture status + final location. Do this twice — once logged out, once as `demo`.
 
-### Tests
-- Update `theme/tests/js/contact-modal.test.js` — the modal markup grows form fields; existing open/close tests still pass.
-- Add JS tests: submit success path (mock fetch → success response), submit error path, honeypot suppression at the JS layer.
-- Add PHP test in `theme/tests/unit/` for the handler: nonce missing → 403; honeypot filled → silent success without sending email; valid input → `wp_mail` invoked with expected args.
+Merge both passes into one master list. Each row gets a status:
+- ✅ resolves to expected page
+- ⚠️ redirects (record where to — sometimes that's correct, sometimes it's a missing slash issue)
+- ❌ 404 / wrong destination
+- ➖ external (note only, don't validate)
 
-## Decisions (locked in)
+### Pass 3 — Fix
+For each ❌ and any ⚠️ that's wrong:
+1. Identify whether it's a code path issue (theme/plugin file emits the wrong URL) or a content issue (a CMS page slug changed).
+2. Code-path fixes go in atomic commits, one per fix, with file:line referenced.
+3. Content issues get flagged in the PR description for the user to handle in WP admin (we don't edit the database in this branch).
 
-1. **Fields**: name, email, **subject (optional)**, message.
-2. **Where messages go**: email to `admin_email` only. CPT (`rr_contact_message`) for record-keeping is recorded as future work in `theme/TODO.md` — not in this PR.
-3. **After-submit UX**: inline success message, auto-close after 3s.
-4. **PR**: new branch `theme/contact-modal-form`, separate PR.
+After each fix: re-run that link through curl, confirm 200, screenshot if it's a UI-affecting change.
 
-## Risk
+## Risk / what could go sideways
 
-- `wp_mail` in dev relies on docker mail config. If the local stack doesn't have a working SMTP, the form will appear to succeed but no email arrives. Worth a quick check in the dev container before relying on it.
-- The `wp_navigation` post in the DB still emits `href="#contact"` — that's fine, JS intercepts it. No DB change needed.
+- The `demo` user's logged-in URLs include registry slugs — those are dynamic per seed. Crawl needs to handle that (start from `/my-registries/`, follow into the first registry, etc., rather than hardcoding slugs).
+- Some "broken" links might actually be intentional placeholders (`/terms-and-conditions/`, `/privacy-policy/` — I see these in the footer; they may not have backing pages yet). We surface them but you decide whether to fix or accept.
+- WordPress trailing-slash normalization can make `/foo` → `/foo/` 301s look like "broken" when they're fine. We classify 301-to-canonical as ✅, not ⚠️.
 
 ---
 
 ## Todo
 
-- [ ] Record the future-work CPT idea in `theme/TODO.md`.
-- [ ] Replace WPForms placeholder with native form markup (name/email/subject/message + honeypot + nonce).
-- [ ] Add `wp_ajax_*` + `wp_ajax_nopriv_*` handler in `functions.php`. Email to `admin_email`, Reply-To set to user.
-- [ ] Localize `restartContact` (ajax URL) for the JS.
-- [ ] Extend `contact-modal.js` for submit flow with success/error UI; auto-close 3s after success.
-- [ ] Add CSS for form-in-modal.
-- [ ] Update existing JS tests; add tests for submit success / submit error / honeypot.
-- [ ] Add PHP handler test.
-- [ ] Verify in browser: submit form, confirm wp_mail invoked (mail log or test mode); error paths.
+- [x] Pass 1: branch (`audit/links-and-paths`), static grep across theme + plugin.
+- [x] Pass 2a: live crawl logged out — all major surfaces hit.
+- [x] Pass 2b: live crawl as `demo` — front, my-registries, single registry, my-account, start-a-registry.
+- [x] Pass 2c: live crawl plugin admin as `admin` — dashboard, list, affiliates, settings.
+- [x] Pass 2d: external spot-check (3 social URLs).
+- [x] Triage: 2 broken (Terms, Privacy 404s), 1 inconsistency (Privacy missing from `footer-default.php` pattern), 1 content issue to flag (`#contact` nav anchor). Social URL placeholders are intentional.
+- [x] Pass 3a: footer pattern parity. (72ba535)
+- [x] Pass 3b: stub pages via seed extension; Privacy reuses WP's reserved draft. (5a225bb)
+- [x] Audit manifest committed at `audit/link-inventory.md`. (556c6c4)
+- [x] Verify: all 11 user-facing URLs return 200; theme phpunit 23/23 green.
 - [ ] Push branch + open PR.
