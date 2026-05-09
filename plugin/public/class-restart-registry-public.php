@@ -438,11 +438,7 @@ class Restart_Registry_Public {
                                 <input type="text" id="rr-edit-item-description" name="description"
                                        placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
                             </div>
-                            <div class="rr-form-group">
-                                <label for="rr-edit-item-image-url"><?php _e('Image URL', 'restart-registry'); ?></label>
-                                <input type="url" id="rr-edit-item-image-url" name="image_url"
-                                       placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
-                            </div>
+                            <input type="hidden" id="rr-edit-item-image-url" name="image_url">
                             <div class="rr-form-actions">
                                 <button type="submit" class="rr-button"><?php _e('Save Changes', 'restart-registry'); ?></button>
                                 <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
