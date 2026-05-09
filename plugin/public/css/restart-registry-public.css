@@ -465,9 +465,12 @@
 
 .rr-item-row__note {
     display: block;
-    font-size: 12px;
-    color: var(--rr-muted);
-    font-style: italic;
+    font-size: 13px;
+    color: var(--rr-mid);
+    margin-top: 4px;
+    padding-left: 10px;
+    border-left: 2px solid var(--rr-mint);
+    line-height: 1.45;
 }
 
 /* ── Purchase button ────────────────────────────────────────────────────── */
