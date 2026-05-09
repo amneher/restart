@@ -44,6 +44,7 @@ final class EnqueueStartRegistryTest extends ThemeTestCase
         Functions\when('get_stylesheet_uri')->justReturn('#');
         Functions\when('wp_get_theme')->justReturn(new WP_Theme());
         Functions\when('get_stylesheet_directory_uri')->justReturn('http://example.com');
+        Functions\when('admin_url')->justReturn('#');
         Functions\when('wp_enqueue_style')->justReturn(null);
         Functions\when('wp_localize_script')->justReturn(true);
 
@@ -77,6 +78,7 @@ final class EnqueueStartRegistryTest extends ThemeTestCase
         Functions\when('get_stylesheet_directory_uri')->justReturn('http://example.com');
         Functions\when('get_stylesheet_uri')->justReturn('#');
         Functions\when('home_url')->justReturn('http://example.com/my-account/');
+        Functions\when('admin_url')->justReturn('#');
         Functions\when('wp_enqueue_style')->justReturn(null);
         Functions\when('update_user_meta')->justReturn(true);
 
@@ -108,6 +110,7 @@ final class EnqueueStartRegistryTest extends ThemeTestCase
         Functions\when('get_stylesheet_directory_uri')->justReturn('http://example.com');
         Functions\when('get_stylesheet_uri')->justReturn('#');
         Functions\when('home_url')->justReturn('http://example.com/my-account/');
+        Functions\when('admin_url')->justReturn('#');
         Functions\when('wp_enqueue_style')->justReturn(null);
         Functions\when('wp_enqueue_script')->justReturn(null);
         Functions\when('wp_localize_script')->justReturn(true);
