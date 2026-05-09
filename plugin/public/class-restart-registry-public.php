@@ -458,6 +458,12 @@ class Restart_Registry_Public {
                                        placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
                             </div>
                             <input type="hidden" id="rr-edit-item-image-url" name="image_url">
+                            <div class="rr-form-group rr-form-group--checkbox">
+                                <label for="rr-edit-item-fulfilled">
+                                    <input type="checkbox" id="rr-edit-item-fulfilled" name="mark_fulfilled" value="1">
+                                    <?php _e('Mark as fulfilled (no more needed)', 'restart-registry'); ?>
+                                </label>
+                            </div>
                             <div class="rr-form-actions">
                                 <button type="submit" class="rr-button"><?php _e('Save Changes', 'restart-registry'); ?></button>
                                 <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
@@ -564,9 +570,20 @@ class Restart_Registry_Public {
             $name_inner .= '<span class="rr-item-row__note">' . esc_html($item['description']) . '</span>';
         }
 
-        $fulfilled_inner = $is_fulfilled
+        // Fulfilled column: shows the existing status (✓ or n/m) and a checkbox
+        // for the owner to flip "no more needed" — clamps qty_needed to
+        // qty_purchased server-side. Disabled until at least one purchase exists.
+        $status_inner = $is_fulfilled
             ? '<span class="rr-fulfilled-check" title="' . esc_attr__('Fulfilled', 'restart-registry') . '">&#10003;</span>'
             : esc_html($qty_purchased . ' / ' . $qty_needed);
+        $checkbox_disabled = (!$is_fulfilled && $qty_purchased < 1) ? ' disabled' : '';
+        $checkbox_title    = $checkbox_disabled
+            ? esc_attr__('At least one must be purchased before you can mark this fulfilled.', 'restart-registry')
+            : esc_attr__('Mark as fulfilled (no more needed)', 'restart-registry');
+        $fulfilled_inner = '<label class="rr-fulfilled-toggle" title="' . $checkbox_title . '">'
+            . '<input type="checkbox" class="rr-mark-fulfilled" data-item-id="' . esc_attr($item['id']) . '"' . $checkbox_disabled . ($is_fulfilled ? ' checked' : '') . '>'
+            . '<span class="rr-fulfilled-status">' . $status_inner . '</span>'
+            . '</label>';
 
         return '<li class="rr-item-row ' . ($is_fulfilled ? 'rr-item-row--fulfilled' : '') . '"'
             . ' data-item-id="' . esc_attr($item['id']) . '"'
@@ -928,6 +945,19 @@ class Restart_Registry_Public {
         if (isset($_POST['quantity']))    $data['quantity']    = (int) $_POST['quantity'];
         if (isset($_POST['price']))       $data['price']       = (float) $_POST['price'];
         if (isset($_POST['image_url']))   $data['image_url']   = esc_url_raw($_POST['image_url']);
+
+        // mark_fulfilled override: clamp quantity_needed down to quantity_purchased.
+        // Wins over any explicit `quantity` in the same request — if the owner
+        // ticks "fulfilled" on save, that's the intended end state.
+        if (!empty($_POST['mark_fulfilled']) && $_POST['mark_fulfilled'] !== '0') {
+            $existing = $this->controller->get_item($item_id);
+            if ($existing && !is_wp_error($existing)) {
+                $qty_purchased = (int) ($existing['quantity_purchased'] ?? 0);
+                if ($qty_purchased > 0) {
+                    $data['quantity'] = $qty_purchased;
+                }
+            }
+        }
 
         $result = $this->controller->update_item($item_id, $data);
         if (is_wp_error($result)) {

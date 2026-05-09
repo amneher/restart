@@ -437,6 +437,31 @@
 .rr-item-row__fulfilled--done,
 .rr-item-card__fulfilled--done { color: var(--rr-teal); }
 
+.rr-fulfilled-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+.rr-fulfilled-toggle input[disabled] { cursor: not-allowed; opacity: 0.4; }
+.rr-fulfilled-toggle input[disabled] + .rr-fulfilled-status { opacity: 0.6; }
+
+.rr-form-group--checkbox {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+}
+.rr-form-group--checkbox label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--rr-font-ui);
+    font-size: 13px;
+    color: var(--rr-mid);
+    cursor: pointer;
+}
+
 .rr-item-row__actions,
 .rr-item-card__actions {
     text-align: right;
