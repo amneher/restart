@@ -295,12 +295,14 @@ class Restart_Registry_Public {
                 </div>
             <?php endif; ?>
 
-            <?php if (!empty($registry['description'])): ?>
-                <section class="rr-story">
-                    <h2 class="rr-story__heading"><?php _e('My Story', 'restart-registry'); ?></h2>
+            <section class="rr-story">
+                <h2 class="rr-story__heading"><?php _e('My Story', 'restart-registry'); ?></h2>
+                <?php if (!empty($registry['description'])): ?>
                     <p class="rr-story__text"><?php echo nl2br(esc_html($registry['description'])); ?></p>
-                </section>
-            <?php endif; ?>
+                <?php else: ?>
+                    <p class="rr-story__text rr-story__text--placeholder"><?php esc_html_e('Tell visitors why this registry matters to you. Open Settings to add your story.', 'restart-registry'); ?></p>
+                <?php endif; ?>
+            </section>
 
             <hr class="rr-divider">
 
@@ -631,12 +633,14 @@ class Restart_Registry_Public {
                             <?php endif; ?>
                         </p>
                     <?php endif; ?>
-                    <?php if (!empty($registry['description'])): ?>
-                        <section class="rr-story">
-                            <h2 class="rr-story__heading"><?php _e('Their Story', 'restart-registry'); ?></h2>
+                    <section class="rr-story">
+                        <h2 class="rr-story__heading"><?php _e('Their Story', 'restart-registry'); ?></h2>
+                        <?php if (!empty($registry['description'])): ?>
                             <p class="rr-story__text"><?php echo nl2br(esc_html($registry['description'])); ?></p>
-                        </section>
-                    <?php endif; ?>
+                        <?php else: ?>
+                            <p class="rr-story__text rr-story__text--placeholder"><?php echo esc_html(sprintf(__('%s hasn\'t shared their story yet.', 'restart-registry'), $owner_name)); ?></p>
+                        <?php endif; ?>
+                    </section>
                 </div>
                 <?php if ($hero_url): ?>
                     <div class="rr-registry-top__hero">
