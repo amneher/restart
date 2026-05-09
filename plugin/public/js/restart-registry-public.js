@@ -10,14 +10,14 @@
         // ── Modal helpers ────────────────────────────────────────────────────
         function openModal(id) {
             var $modal = $(id);
-            $modal.attr('aria-hidden', 'false').addClass('is-open');
+            $modal.attr('aria-inert', 'false').addClass('is-open');
             $('body').addClass('rr-modal-open');
             $modal.find('.rr-modal__close, .rr-modal-cancel').first().focus();
         }
 
         function closeModal(id) {
             var $modal = id ? $(id) : $('.rr-modal.is-open');
-            $modal.attr('aria-hidden', 'true').removeClass('is-open');
+            $modal.attr('aria-inert', 'true').removeClass('is-open');
             if (!$('.rr-modal.is-open').length) {
                 $('body').removeClass('rr-modal-open');
             }

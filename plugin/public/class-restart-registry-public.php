@@ -262,8 +262,8 @@ class Restart_Registry_Public {
                     <input type="checkbox" id="rr-public-toggle" <?php checked($registry['is_public']); ?>>
                     <span class="rr-toggle__slider"></span>
                     <span class="rr-toggle__label" data-on="<?php esc_attr_e('Public', 'restart-registry'); ?>" data-off="<?php esc_attr_e('Private', 'restart-registry'); ?>"><?php echo $registry['is_public'] ? esc_html__('Public', 'restart-registry') : esc_html__('Private', 'restart-registry'); ?></span>
+                    <button type="button" class="rr-toggle-help" id="rr-public-help-toggle" aria-label="<?php esc_attr_e('What does Public mean?', 'restart-registry'); ?>" title="<?php esc_attr_e('What does Public mean?', 'restart-registry'); ?>">&#9432;</button>
                 </label>
-                <button type="button" class="rr-toggle-help" id="rr-public-help-toggle" aria-label="<?php esc_attr_e('What does Public mean?', 'restart-registry'); ?>" title="<?php esc_attr_e('What does Public mean?', 'restart-registry'); ?>">&#9432;</button>
                 <button type="button" class="rr-btn-ghost" id="rr-share-toggle">&#8679; <?php _e('Share', 'restart-registry'); ?></button>
                 <button type="button" class="rr-btn-ghost" id="rr-edit-registry">&#9881; <?php _e('Settings', 'restart-registry'); ?></button>
             </div>
@@ -368,7 +368,7 @@ class Restart_Registry_Public {
             </div>
 
             <!-- Public-toggle help modal -->
-            <div class="rr-modal" id="rr-public-help-modal" aria-hidden="true">
+            <div class="rr-modal" id="rr-public-help-modal" aria-inert="true">
                 <div class="rr-modal__backdrop"></div>
                 <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-public-help-modal-title" aria-modal="true">
                     <div class="rr-modal__header">

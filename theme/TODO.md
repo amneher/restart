@@ -1,13 +1,16 @@
-## Open TODOs
+# Open TODOs
 
-### Next up — Phase D (in the 18-item backlog plan)
+## Next up — Phase D (in the 18-item backlog plan)
+
 - **Optional registry hero image.** Plumb media-library uploads through start-a-registry → registry post thumbnail → owner + public single render. Decision locked: WP media library upload via the CPT's `thumbnail` support (size cap proposed 5 MB). Touches lambda model, plugin save/render, theme display.
 - **Optional recipient / divorcee fields.** Add `recipient_name`, `recipient_relationship`, `recipient_email` (optional), and `is_for_self` (bool) for cases where the registry creator isn't the person rebuilding. Touches lambda model + plugin form + theme display. When `is_for_self=false`, surface recipient name/relationship in the registry header instead of (or alongside) the owner display name.
 
 ### Deferred — needs its own planning + eng review (Phase E)
+
 - **Price scraping subsystem.** Pull item prices from URLs at item add and on a refresh cadence. Store `price_last_checked_at`. Add an admin "Refresh prices" button + a configurable schedule. Per-retailer parsers, fallback strategies, rate limiting, scrape-friendly headers — all need a /plan-eng-review pass before code. Decision locked: defer until after Phase D.
 
 ### Pre-existing
+
 - **Build `theme/templates/page-find-a-registry.html`.** The "Find a Registry" page exists (created in seed) but falls back to `page.html` because the dedicated template was never built. Add a real one when the search / lookup UX is designed.
 - **Contact form submissions CPT (`rr_contact_message`).** The contact modal currently only emails `admin_email` via `wp_mail` — no record on the WP side. Register a private (not publicly queryable) CPT, write each submission as a post with name / email / subject / message fields, surface a basic admin list table. Keep the email path; the CPT is a parallel sink.
 
