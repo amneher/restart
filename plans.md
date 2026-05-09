@@ -53,12 +53,12 @@ Both route to a single handler that:
 - Add JS tests: submit success path (mock fetch → success response), submit error path, honeypot suppression at the JS layer.
 - Add PHP test in `theme/tests/unit/` for the handler: nonce missing → 403; honeypot filled → silent success without sending email; valid input → `wp_mail` invoked with expected args.
 
-## Decisions I'd like you to weigh in on
+## Decisions (locked in)
 
-1. **Form fields** — proposed: name + email + message. Should I also add an optional Subject field? (default no, simpler is better)
-2. **Where messages go** — proposed: email to `admin_email` only. Want me to also log submissions to a CPT (`rr_contact_message`) so they're queryable in WP admin even if the email bounces?
-3. **After-submit UX** — proposed: inline "Thanks!" message in the modal, auto-close after 3s. Alternative: keep modal open with success message until user closes manually. Which do you prefer?
-4. **Same PR, or separate?** — proposed: amend the audit PR (#5) since the `#contact` issue was flagged there. Alternative: separate branch + PR.
+1. **Fields**: name, email, **subject (optional)**, message.
+2. **Where messages go**: email to `admin_email` only. CPT (`rr_contact_message`) for record-keeping is recorded as future work in `theme/TODO.md` — not in this PR.
+3. **After-submit UX**: inline success message, auto-close after 3s.
+4. **PR**: new branch `theme/contact-modal-form`, separate PR.
 
 ## Risk
 
@@ -67,15 +67,15 @@ Both route to a single handler that:
 
 ---
 
-## Todo (filled in once decisions land)
+## Todo
 
-- [ ] Decide on the four open questions above.
-- [ ] Replace WPForms placeholder with native form markup.
-- [ ] Add nonce + honeypot to form.
-- [ ] Add AJAX handler in `functions.php`.
-- [ ] Extend `contact-modal.js` for submit flow.
+- [ ] Record the future-work CPT idea in `theme/TODO.md`.
+- [ ] Replace WPForms placeholder with native form markup (name/email/subject/message + honeypot + nonce).
+- [ ] Add `wp_ajax_*` + `wp_ajax_nopriv_*` handler in `functions.php`. Email to `admin_email`, Reply-To set to user.
+- [ ] Localize `restartContact` (ajax URL) for the JS.
+- [ ] Extend `contact-modal.js` for submit flow with success/error UI; auto-close 3s after success.
 - [ ] Add CSS for form-in-modal.
-- [ ] Update + add JS tests.
+- [ ] Update existing JS tests; add tests for submit success / submit error / honeypot.
 - [ ] Add PHP handler test.
-- [ ] Verify in browser: submit form, check inbox / mail log, check error paths.
-- [ ] Push to branch (amend PR #5 or open new).
+- [ ] Verify in browser: submit form, confirm wp_mail invoked (mail log or test mode); error paths.
+- [ ] Push branch + open PR.
