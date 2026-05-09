@@ -4,7 +4,7 @@ Theme URI: https://the-restart.co
 Author: Andrew Neher
 Author URI: https://the-restart.co
 Description: Gift registry theme for people restarting after a divorce.
-Version: 1.0.5
+Version: 1.0.6
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: therestart
@@ -87,10 +87,21 @@ body {
     font-size: 13px;
     font-weight: 700;
     transition: color 0.2s;
+    /* Keep each nav label on a single line at tablet widths (~768px) where
+       the desktop nav is still showing but space is tight. */
+    white-space: nowrap;
 }
 
-.site-header .wp-block-navigation a:hover {
+.site-header .wp-block-navigation a:hover,
+.site-header .wp-block-navigation a.is-current,
+.site-header .wp-block-navigation a[aria-current="page"] {
     color: var(--wp--preset--color--primary) !important;
+}
+
+.site-header .wp-block-navigation a.is-current,
+.site-header .wp-block-navigation a[aria-current="page"] {
+    border-bottom: 2px solid var(--wp--preset--color--primary);
+    padding-bottom: 2px;
 }
 
 .site-header .wp-block-navigation__responsive-container-open,
@@ -173,6 +184,13 @@ a:hover { color: var(--wp--preset--color--primary); }
     background-position: center top;
 }
 
+/* Mint body copy on the hero loses contrast where the photo is brightest.
+   A subtle drop-shadow restores legibility without darkening the photo. */
+.hero-cover p,
+.hero-page p {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
 /* ── Registry pages ── */
 .rr-page-wrap {
     max-width: 1200px;
@@ -182,7 +200,9 @@ a:hover { color: var(--wp--preset--color--primary); }
 
 .rr-registry-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    /* auto-fit (vs auto-fill) collapses empty tracks so 2-card or 5-card rows
+       fill the row instead of leaving a gap on the right. */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
 }
 
@@ -218,11 +238,13 @@ a:hover { color: var(--wp--preset--color--primary); }
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.5rem;
 }
 
 .restart-my-account__nav a {
-    display: inline-block;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
     font-family: var(--wp--preset--font-family--montserrat);
     font-size: 14px;
     font-weight: 700;
@@ -230,14 +252,17 @@ a:hover { color: var(--wp--preset--color--primary); }
     letter-spacing: 0.05em;
     color: #47b4b0;
     text-decoration: none;
-    padding: 0.5rem 0;
-    border-bottom: 2px solid transparent;
-    transition: border-color 0.15s ease, color 0.15s ease;
+    padding: 0.5rem 1rem;
+    border: 1px solid #c8e8d4;
+    border-radius: 4px;
+    background: #ffffff;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .restart-my-account__nav a:hover {
     color: #193540;
-    border-bottom-color: #47b4b0;
+    background: #c8e8d4;
+    border-color: #47b4b0;
 }
 
 .restart-my-account__edit-panel {
@@ -395,11 +420,33 @@ a:hover { color: var(--wp--preset--color--primary); }
 }
 
 /* Footer */
+/* Match header bar's container so columns + nav line up at the same viewport
+   gutters at desktop widths. Defaults to theme.json contentSize (780px) without
+   this override, leaving footer content visibly inset further than the header. */
 .site-footer__columns {
     min-width: 0;
+    max-width: 1200px !important;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 4vw, 40px);
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* Equalize Explore (6 links) and Account (3 links) columns so they don't
+   visually drift apart at desktop widths. Brand column (first child) keeps
+   its content width. */
+@media (min-width: 601px) {
+    .site-footer__columns > :nth-child(2),
+    .site-footer__columns > :nth-child(3) {
+        flex: 1 1 0;
+        min-width: 0;
+    }
 }
 
 @media (max-width: 600px) {
+    .site-footer {
+        padding-inline: var(--wp--preset--spacing--small);
+    }
     .site-footer__columns {
         flex-direction: column !important;
         gap: 2rem;
@@ -451,6 +498,20 @@ a:hover { color: var(--wp--preset--color--primary); }
     margin-bottom: 1.5rem;
 }
 
+/* ── Button color convention ──
+ * Two colors are used intentionally and consistently:
+ * - GOLD (--wp--preset--color--primary, #ebd060): marketing/discovery CTAs.
+ *   Used on the front page hero and call-to-action patterns ("Create a
+ *   Registry", "Find a Registry"). These are aspirational, journey-starting
+ *   actions and they sit on photo backgrounds where gold reads brightly.
+ * - TEAL (--wp--preset--color--accent, #47b4b0): in-app action buttons.
+ *   Login submit, profile save, registry create, purchase — all happen
+ *   inside the app on plain backgrounds, where teal carries the brand
+ *   identity without competing with photo content.
+ *
+ * Don't mix them: a "Submit" button on a marketing page and a "Submit"
+ * button on /login both use teal. A "Get started" CTA on any page uses gold.
+ */
 .restart-btn {
     display: inline-block;
     background-color: var(--wp--preset--color--primary);
