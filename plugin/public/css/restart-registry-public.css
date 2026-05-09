@@ -179,6 +179,28 @@
     min-width: 44px;
 }
 
+/* Help icon next to the public/private toggle. Hover surfaces the native
+   tooltip (title attr); click opens the explanation modal. */
+.rr-toggle-help {
+    background: none;
+    border: none;
+    color: var(--rr-muted);
+    font-size: 16px;
+    line-height: 1;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: color 0.15s, background-color 0.15s;
+}
+.rr-toggle-help:hover {
+    color: var(--rr-teal);
+    background-color: var(--rr-mint-bg);
+}
+.rr-toggle-help:focus {
+    outline: 2px solid var(--rr-teal);
+    outline-offset: 2px;
+}
+
 /* ── Registry title & owner line ────────────────────────────────────────── */
 .rr-registry-header { margin-bottom: 20px; }
 

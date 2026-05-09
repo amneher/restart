@@ -262,6 +262,7 @@ class Restart_Registry_Public {
                     <span class="rr-toggle__slider"></span>
                     <span class="rr-toggle__label" data-on="<?php esc_attr_e('Public', 'restart-registry'); ?>" data-off="<?php esc_attr_e('Private', 'restart-registry'); ?>"><?php echo $registry['is_public'] ? esc_html__('Public', 'restart-registry') : esc_html__('Private', 'restart-registry'); ?></span>
                 </label>
+                <button type="button" class="rr-toggle-help" id="rr-public-help-toggle" aria-label="<?php esc_attr_e('What does Public mean?', 'restart-registry'); ?>" title="<?php esc_attr_e('What does Public mean?', 'restart-registry'); ?>">&#9432;</button>
                 <button type="button" class="rr-btn-ghost" id="rr-share-toggle">&#8679; <?php _e('Share', 'restart-registry'); ?></button>
                 <button type="button" class="rr-btn-ghost" id="rr-edit-registry">&#9881; <?php _e('Settings', 'restart-registry'); ?></button>
             </div>
@@ -378,6 +379,24 @@ class Restart_Registry_Public {
                 </label>
                 <p id="rr-notify-prefs-status" class="rr-notify-status" aria-live="polite"></p>
             </section>
+
+            <!-- Public-toggle help modal -->
+            <div class="rr-modal" id="rr-public-help-modal" aria-hidden="true">
+                <div class="rr-modal__backdrop"></div>
+                <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-public-help-modal-title" aria-modal="true">
+                    <div class="rr-modal__header">
+                        <h3 id="rr-public-help-modal-title"><?php _e('Public vs. private', 'restart-registry'); ?></h3>
+                        <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                    </div>
+                    <div class="rr-modal__body">
+                        <p><strong><?php _e('Private (default)', 'restart-registry'); ?></strong></p>
+                        <p><?php _e('Only people you invite can view the registry. Use Share to send a private invitation by email or username — invitees see the registry when they sign in.', 'restart-registry'); ?></p>
+                        <p><strong><?php _e('Public', 'restart-registry'); ?></strong></p>
+                        <p><?php _e('Anyone with the link can view the registry, no sign-in required. Your registry may also appear in the Find a Registry listing if your account allows it. Your email and account details are never shown — only the registry title, story, and items.', 'restart-registry'); ?></p>
+                        <p><?php _e('You can switch between public and private at any time.', 'restart-registry'); ?></p>
+                    </div>
+                </div>
+            </div>
 
             <!-- Share modal -->
             <div class="rr-modal" id="rr-share-modal" aria-hidden="true">

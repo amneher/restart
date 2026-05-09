@@ -100,6 +100,11 @@
             });
         });
 
+        // ── Public-toggle help modal ─────────────────────────────────────────
+        $('#rr-public-help-toggle').on('click', function() {
+            openModal('#rr-public-help-modal');
+        });
+
         // ── Share modal ──────────────────────────────────────────────────────
         $('#rr-share-toggle').on('click', function() {
             openModal('#rr-share-modal');
