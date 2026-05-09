@@ -257,7 +257,8 @@
 
 /* ── Story section ──────────────────────────────────────────────────────── */
 .rr-story { margin-top: 16px; }
-.rr-story__heading {
+.rr-story__heading,
+.rr-notification-prefs__heading {
     font-family: var(--rr-font-ui);
     font-size: 11px;
     font-weight: 700;
@@ -265,6 +266,13 @@
     letter-spacing: 0.08em;
     color: var(--rr-teal);
     margin: 0 0 8px;
+}
+
+/* ── Notification preferences section ───────────────────────────────────── */
+.rr-notification-prefs {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rr-border);
 }
 .rr-story__text {
     font-family: var(--rr-font-body);
