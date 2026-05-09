@@ -531,6 +531,7 @@
                 success: function(response) {
                     if (response.success) {
                         showNotice(response.data.message, 'success');
+                        appendInviteeRow($invitee.val());
                         $invitee.val('');
                     } else {
                         alert(response.data.message || restartRegistry.strings.error);
@@ -543,6 +544,59 @@
                 }
             });
         });
+
+        // ── Remove invitee ───────────────────────────────────────────────────
+        $(document).on('click', '.rr-remove-invitee', function() {
+            var $btn  = $(this);
+            var $item = $btn.closest('.rr-invitees__item');
+            var email = $item.data('invitee');
+            if (!email) return;
+            if (!confirm('Remove ' + email + '?')) return;
+            $btn.prop('disabled', true);
+            $.ajax({
+                url:  restartRegistry.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action:      'restart_registry_remove_invitee',
+                    nonce:       restartRegistry.nonce,
+                    registry_id: registryId,
+                    invitee:     email
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $item.remove();
+                        renderEmptyInviteesIfNeeded();
+                    } else {
+                        alert(response.data.message || restartRegistry.strings.error);
+                        $btn.prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    alert(restartRegistry.strings.error);
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
+
+        function appendInviteeRow(email) {
+            var $list  = $('#rr-invitees-list');
+            $list.find('.rr-invitees__empty').remove();
+            var safeEmail = $('<div>').text(email).html();
+            $list.append(
+                '<li class="rr-invitees__item" data-invitee="' + safeEmail + '">' +
+                '<span class="rr-invitees__email">' + safeEmail + '</span>' +
+                '<button type="button" class="rr-btn-icon rr-btn-icon--danger rr-remove-invitee" title="Remove invitee" aria-label="Remove ' + safeEmail + '">✕</button>' +
+                '</li>'
+            );
+        }
+
+        function renderEmptyInviteesIfNeeded() {
+            var $list = $('#rr-invitees-list');
+            if ($list.find('.rr-invitees__item').length === 0) {
+                var emptyText = $('#rr-invitees-section').data('empty-text') || 'No one invited yet.';
+                $list.append('<li class="rr-invitees__empty">' + emptyText + '</li>');
+            }
+        }
 
         // ── Helpers ──────────────────────────────────────────────────────────
         function updateItemCount() {

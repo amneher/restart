@@ -38,6 +38,7 @@ class Restart_Registry_Public {
         add_action('wp_ajax_restart_registry_mark_purchased',        [$this, 'ajax_mark_purchased']);
         add_action('wp_ajax_nopriv_restart_registry_mark_purchased', [$this, 'ajax_mark_purchased']);
         add_action('wp_ajax_restart_registry_send_invite',           [$this, 'ajax_send_invite']);
+        add_action('wp_ajax_restart_registry_remove_invitee',        [$this, 'ajax_remove_invitee']);
         add_action('wp_ajax_restart_registry_create',                [$this, 'ajax_create_registry']);
         add_action('wp_ajax_restart_registry_update',                [$this, 'ajax_update_registry']);
         add_action('wp_ajax_restart_registry_fetch_url',                    [$this, 'ajax_fetch_url']);
@@ -418,6 +419,25 @@ class Restart_Registry_Public {
                             <input type="text" name="invitee" placeholder="<?php esc_attr_e('Email or username…', 'restart-registry'); ?>" required>
                             <button type="submit" class="rr-button rr-button-small"><?php _e('Send Invite', 'restart-registry'); ?></button>
                         </form>
+
+                        <?php
+                        $invitees = $this->controller->get_registry_invites($registry['id']);
+                        ?>
+                        <div class="rr-invitees" id="rr-invitees-section" data-empty-text="<?php esc_attr_e('No one invited yet.', 'restart-registry'); ?>">
+                            <h4 class="rr-invitees__heading"><?php _e('Manage invitees', 'restart-registry'); ?></h4>
+                            <ul class="rr-invitees__list" id="rr-invitees-list">
+                                <?php if (empty($invitees)): ?>
+                                    <li class="rr-invitees__empty"><?php esc_html_e('No one invited yet.', 'restart-registry'); ?></li>
+                                <?php else: ?>
+                                    <?php foreach ($invitees as $row): ?>
+                                        <li class="rr-invitees__item" data-invitee="<?php echo esc_attr($row['email']); ?>">
+                                            <span class="rr-invitees__email"><?php echo esc_html($row['email']); ?></span>
+                                            <button type="button" class="rr-btn-icon rr-btn-icon--danger rr-remove-invitee" title="<?php esc_attr_e('Remove invitee', 'restart-registry'); ?>" aria-label="<?php echo esc_attr(sprintf(__('Remove %s', 'restart-registry'), $row['email'])); ?>">&#10005;</button>
+                                        </li>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1024,6 +1044,30 @@ class Restart_Registry_Public {
         }
 
         wp_send_json_success(['message' => __('Invitation sent!', 'restart-registry')]);
+    }
+
+    public function ajax_remove_invitee(): void {
+        check_ajax_referer('restart_registry_nonce', 'nonce');
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
+        }
+
+        $registry_id = (int) ($_POST['registry_id'] ?? 0);
+        $invitee     = sanitize_text_field($_POST['invitee'] ?? '');
+
+        if (!$this->controller->can_edit_registry($registry_id, get_current_user_id())) {
+            wp_send_json_error(['message' => __('You cannot manage this registry.', 'restart-registry')]);
+        }
+        if (empty($invitee)) {
+            wp_send_json_error(['message' => __('Missing invitee identifier.', 'restart-registry')]);
+        }
+
+        $result = $this->controller->delete_invitee($registry_id, $invitee);
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success(['message' => __('Invitee removed.', 'restart-registry')]);
     }
 
     public function ajax_update_registry(): void {
