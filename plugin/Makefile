@@ -22,6 +22,7 @@ test:
 
 build:
 	mkdir -p $(DIST_DIR)
+	rm -f $(DIST_DIR)/$(PLUGIN_NAME).zip
 	rm -rf /tmp/$(PLUGIN_NAME)
 	rsync -a --delete --exclude-from=.distignore $(CURDIR)/ /tmp/$(PLUGIN_NAME)/
 	cd /tmp && zip -r $(DIST_DIR)/$(PLUGIN_NAME).zip $(PLUGIN_NAME)

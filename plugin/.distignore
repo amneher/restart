@@ -16,3 +16,4 @@ phpunit.xml
 node_modules
 vendor
 tests
+coverage
