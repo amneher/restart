@@ -13,11 +13,18 @@
         "phpunit/phpunit": "^12",
         "brain/monkey": "^2.7",
         "mockery/mockery": "^1.6",
-        "monolog/monolog": "^2.0"
+        "monolog/monolog": "^2.0",
+        "squizlabs/php_codesniffer": "*",
+        "wp-coding-standards/wpcs": "^3.3"
     },
     "autoload-dev": {
         "psr-4": {
             "RestartRegistry\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
         }
     }
 }
