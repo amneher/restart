@@ -89,14 +89,14 @@ beforeEach(() => {
 describe('modal open/close', () => {
     it('opens the item-detail modal when an item name button is clicked', () => {
         $('.rr-item-name-btn').trigger('click');
-        expect($('#rr-item-detail-modal').attr('aria-hidden')).toBe('false');
+        expect($('#rr-item-detail-modal').attr('aria-inert')).toBe('false');
         expect($('#rr-item-detail-modal').hasClass('is-open')).toBe(true);
     });
 
     it('closes the modal when the × button is clicked', () => {
         $('.rr-item-name-btn').trigger('click');
         $('.rr-modal__close').trigger('click');
-        expect($('#rr-item-detail-modal').attr('aria-hidden')).toBe('true');
+        expect($('#rr-item-detail-modal').attr('aria-inert')).toBe('true');
         expect($('#rr-item-detail-modal').hasClass('is-open')).toBe(false);
     });
 
