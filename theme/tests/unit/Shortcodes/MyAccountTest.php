@@ -35,6 +35,8 @@ final class MyAccountTest extends ThemeTestCase
         Functions\when('home_url')->justReturn('#');
         Functions\when('wp_logout_url')->justReturn('#');
         Functions\when('wp_create_nonce')->justReturn('test-nonce');
+        Functions\when('get_user_meta')->justReturn('');
+        Functions\when('checked')->justReturn('');
 
         $output = $this->invokeShortcode('restart_my_account');
 

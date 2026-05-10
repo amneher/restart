@@ -38,6 +38,7 @@ class Restart_Registry_Public {
         add_action('wp_ajax_restart_registry_mark_purchased',        [$this, 'ajax_mark_purchased']);
         add_action('wp_ajax_nopriv_restart_registry_mark_purchased', [$this, 'ajax_mark_purchased']);
         add_action('wp_ajax_restart_registry_send_invite',           [$this, 'ajax_send_invite']);
+        add_action('wp_ajax_restart_registry_remove_invitee',        [$this, 'ajax_remove_invitee']);
         add_action('wp_ajax_restart_registry_create',                [$this, 'ajax_create_registry']);
         add_action('wp_ajax_restart_registry_update',                [$this, 'ajax_update_registry']);
         add_action('wp_ajax_restart_registry_fetch_url',                    [$this, 'ajax_fetch_url']);
@@ -261,6 +262,7 @@ class Restart_Registry_Public {
                     <input type="checkbox" id="rr-public-toggle" <?php checked($registry['is_public']); ?>>
                     <span class="rr-toggle__slider"></span>
                     <span class="rr-toggle__label" data-on="<?php esc_attr_e('Public', 'restart-registry'); ?>" data-off="<?php esc_attr_e('Private', 'restart-registry'); ?>"><?php echo $registry['is_public'] ? esc_html__('Public', 'restart-registry') : esc_html__('Private', 'restart-registry'); ?></span>
+                    <button type="button" class="rr-toggle-help" id="rr-public-help-toggle" aria-label="<?php esc_attr_e('What does Public mean?', 'restart-registry'); ?>" title="<?php esc_attr_e('What does Public mean?', 'restart-registry'); ?>">&#9432;</button>
                 </label>
                 <button type="button" class="rr-btn-ghost" id="rr-share-toggle">&#8679; <?php _e('Share', 'restart-registry'); ?></button>
                 <button type="button" class="rr-btn-ghost" id="rr-edit-registry">&#9881; <?php _e('Settings', 'restart-registry'); ?></button>
@@ -365,19 +367,23 @@ class Restart_Registry_Public {
                 <?php endif; ?>
             </div>
 
-            <!-- Notification preferences -->
-            <?php
-            $notify_pref = get_user_meta(get_current_user_id(), 'restart_notify_on_purchase', true);
-            $notify_on   = $notify_pref !== '0';
-            ?>
-            <section class="rr-notification-prefs">
-                <h2 class="rr-notification-prefs__heading"><?php _e('Notification Preferences', 'restart-registry'); ?></h2>
-                <label class="rr-checkbox-label">
-                    <input type="checkbox" id="rr-notify-purchase" <?php checked($notify_on); ?>>
-                    <?php _e('Email me when items are purchased', 'restart-registry'); ?>
-                </label>
-                <p id="rr-notify-prefs-status" class="rr-notify-status" aria-live="polite"></p>
-            </section>
+            <!-- Public-toggle help modal -->
+            <div class="rr-modal" id="rr-public-help-modal" aria-inert="true">
+                <div class="rr-modal__backdrop"></div>
+                <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-public-help-modal-title" aria-modal="true">
+                    <div class="rr-modal__header">
+                        <h3 id="rr-public-help-modal-title"><?php _e('Public vs. private', 'restart-registry'); ?></h3>
+                        <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                    </div>
+                    <div class="rr-modal__body">
+                        <p><strong><?php _e('Private (default)', 'restart-registry'); ?></strong></p>
+                        <p><?php _e('Only people you invite can view the registry. Use Share to send a private invitation by email or username — invitees see the registry when they sign in.', 'restart-registry'); ?></p>
+                        <p><strong><?php _e('Public', 'restart-registry'); ?></strong></p>
+                        <p><?php _e('Anyone with the link can view the registry, no sign-in required. Your registry may also appear in the Find a Registry listing if your account allows it. Your email and account details are never shown — only the registry title, story, and items.', 'restart-registry'); ?></p>
+                        <p><?php _e('You can switch between public and private at any time.', 'restart-registry'); ?></p>
+                    </div>
+                </div>
+            </div>
 
             <!-- Share modal -->
             <div class="rr-modal" id="rr-share-modal" aria-hidden="true">
@@ -399,6 +405,25 @@ class Restart_Registry_Public {
                             <input type="text" name="invitee" placeholder="<?php esc_attr_e('Email or username…', 'restart-registry'); ?>" required>
                             <button type="submit" class="rr-button rr-button-small"><?php _e('Send Invite', 'restart-registry'); ?></button>
                         </form>
+
+                        <?php
+                        $invitees = $this->controller->get_registry_invites($registry['id']);
+                        ?>
+                        <div class="rr-invitees" id="rr-invitees-section" data-empty-text="<?php esc_attr_e('No one invited yet.', 'restart-registry'); ?>">
+                            <h4 class="rr-invitees__heading"><?php _e('Manage invitees', 'restart-registry'); ?></h4>
+                            <ul class="rr-invitees__list" id="rr-invitees-list">
+                                <?php if (empty($invitees)): ?>
+                                    <li class="rr-invitees__empty"><?php esc_html_e('No one invited yet.', 'restart-registry'); ?></li>
+                                <?php else: ?>
+                                    <?php foreach ($invitees as $row): ?>
+                                        <li class="rr-invitees__item" data-invitee="<?php echo esc_attr($row['email']); ?>">
+                                            <span class="rr-invitees__email"><?php echo esc_html($row['email']); ?></span>
+                                            <button type="button" class="rr-btn-icon rr-btn-icon--danger rr-remove-invitee" title="<?php esc_attr_e('Remove invitee', 'restart-registry'); ?>" aria-label="<?php echo esc_attr(sprintf(__('Remove %s', 'restart-registry'), $row['email'])); ?>">&#10005;</button>
+                                        </li>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -438,10 +463,12 @@ class Restart_Registry_Public {
                                 <input type="text" id="rr-edit-item-description" name="description"
                                        placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
                             </div>
-                            <div class="rr-form-group">
-                                <label for="rr-edit-item-image-url"><?php _e('Image URL', 'restart-registry'); ?></label>
-                                <input type="url" id="rr-edit-item-image-url" name="image_url"
-                                       placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
+                            <input type="hidden" id="rr-edit-item-image-url" name="image_url">
+                            <div class="rr-form-group rr-form-group--checkbox">
+                                <label for="rr-edit-item-fulfilled">
+                                    <input type="checkbox" id="rr-edit-item-fulfilled" name="mark_fulfilled" value="1">
+                                    <?php _e('Mark as fulfilled (no more needed)', 'restart-registry'); ?>
+                                </label>
                             </div>
                             <div class="rr-form-actions">
                                 <button type="submit" class="rr-button"><?php _e('Save Changes', 'restart-registry'); ?></button>
@@ -549,9 +576,20 @@ class Restart_Registry_Public {
             $name_inner .= '<span class="rr-item-row__note">' . esc_html($item['description']) . '</span>';
         }
 
-        $fulfilled_inner = $is_fulfilled
+        // Fulfilled column: shows the existing status (✓ or n/m) and a checkbox
+        // for the owner to flip "no more needed" — clamps qty_needed to
+        // qty_purchased server-side. Disabled until at least one purchase exists.
+        $status_inner = $is_fulfilled
             ? '<span class="rr-fulfilled-check" title="' . esc_attr__('Fulfilled', 'restart-registry') . '">&#10003;</span>'
             : esc_html($qty_purchased . ' / ' . $qty_needed);
+        $checkbox_disabled = (!$is_fulfilled && $qty_purchased < 1) ? ' disabled' : '';
+        $checkbox_title    = $checkbox_disabled
+            ? esc_attr__('At least one must be purchased before you can mark this fulfilled.', 'restart-registry')
+            : esc_attr__('Mark as fulfilled (no more needed)', 'restart-registry');
+        $fulfilled_inner = '<label class="rr-fulfilled-toggle" title="' . $checkbox_title . '">'
+            . '<input type="checkbox" class="rr-mark-fulfilled" data-item-id="' . esc_attr($item['id']) . '"' . $checkbox_disabled . ($is_fulfilled ? ' checked' : '') . '>'
+            . '<span class="rr-fulfilled-status">' . $status_inner . '</span>'
+            . '</label>';
 
         return '<li class="rr-item-row ' . ($is_fulfilled ? 'rr-item-row--fulfilled' : '') . '"'
             . ' data-item-id="' . esc_attr($item['id']) . '"'
@@ -914,6 +952,19 @@ class Restart_Registry_Public {
         if (isset($_POST['price']))       $data['price']       = (float) $_POST['price'];
         if (isset($_POST['image_url']))   $data['image_url']   = esc_url_raw($_POST['image_url']);
 
+        // mark_fulfilled override: clamp quantity_needed down to quantity_purchased.
+        // Wins over any explicit `quantity` in the same request — if the owner
+        // ticks "fulfilled" on save, that's the intended end state.
+        if (!empty($_POST['mark_fulfilled']) && $_POST['mark_fulfilled'] !== '0') {
+            $existing = $this->controller->get_item($item_id);
+            if ($existing && !is_wp_error($existing)) {
+                $qty_purchased = (int) ($existing['quantity_purchased'] ?? 0);
+                if ($qty_purchased > 0) {
+                    $data['quantity'] = $qty_purchased;
+                }
+            }
+        }
+
         $result = $this->controller->update_item($item_id, $data);
         if (is_wp_error($result)) {
             wp_send_json_error(['message' => $result->get_error_message()]);
@@ -979,6 +1030,30 @@ class Restart_Registry_Public {
         }
 
         wp_send_json_success(['message' => __('Invitation sent!', 'restart-registry')]);
+    }
+
+    public function ajax_remove_invitee(): void {
+        check_ajax_referer('restart_registry_nonce', 'nonce');
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
+        }
+
+        $registry_id = (int) ($_POST['registry_id'] ?? 0);
+        $invitee     = sanitize_text_field($_POST['invitee'] ?? '');
+
+        if (!$this->controller->can_edit_registry($registry_id, get_current_user_id())) {
+            wp_send_json_error(['message' => __('You cannot manage this registry.', 'restart-registry')]);
+        }
+        if (empty($invitee)) {
+            wp_send_json_error(['message' => __('Missing invitee identifier.', 'restart-registry')]);
+        }
+
+        $result = $this->controller->delete_invitee($registry_id, $invitee);
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success(['message' => __('Invitee removed.', 'restart-registry')]);
     }
 
     public function ajax_update_registry(): void {

@@ -51,6 +51,23 @@
         $panel.slideUp(200, function () { $panel.attr('hidden', ''); });
     });
 
+    // ── Notification preferences toggle ────────────────────────────────────────
+
+    $(document).on('click', '#rr-notification-prefs-toggle', function (e) {
+        e.preventDefault();
+        var $panel = $('#rr-notification-prefs-panel');
+        if ($panel.is(':hidden')) {
+            $panel.removeAttr('hidden').hide().slideDown(200);
+        } else {
+            $panel.slideUp(200, function () { $panel.attr('hidden', ''); });
+        }
+    });
+
+    $(document).on('click', '#rr-notification-prefs-close', function () {
+        var $panel = $('#rr-notification-prefs-panel');
+        $panel.slideUp(200, function () { $panel.attr('hidden', ''); });
+    });
+
     // ── Profile update form ────────────────────────────────────────────────────
 
     $(document).on('submit', '#rr-profile-form', function (e) {

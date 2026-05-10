@@ -10,14 +10,14 @@
         // ── Modal helpers ────────────────────────────────────────────────────
         function openModal(id) {
             var $modal = $(id);
-            $modal.attr('aria-hidden', 'false').addClass('is-open');
+            $modal.attr('aria-inert', 'false').addClass('is-open');
             $('body').addClass('rr-modal-open');
             $modal.find('.rr-modal__close, .rr-modal-cancel').first().focus();
         }
 
         function closeModal(id) {
             var $modal = id ? $(id) : $('.rr-modal.is-open');
-            $modal.attr('aria-hidden', 'true').removeClass('is-open');
+            $modal.attr('aria-inert', 'true').removeClass('is-open');
             if (!$('.rr-modal.is-open').length) {
                 $('body').removeClass('rr-modal-open');
             }
@@ -98,6 +98,11 @@
                     alert(restartRegistry.strings.error);
                 }
             });
+        });
+
+        // ── Public-toggle help modal ─────────────────────────────────────────
+        $('#rr-public-help-toggle').on('click', function() {
+            openModal('#rr-public-help-modal');
         });
 
         // ── Share modal ──────────────────────────────────────────────────────
@@ -280,6 +285,45 @@
             });
         });
 
+        // ── Mark fulfilled (per-row checkbox) ────────────────────────────────
+        // Owner-only affordance in each item row. Checking it tells the server
+        // to clamp quantity_needed down to quantity_purchased — equivalent to
+        // saying "no more of this needed". One-way at the row level: to revive
+        // a fulfilled item, edit it and bump quantity in the modal.
+        $(document).on('change', '.rr-mark-fulfilled', function() {
+            var $cb     = $(this);
+            var itemId  = $cb.data('item-id');
+            if (!$cb.is(':checked')) {
+                // Don't allow unchecking from the row — owner uses the modal.
+                $cb.prop('checked', true);
+                return;
+            }
+            $cb.prop('disabled', true);
+            $.ajax({
+                url:  restartRegistry.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action:         'restart_registry_update_item',
+                    nonce:          restartRegistry.nonce,
+                    item_id:        itemId,
+                    registry_id:    registryId,
+                    mark_fulfilled: '1'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        window.location.reload();
+                    } else {
+                        alert(response.data.message || restartRegistry.strings.error);
+                        $cb.prop('checked', false).prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    alert(restartRegistry.strings.error);
+                    $cb.prop('checked', false).prop('disabled', false);
+                }
+            });
+        });
+
         // ── Edit item (modal) ────────────────────────────────────────────────
         $(document).on('click', '.rr-edit-item', function() {
             var $row = $(this).closest('.rr-item-row, .rr-item-card');
@@ -290,6 +334,7 @@
             $('#rr-edit-item-quantity').val($row.data('quantity') || 1);
             $('#rr-edit-item-description').val($row.data('description'));
             $('#rr-edit-item-image-url').val($row.data('image-url'));
+            $('#rr-edit-item-fulfilled').prop('checked', false);
             openModal('#rr-item-edit-modal');
         });
 
@@ -303,16 +348,17 @@
                 url:  restartRegistry.ajaxUrl,
                 type: 'POST',
                 data: {
-                    action:      'restart_registry_update_item',
-                    nonce:       restartRegistry.nonce,
-                    item_id:     $('#rr-edit-item-id').val(),
-                    registry_id: registryId,
-                    name:        $('#rr-edit-item-name').val(),
-                    url:         $('#rr-edit-item-url').val(),
-                    price:       $('#rr-edit-item-price').val(),
-                    quantity:    $('#rr-edit-item-quantity').val(),
-                    description: $('#rr-edit-item-description').val(),
-                    image_url:   $('#rr-edit-item-image-url').val()
+                    action:         'restart_registry_update_item',
+                    nonce:          restartRegistry.nonce,
+                    item_id:        $('#rr-edit-item-id').val(),
+                    registry_id:    registryId,
+                    name:           $('#rr-edit-item-name').val(),
+                    url:            $('#rr-edit-item-url').val(),
+                    price:          $('#rr-edit-item-price').val(),
+                    quantity:       $('#rr-edit-item-quantity').val(),
+                    description:    $('#rr-edit-item-description').val(),
+                    image_url:      $('#rr-edit-item-image-url').val(),
+                    mark_fulfilled: $('#rr-edit-item-fulfilled').is(':checked') ? '1' : '0'
                 },
                 success: function(response) {
                     if (response.success) {
@@ -485,6 +531,7 @@
                 success: function(response) {
                     if (response.success) {
                         showNotice(response.data.message, 'success');
+                        appendInviteeRow($invitee.val());
                         $invitee.val('');
                     } else {
                         alert(response.data.message || restartRegistry.strings.error);
@@ -497,6 +544,59 @@
                 }
             });
         });
+
+        // ── Remove invitee ───────────────────────────────────────────────────
+        $(document).on('click', '.rr-remove-invitee', function() {
+            var $btn  = $(this);
+            var $item = $btn.closest('.rr-invitees__item');
+            var email = $item.data('invitee');
+            if (!email) return;
+            if (!confirm('Remove ' + email + '?')) return;
+            $btn.prop('disabled', true);
+            $.ajax({
+                url:  restartRegistry.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action:      'restart_registry_remove_invitee',
+                    nonce:       restartRegistry.nonce,
+                    registry_id: registryId,
+                    invitee:     email
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $item.remove();
+                        renderEmptyInviteesIfNeeded();
+                    } else {
+                        alert(response.data.message || restartRegistry.strings.error);
+                        $btn.prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    alert(restartRegistry.strings.error);
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
+
+        function appendInviteeRow(email) {
+            var $list  = $('#rr-invitees-list');
+            $list.find('.rr-invitees__empty').remove();
+            var safeEmail = $('<div>').text(email).html();
+            $list.append(
+                '<li class="rr-invitees__item" data-invitee="' + safeEmail + '">' +
+                '<span class="rr-invitees__email">' + safeEmail + '</span>' +
+                '<button type="button" class="rr-btn-icon rr-btn-icon--danger rr-remove-invitee" title="Remove invitee" aria-label="Remove ' + safeEmail + '">✕</button>' +
+                '</li>'
+            );
+        }
+
+        function renderEmptyInviteesIfNeeded() {
+            var $list = $('#rr-invitees-list');
+            if ($list.find('.rr-invitees__item').length === 0) {
+                var emptyText = $('#rr-invitees-section').data('empty-text') || 'No one invited yet.';
+                $list.append('<li class="rr-invitees__empty">' + emptyText + '</li>');
+            }
+        }
 
         // ── Helpers ──────────────────────────────────────────────────────────
         function updateItemCount() {

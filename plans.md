@@ -75,9 +75,9 @@ This deserves its own /plan-eng-review pass. I'd rather not touch it in the same
 
 ## Todo (filled in once decisions land)
 
-- [ ] Decisions 1–7 confirmed.
-- [ ] Phase A PR (items 1–10).
-- [ ] Phase B PR (item 11).
-- [ ] Phase C PR (items 12–17).
+- [x] Decisions 1–7 confirmed.
+- [x] Phase A PR (items 1–10).
+- [x] Phase B PR (item 11).
+- [x] Phase C PR (items 12–17).
 - [ ] Phase D PR (items 18–19).
 - [ ] Phase E plan + PR (item 20).
