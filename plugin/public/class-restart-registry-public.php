@@ -815,21 +815,28 @@ class Restart_Registry_Public {
             wp_send_json_error(['message' => __('Please enter a registry title.', 'restart-registry')]);
         }
 
+        // Build the meta dict up-front; create_registry persists it during
+        // initial creation so the row never has a "self-recipient" blink for
+        // gift-from-loved-one registries.
+        $meta = [];
+        if (!empty($_POST['event_type']))             $meta['event_type']             = $_POST['event_type'];
+        if (!empty($_POST['event_date']))             $meta['event_date']             = $_POST['event_date'];
+        if (isset($_POST['is_for_self']))             $meta['is_for_self']            = $_POST['is_for_self'] === '1';
+        if (!empty($_POST['recipient_name']))         $meta['recipient_name']         = $_POST['recipient_name'];
+        if (!empty($_POST['recipient_relationship'])) $meta['recipient_relationship'] = $_POST['recipient_relationship'];
+        if (!empty($_POST['recipient_email']))        $meta['recipient_email']        = $_POST['recipient_email'];
+
         $result = $this->controller->create_registry(
             get_current_user_id(),
             $title,
             sanitize_textarea_field($_POST['description'] ?? ''),
-            isset($_POST['is_public']) && $_POST['is_public'] === '1'
+            isset($_POST['is_public']) && $_POST['is_public'] === '1',
+            $meta
         );
 
         if (is_wp_error($result)) {
             wp_send_json_error(['message' => $result->get_error_message()]);
         }
-
-        $meta = [];
-        if (!empty($_POST['event_type'])) $meta['event_type'] = $_POST['event_type'];
-        if (!empty($_POST['event_date']))  $meta['event_date'] = $_POST['event_date'];
-        if ($meta) $this->controller->update_registry($result['id'], $meta);
 
         wp_send_json_success([
             'message'     => __('Registry created successfully!', 'restart-registry'),
@@ -993,11 +1000,16 @@ class Restart_Registry_Public {
         }
 
         $data = [];
-        if (isset($_POST['title']))       $data['title']       = $_POST['title'];
-        if (isset($_POST['description'])) $data['description'] = $_POST['description'];
-        if (isset($_POST['is_public']))   $data['is_public']   = $_POST['is_public'] === '1';
-        if (isset($_POST['event_type'])) $data['event_type']  = $_POST['event_type'];
-        if (isset($_POST['event_date']))  $data['event_date']  = $_POST['event_date'];
+        if (isset($_POST['title']))                  $data['title']                  = $_POST['title'];
+        if (isset($_POST['description']))            $data['description']            = $_POST['description'];
+        if (isset($_POST['is_public']))              $data['is_public']              = $_POST['is_public'] === '1';
+        if (isset($_POST['event_type']))             $data['event_type']             = $_POST['event_type'];
+        if (isset($_POST['event_date']))             $data['event_date']             = $_POST['event_date'];
+        if (isset($_POST['is_for_self']))            $data['is_for_self']            = $_POST['is_for_self'] === '1';
+        if (isset($_POST['recipient_name']))         $data['recipient_name']         = $_POST['recipient_name'];
+        if (isset($_POST['recipient_relationship'])) $data['recipient_relationship'] = $_POST['recipient_relationship'];
+        if (isset($_POST['recipient_email']))        $data['recipient_email']        = $_POST['recipient_email'];
+        if (isset($_POST['hero_image_id']))          $data['hero_image_id']          = (int) $_POST['hero_image_id'];
 
         $this->controller->update_registry($registry_id, $data);
         wp_send_json_success(['message' => __('Registry updated.', 'restart-registry')]);

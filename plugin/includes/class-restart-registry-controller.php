@@ -42,6 +42,13 @@ class Restart_Registry_Controller {
         $invitees = json_decode(get_post_meta($post->ID, 'restart_invitees', true) ?: '[]', true) ?: [];
         $item_ids = json_decode(get_post_meta($post->ID, 'restart_item_ids', true) ?: '[]', true) ?: [];
 
+        // is_for_self defaults to true for legacy registries that pre-date the
+        // recipient meta — they were created by the recipient.
+        $raw_for_self = get_post_meta($post->ID, 'restart_is_for_self', true);
+        $is_for_self  = ($raw_for_self === '' || $raw_for_self === false)
+            ? true
+            : (string) $raw_for_self !== '0';
+
         return [
             'id'          => $post->ID,
             'user_id'     => (int) $post->post_author,
@@ -52,10 +59,14 @@ class Restart_Registry_Controller {
             // backward-compat alias used in the public shortcode class
             'share_key'   => $post->ID,
             'meta'        => [
-                'invitees'   => $invitees,
-                'item_ids'   => $item_ids,
-                'event_type' => get_post_meta($post->ID, 'restart_event_type', true) ?: '',
-                'event_date' => get_post_meta($post->ID, 'restart_event_date', true) ?: '',
+                'invitees'                => $invitees,
+                'item_ids'                => $item_ids,
+                'event_type'              => get_post_meta($post->ID, 'restart_event_type', true) ?: '',
+                'event_date'              => get_post_meta($post->ID, 'restart_event_date', true) ?: '',
+                'is_for_self'             => $is_for_self,
+                'recipient_name'          => get_post_meta($post->ID, 'restart_recipient_name', true) ?: '',
+                'recipient_relationship'  => get_post_meta($post->ID, 'restart_recipient_relationship', true) ?: '',
+                'recipient_email'         => get_post_meta($post->ID, 'restart_recipient_email', true) ?: '',
             ],
             // items populated separately to avoid eager-loading Lambda on every call
             'items' => [],
@@ -128,7 +139,7 @@ class Restart_Registry_Controller {
      * Create a new registry WP post for a user.
      * Returns ['id' => post_id, 'share_key' => post_id] or WP_Error.
      */
-    public function create_registry(int $user_id, string $title, string $description = '', bool $is_public = false) {
+    public function create_registry(int $user_id, string $title, string $description = '', bool $is_public = false, array $meta = []) {
         $existing = get_posts([
             'post_type'      => 'restart-registry',
             'author'         => $user_id,
@@ -154,8 +165,15 @@ class Restart_Registry_Controller {
 
         update_post_meta($post_id, 'restart_invitees', '[]');
         update_post_meta($post_id, 'restart_item_ids', '[]');
-        update_post_meta($post_id, 'restart_event_type', '');
-        update_post_meta($post_id, 'restart_event_date', '');
+        update_post_meta($post_id, 'restart_event_type', sanitize_text_field($meta['event_type'] ?? ''));
+        update_post_meta($post_id, 'restart_event_date', sanitize_text_field($meta['event_date'] ?? ''));
+
+        // Recipient meta — defaults to is_for_self=true, recipient fields empty.
+        $is_for_self = !isset($meta['is_for_self']) || (bool) $meta['is_for_self'];
+        update_post_meta($post_id, 'restart_is_for_self', $is_for_self ? '1' : '0');
+        update_post_meta($post_id, 'restart_recipient_name', sanitize_text_field($meta['recipient_name'] ?? ''));
+        update_post_meta($post_id, 'restart_recipient_relationship', sanitize_text_field($meta['recipient_relationship'] ?? ''));
+        update_post_meta($post_id, 'restart_recipient_email', sanitize_email($meta['recipient_email'] ?? ''));
 
         return [
             'id'        => $post_id,
@@ -165,7 +183,9 @@ class Restart_Registry_Controller {
 
     /**
      * Update registry post fields.
-     * Accepted keys: title, description, is_public, event_type, event_date.
+     * Accepted keys: title, description, is_public, event_type, event_date,
+     * is_for_self, recipient_name, recipient_relationship, recipient_email,
+     * hero_image_id (sets the post's featured image / thumbnail).
      */
     public function update_registry(int $registry_id, array $data): bool {
         $update = ['ID' => $registry_id];
@@ -189,6 +209,26 @@ class Restart_Registry_Controller {
         }
         if (isset($data['event_date'])) {
             update_post_meta($registry_id, 'restart_event_date', sanitize_text_field($data['event_date']));
+        }
+        if (isset($data['is_for_self'])) {
+            update_post_meta($registry_id, 'restart_is_for_self', $data['is_for_self'] ? '1' : '0');
+        }
+        if (isset($data['recipient_name'])) {
+            update_post_meta($registry_id, 'restart_recipient_name', sanitize_text_field($data['recipient_name']));
+        }
+        if (isset($data['recipient_relationship'])) {
+            update_post_meta($registry_id, 'restart_recipient_relationship', sanitize_text_field($data['recipient_relationship']));
+        }
+        if (isset($data['recipient_email'])) {
+            update_post_meta($registry_id, 'restart_recipient_email', sanitize_email($data['recipient_email']));
+        }
+        if (array_key_exists('hero_image_id', $data)) {
+            $attach_id = (int) $data['hero_image_id'];
+            if ($attach_id > 0) {
+                set_post_thumbnail($registry_id, $attach_id);
+            } else {
+                delete_post_thumbnail($registry_id);
+            }
         }
 
         return true;
