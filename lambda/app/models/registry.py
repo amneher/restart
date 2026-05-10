@@ -128,6 +128,14 @@ class RegistryMeta(BaseModel):
     event_type: Optional[str] = Field(default=None, max_length=100)
     event_date: Optional[str] = Field(default=None, description="ISO 8601 date string")
 
+    # Recipient — when the registry creator isn't the person rebuilding.
+    # is_for_self defaults to True; recipient_* fields are surfaced only
+    # when is_for_self is False.
+    is_for_self: bool = Field(default=True)
+    recipient_name: Optional[str] = Field(default=None, max_length=100)
+    recipient_relationship: Optional[str] = Field(default=None, max_length=100)
+    recipient_email: Optional[str] = Field(default=None, max_length=200)
+
     def to_wp_meta(self) -> dict[str, Any]:
         """Serialize to the flat dict expected by the WP REST API meta field."""
         return {
@@ -135,6 +143,10 @@ class RegistryMeta(BaseModel):
             f"{_META_PREFIX}item_ids": json.dumps(self.item_ids),
             f"{_META_PREFIX}event_type": self.event_type or "",
             f"{_META_PREFIX}event_date": self.event_date or "",
+            f"{_META_PREFIX}is_for_self": "1" if self.is_for_self else "0",
+            f"{_META_PREFIX}recipient_name": self.recipient_name or "",
+            f"{_META_PREFIX}recipient_relationship": self.recipient_relationship or "",
+            f"{_META_PREFIX}recipient_email": self.recipient_email or "",
         }
 
     @classmethod
@@ -152,11 +164,23 @@ class RegistryMeta(BaseModel):
                     pass
             return []
 
+        # is_for_self defaults to True for legacy registries that pre-date the
+        # recipient fields — they were always created by the recipient.
+        raw_is_for_self = meta.get(f"{_META_PREFIX}is_for_self")
+        if raw_is_for_self is None or raw_is_for_self == "":
+            is_for_self = True
+        else:
+            is_for_self = str(raw_is_for_self) not in ("0", "false", "False")
+
         return cls(
             invitees=_json_list(meta.get(f"{_META_PREFIX}invitees", []), str),
             item_ids=_json_list(meta.get(f"{_META_PREFIX}item_ids", []), int),
             event_type=meta.get(f"{_META_PREFIX}event_type") or None,
             event_date=meta.get(f"{_META_PREFIX}event_date") or None,
+            is_for_self=is_for_self,
+            recipient_name=meta.get(f"{_META_PREFIX}recipient_name") or None,
+            recipient_relationship=meta.get(f"{_META_PREFIX}recipient_relationship") or None,
+            recipient_email=meta.get(f"{_META_PREFIX}recipient_email") or None,
         )
 
 

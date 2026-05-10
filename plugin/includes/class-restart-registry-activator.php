@@ -50,6 +50,21 @@ class Restart_Registry_Activator {
         if ($role) {
             $role->add_cap('manage_restart_registry');
         }
+
+        // Subscribers (the default role for registry owners) need upload_files
+        // so they can pick a hero image via the WP media library on their own
+        // registry. WP enforces ownership filters by default, so this only
+        // exposes uploads to authenticated users — not anonymous visitors.
+        // Tradeoff: media-library quota grows with users; size cap +
+        // media filtering live downstream of this cap grant.
+        $subscriber = get_role('subscriber');
+        if ($subscriber) {
+            $subscriber->add_cap('upload_files');
+        }
+        $registry_user = get_role('registry_user');
+        if ($registry_user) {
+            $registry_user->add_cap('upload_files');
+        }
     }
 
     /**

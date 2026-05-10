@@ -108,4 +108,21 @@ add_action('init', function () {
     register_post_meta('restart-registry', 'restart_item_ids', $meta_args);
     register_post_meta('restart-registry', 'restart_event_type', $meta_args);
     register_post_meta('restart-registry', 'restart_event_date', $meta_args);
+    register_post_meta('restart-registry', 'restart_is_for_self', $meta_args);
+    register_post_meta('restart-registry', 'restart_recipient_name', $meta_args);
+    register_post_meta('restart-registry', 'restart_recipient_relationship', $meta_args);
+    register_post_meta('restart-registry', 'restart_recipient_email', $meta_args);
+});
+
+/**
+ * Cap upload size to 5 MB for non-admin uploads. Hero-image picker on the
+ * registry settings modal hits the same wp_handle_upload pipeline as the
+ * media library, so this catches both. Admins keep the PHP-ini default so
+ * they can manage assets without restriction.
+ */
+add_filter('upload_size_limit', function ($size) {
+    if (current_user_can('manage_options')) {
+        return $size;
+    }
+    return min($size, 5 * 1024 * 1024);
 });

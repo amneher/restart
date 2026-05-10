@@ -123,6 +123,52 @@
             openModal('#rr-settings-modal');
         });
 
+        // Recipient toggle: a UX-only checkbox the user sees ("This registry
+        // is for someone else") drives a hidden is_for_self field server-side.
+        // Keeping the visible label phrased positively while the data field
+        // stores the inverse means default-true is_for_self stays simple.
+        $(document).on('change', '#rr-edit-not-for-self', function() {
+            var notForSelf = $(this).is(':checked');
+            $('#rr-edit-is-for-self').val(notForSelf ? '0' : '1');
+            $('#rr-edit-recipient-fields').prop('hidden', !notForSelf);
+        });
+
+        // Hero image picker — opens the WP media library, captures the
+        // attachment id into a hidden input. Server applies it via
+        // set_post_thumbnail() on save.
+        var heroFrame = null;
+        $(document).on('click', '#rr-hero-pick', function(e) {
+            e.preventDefault();
+            if (typeof wp === 'undefined' || !wp.media) {
+                alert('Media library not available — refresh the page and try again.');
+                return;
+            }
+            if (heroFrame) { heroFrame.open(); return; }
+            heroFrame = wp.media({
+                title:    restartRegistry.strings.heroPickerTitle,
+                button:   { text: restartRegistry.strings.heroPickerCta },
+                library:  { type: 'image' },
+                multiple: false
+            });
+            heroFrame.on('select', function() {
+                var attachment = heroFrame.state().get('selection').first().toJSON();
+                $('#rr-edit-hero-image-id').val(attachment.id);
+                var $preview = $('#rr-hero-preview');
+                $preview.removeClass('is-empty').empty().append(
+                    $('<img>').attr('src', attachment.sizes && attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url)
+                );
+                $('#rr-hero-clear').prop('hidden', false);
+            });
+            heroFrame.open();
+        });
+        $(document).on('click', '#rr-hero-clear', function() {
+            $('#rr-edit-hero-image-id').val('');
+            $('#rr-hero-preview').addClass('is-empty').empty().append(
+                $('<span class="rr-hero-picker__empty">No image set</span>')
+            );
+            $(this).prop('hidden', true);
+        });
+
         $('#rr-edit-registry-form').on('submit', function(e) {
             e.preventDefault();
             var $form   = $(this);
@@ -133,14 +179,19 @@
                 url:  restartRegistry.ajaxUrl,
                 type: 'POST',
                 data: {
-                    action:      'restart_registry_update',
-                    nonce:       restartRegistry.nonce,
-                    registry_id: registryId,
-                    title:       $form.find('[name="title"]').val(),
-                    description: $form.find('[name="description"]').val(),
-                    event_type:  $form.find('[name="event_type"]').val(),
-                    event_date:  $form.find('[name="event_date"]').val(),
-                    is_public:   $form.find('[name="is_public"]').is(':checked') ? '1' : '0'
+                    action:                 'restart_registry_update',
+                    nonce:                  restartRegistry.nonce,
+                    registry_id:            registryId,
+                    title:                  $form.find('[name="title"]').val(),
+                    description:            $form.find('[name="description"]').val(),
+                    event_type:             $form.find('[name="event_type"]').val(),
+                    event_date:             $form.find('[name="event_date"]').val(),
+                    is_public:              $form.find('[name="is_public"]').is(':checked') ? '1' : '0',
+                    is_for_self:            $form.find('[name="is_for_self"]').val(),
+                    recipient_name:         $form.find('[name="recipient_name"]').val() || '',
+                    recipient_relationship: $form.find('[name="recipient_relationship"]').val() || '',
+                    recipient_email:        $form.find('[name="recipient_email"]').val() || '',
+                    hero_image_id:          $form.find('[name="hero_image_id"]').val() || ''
                 },
                 success: function(response) {
                     if (response.success) {

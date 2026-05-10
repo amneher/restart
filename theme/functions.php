@@ -138,6 +138,29 @@ add_shortcode('restart_start_registry', function () {
             <p class="restart-form__hint">This will appear on your public registry page.</p>
         </div>
 
+        <!-- Recipient: when the creator is making this for someone else. Hidden
+             is_for_self=1 by default; when "for someone else" is checked the
+             value flips and the recipient block appears. -->
+        <div class="restart-form__group">
+            <label class="restart-toggle">
+                <input type="checkbox" id="rr-not-for-self" name="not_for_self" value="1">
+                <span class="restart-toggle__track"></span>
+                <span class="restart-toggle__label">This registry is for someone else</span>
+            </label>
+            <input type="hidden" id="rr-is-for-self" name="is_for_self" value="1">
+        </div>
+
+        <div class="restart-form__group rr-recipient-fields" id="rr-recipient-fields" hidden>
+            <label class="restart-form__label" for="rr-recipient-name">Recipient name</label>
+            <input class="restart-form__input" type="text" id="rr-recipient-name" name="recipient_name" maxlength="100" placeholder="e.g. Sarah">
+
+            <label class="restart-form__label" for="rr-recipient-relationship" style="margin-top:0.75rem">Your relationship to them</label>
+            <input class="restart-form__input" type="text" id="rr-recipient-relationship" name="recipient_relationship" maxlength="100" placeholder="e.g. my sister">
+
+            <label class="restart-form__label" for="rr-recipient-email" style="margin-top:0.75rem">Recipient email <span class="restart-form__hint" style="display:inline">(optional, so they can claim the registry later)</span></label>
+            <input class="restart-form__input" type="email" id="rr-recipient-email" name="recipient_email" maxlength="200">
+        </div>
+
         <div class="restart-form__group">
             <span class="restart-form__label">Private Registry?</span>
             <label class="restart-toggle">

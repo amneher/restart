@@ -60,6 +60,14 @@ class Restart_Registry_Public {
     }
 
     public function enqueue_scripts(): void {
+        // Owner pages need wp.media for the hero-image picker. Loading on
+        // every page is wasteful; load only when viewing a registry the user
+        // can edit.
+        if (is_singular('restart-registry') && is_user_logged_in()
+            && $this->controller->can_edit_registry((int) get_the_ID(), get_current_user_id())) {
+            wp_enqueue_media();
+        }
+
         wp_enqueue_script(
             $this->plugin_name,
             plugin_dir_url(__FILE__) . 'js/restart-registry-public.js',
@@ -77,6 +85,8 @@ class Restart_Registry_Public {
                 'loading'         => __('Loading…', 'restart-registry'),
                 'error'           => __('An error occurred. Please try again.', 'restart-registry'),
                 'prefsSaved'      => __('Preferences saved.', 'restart-registry'),
+                'heroPickerTitle' => __('Choose a hero image', 'restart-registry'),
+                'heroPickerCta'   => __('Use this image', 'restart-registry'),
             ],
         ]);
     }
@@ -271,6 +281,20 @@ class Restart_Registry_Public {
             <!-- Header: title + event meta -->
             <div class="rr-registry-header">
                 <h1 class="rr-registry-title"><?php echo esc_html($registry['title']); ?></h1>
+                <?php
+                $is_for_self    = (bool) ($registry['meta']['is_for_self'] ?? true);
+                $recipient_name = $registry['meta']['recipient_name'] ?? '';
+                $recipient_rel  = $registry['meta']['recipient_relationship'] ?? '';
+                if (!$is_for_self && $recipient_name):
+                ?>
+                    <p class="rr-recipient">
+                        <?php echo wp_kses_post(sprintf(
+                            __('For <strong>%1$s</strong>%2$s', 'restart-registry'),
+                            esc_html($recipient_name),
+                            $recipient_rel ? ' (' . esc_html($recipient_rel) . ')' : ''
+                        )); ?>
+                    </p>
+                <?php endif; ?>
                 <?php if ($event_type || $event_date): ?>
                     <p class="rr-event-meta">
                         <?php if ($event_type): ?>
@@ -488,6 +512,14 @@ class Restart_Registry_Public {
                         <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
                     </div>
                     <div class="rr-modal__body">
+                        <?php
+                        $is_for_self            = (bool) ($registry['meta']['is_for_self'] ?? true);
+                        $recipient_name         = $registry['meta']['recipient_name'] ?? '';
+                        $recipient_relationship = $registry['meta']['recipient_relationship'] ?? '';
+                        $recipient_email        = $registry['meta']['recipient_email'] ?? '';
+                        $thumbnail_id           = (int) get_post_thumbnail_id($registry['id']);
+                        $thumbnail_url          = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'medium') : '';
+                        ?>
                         <form id="rr-edit-registry-form" class="rr-form">
                             <div class="rr-form-group">
                                 <label for="rr-edit-title"><?php _e('Title', 'restart-registry'); ?></label>
@@ -511,6 +543,57 @@ class Restart_Registry_Public {
                                            value="<?php echo esc_attr($event_date); ?>">
                                 </div>
                             </div>
+
+                            <!-- Hero image picker — opens the WP media library; size cap enforced server-side. -->
+                            <div class="rr-form-group">
+                                <label><?php _e('Hero image', 'restart-registry'); ?></label>
+                                <div class="rr-hero-picker">
+                                    <div class="rr-hero-picker__preview <?php echo $thumbnail_url ? '' : 'is-empty'; ?>" id="rr-hero-preview">
+                                        <?php if ($thumbnail_url): ?>
+                                            <img src="<?php echo esc_url($thumbnail_url); ?>" alt="">
+                                        <?php else: ?>
+                                            <span class="rr-hero-picker__empty"><?php esc_html_e('No image set', 'restart-registry'); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="rr-hero-picker__actions">
+                                        <button type="button" class="rr-btn-ghost" id="rr-hero-pick"><?php esc_html_e('Choose image', 'restart-registry'); ?></button>
+                                        <button type="button" class="rr-btn-ghost rr-btn-icon--danger" id="rr-hero-clear" <?php echo $thumbnail_id ? '' : 'hidden'; ?>><?php esc_html_e('Remove', 'restart-registry'); ?></button>
+                                    </div>
+                                    <input type="hidden" id="rr-edit-hero-image-id" name="hero_image_id" value="<?php echo esc_attr($thumbnail_id ?: ''); ?>">
+                                </div>
+                            </div>
+
+                            <!-- Recipient fieldset — collapsed when is_for_self=true. -->
+                            <div class="rr-form-group">
+                                <label class="rr-checkbox-label">
+                                    <input type="checkbox" id="rr-edit-not-for-self" name="is_for_self_neg" value="1" <?php checked(!$is_for_self); ?>>
+                                    <?php _e('This registry is for someone else', 'restart-registry'); ?>
+                                </label>
+                                <input type="hidden" id="rr-edit-is-for-self" name="is_for_self" value="<?php echo $is_for_self ? '1' : '0'; ?>">
+                            </div>
+                            <div class="rr-recipient-fields" id="rr-edit-recipient-fields" <?php echo $is_for_self ? 'hidden' : ''; ?>>
+                                <div class="rr-form-row">
+                                    <div class="rr-form-group">
+                                        <label for="rr-edit-recipient-name"><?php _e('Recipient name', 'restart-registry'); ?></label>
+                                        <input type="text" id="rr-edit-recipient-name" name="recipient_name"
+                                               value="<?php echo esc_attr($recipient_name); ?>"
+                                               placeholder="<?php esc_attr_e('e.g., Sarah', 'restart-registry'); ?>">
+                                    </div>
+                                    <div class="rr-form-group">
+                                        <label for="rr-edit-recipient-relationship"><?php _e('Your relationship', 'restart-registry'); ?></label>
+                                        <input type="text" id="rr-edit-recipient-relationship" name="recipient_relationship"
+                                               value="<?php echo esc_attr($recipient_relationship); ?>"
+                                               placeholder="<?php esc_attr_e('e.g., my sister', 'restart-registry'); ?>">
+                                    </div>
+                                </div>
+                                <div class="rr-form-group">
+                                    <label for="rr-edit-recipient-email"><?php _e('Recipient email (optional)', 'restart-registry'); ?></label>
+                                    <input type="email" id="rr-edit-recipient-email" name="recipient_email"
+                                           value="<?php echo esc_attr($recipient_email); ?>"
+                                           placeholder="<?php esc_attr_e('So they can claim the registry later', 'restart-registry'); ?>">
+                                </div>
+                            </div>
+
                             <div class="rr-form-group">
                                 <label class="rr-checkbox-label">
                                     <input type="checkbox" name="is_public" value="1" <?php checked($registry['is_public']); ?>>
@@ -650,11 +733,28 @@ class Restart_Registry_Public {
             <div class="rr-registry-top <?php echo $hero_url ? 'rr-registry-top--with-hero' : ''; ?>">
                 <div class="rr-registry-top__info">
                     <h1 class="rr-registry-title"><?php echo esc_html($registry['title']); ?></h1>
-                    <p class="rr-owner"><?php printf(
-                        /* translators: %s = owner display name */
-                        __('A gift registry by %s', 'restart-registry'),
-                        '<strong>' . esc_html($owner_name) . '</strong>'
-                    ); ?></p>
+                    <?php
+                    $is_for_self    = (bool) ($registry['meta']['is_for_self'] ?? true);
+                    $recipient_name = $registry['meta']['recipient_name'] ?? '';
+                    $recipient_rel  = $registry['meta']['recipient_relationship'] ?? '';
+                    ?>
+                    <?php if (!$is_for_self && $recipient_name): ?>
+                        <p class="rr-owner"><?php echo wp_kses_post(sprintf(
+                            /* translators: 1: recipient name, 2: owner name */
+                            __('A gift registry for <strong>%1$s</strong>, created by %2$s', 'restart-registry'),
+                            esc_html($recipient_name),
+                            esc_html($owner_name)
+                        )); ?></p>
+                        <?php if ($recipient_rel): ?>
+                            <p class="rr-recipient">(<?php echo esc_html($recipient_rel); ?>)</p>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <p class="rr-owner"><?php printf(
+                            /* translators: %s = owner display name */
+                            __('A gift registry by %s', 'restart-registry'),
+                            '<strong>' . esc_html($owner_name) . '</strong>'
+                        ); ?></p>
+                    <?php endif; ?>
                     <?php if ($event_type || $event_date): ?>
                         <p class="rr-event-meta">
                             <?php if ($event_type): ?>
@@ -853,21 +953,28 @@ class Restart_Registry_Public {
             wp_send_json_error(['message' => __('Please enter a registry title.', 'restart-registry')]);
         }
 
+        // Build the meta dict up-front; create_registry persists it during
+        // initial creation so the row never has a "self-recipient" blink for
+        // gift-from-loved-one registries.
+        $meta = [];
+        if (!empty($_POST['event_type']))             $meta['event_type']             = $_POST['event_type'];
+        if (!empty($_POST['event_date']))             $meta['event_date']             = $_POST['event_date'];
+        if (isset($_POST['is_for_self']))             $meta['is_for_self']            = $_POST['is_for_self'] === '1';
+        if (!empty($_POST['recipient_name']))         $meta['recipient_name']         = $_POST['recipient_name'];
+        if (!empty($_POST['recipient_relationship'])) $meta['recipient_relationship'] = $_POST['recipient_relationship'];
+        if (!empty($_POST['recipient_email']))        $meta['recipient_email']        = $_POST['recipient_email'];
+
         $result = $this->controller->create_registry(
             get_current_user_id(),
             $title,
             sanitize_textarea_field($_POST['description'] ?? ''),
-            isset($_POST['is_public']) && $_POST['is_public'] === '1'
+            isset($_POST['is_public']) && $_POST['is_public'] === '1',
+            $meta
         );
 
         if (is_wp_error($result)) {
             wp_send_json_error(['message' => $result->get_error_message()]);
         }
-
-        $meta = [];
-        if (!empty($_POST['event_type'])) $meta['event_type'] = $_POST['event_type'];
-        if (!empty($_POST['event_date']))  $meta['event_date'] = $_POST['event_date'];
-        if ($meta) $this->controller->update_registry($result['id'], $meta);
 
         wp_send_json_success([
             'message'     => __('Registry created successfully!', 'restart-registry'),
@@ -1068,11 +1175,16 @@ class Restart_Registry_Public {
         }
 
         $data = [];
-        if (isset($_POST['title']))       $data['title']       = $_POST['title'];
-        if (isset($_POST['description'])) $data['description'] = $_POST['description'];
-        if (isset($_POST['is_public']))   $data['is_public']   = $_POST['is_public'] === '1';
-        if (isset($_POST['event_type'])) $data['event_type']  = $_POST['event_type'];
-        if (isset($_POST['event_date']))  $data['event_date']  = $_POST['event_date'];
+        if (isset($_POST['title']))                  $data['title']                  = $_POST['title'];
+        if (isset($_POST['description']))            $data['description']            = $_POST['description'];
+        if (isset($_POST['is_public']))              $data['is_public']              = $_POST['is_public'] === '1';
+        if (isset($_POST['event_type']))             $data['event_type']             = $_POST['event_type'];
+        if (isset($_POST['event_date']))             $data['event_date']             = $_POST['event_date'];
+        if (isset($_POST['is_for_self']))            $data['is_for_self']            = $_POST['is_for_self'] === '1';
+        if (isset($_POST['recipient_name']))         $data['recipient_name']         = $_POST['recipient_name'];
+        if (isset($_POST['recipient_relationship'])) $data['recipient_relationship'] = $_POST['recipient_relationship'];
+        if (isset($_POST['recipient_email']))        $data['recipient_email']        = $_POST['recipient_email'];
+        if (isset($_POST['hero_image_id']))          $data['hero_image_id']          = (int) $_POST['hero_image_id'];
 
         $this->controller->update_registry($registry_id, $data);
         wp_send_json_success(['message' => __('Registry updated.', 'restart-registry')]);
