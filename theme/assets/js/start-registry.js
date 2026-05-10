@@ -13,6 +13,24 @@
         }
     });
 
+    // Recipient toggle: visible "for someone else" checkbox flips the
+    // hidden is_for_self field and reveals the recipient fields.
+    const notForSelfToggle = document.getElementById('rr-not-for-self');
+    const isForSelfInput   = document.getElementById('rr-is-for-self');
+    const recipientFields  = document.getElementById('rr-recipient-fields');
+    if (notForSelfToggle && isForSelfInput && recipientFields) {
+        notForSelfToggle.addEventListener('change', function () {
+            isForSelfInput.value = this.checked ? '0' : '1';
+            recipientFields.hidden = !this.checked;
+            if (!this.checked) {
+                ['rr-recipient-name', 'rr-recipient-relationship', 'rr-recipient-email'].forEach(function (id) {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+            }
+        });
+    }
+
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         errorBox.hidden = true;
@@ -32,6 +50,10 @@
         const eventType = document.getElementById('event-type').value || null;
         const eventDate = document.getElementById('event-date').value || null;
         const story = document.getElementById('registry-story').value.trim() || null;
+        const isForSelf = (isForSelfInput && isForSelfInput.value === '1');
+        const recipientName = document.getElementById('rr-recipient-name')?.value?.trim() || null;
+        const recipientRel  = document.getElementById('rr-recipient-relationship')?.value?.trim() || null;
+        const recipientEmail = document.getElementById('rr-recipient-email')?.value?.trim() || null;
 
         const payload = {
             title,
@@ -43,6 +65,10 @@
                 event_date: eventDate,
                 invitees,
                 item_ids: [],
+                is_for_self: isForSelf,
+                recipient_name: isForSelf ? null : recipientName,
+                recipient_relationship: isForSelf ? null : recipientRel,
+                recipient_email: isForSelf ? null : recipientEmail,
             },
         };
 
