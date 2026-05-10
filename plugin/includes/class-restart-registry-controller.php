@@ -414,6 +414,21 @@ class Restart_Registry_Controller {
         );
     }
 
+    /**
+     * Remove a single invitee from the registry by their email/username string.
+     * Returns true on success, WP_Error if the invitee wasn't on the list.
+     */
+    public function delete_invitee(int $registry_id, string $invitee) {
+        $invitees = json_decode(get_post_meta($registry_id, 'restart_invitees', true) ?: '[]', true) ?: [];
+        $idx = array_search($invitee, $invitees, true);
+        if ($idx === false) {
+            return new WP_Error('not_invited', __('That contact is not currently invited.', 'restart-registry'));
+        }
+        array_splice($invitees, $idx, 1);
+        update_post_meta($registry_id, 'restart_invitees', json_encode(array_values($invitees)));
+        return true;
+    }
+
     private function send_purchase_notification(array $item, string $purchaser_name, string $purchaser_note): void {
         $registry_id = (int) ($item['registry_id'] ?? 0);
         if (!$registry_id) return;

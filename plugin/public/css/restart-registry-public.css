@@ -179,6 +179,28 @@
     min-width: 44px;
 }
 
+/* Help icon next to the public/private toggle. Hover surfaces the native
+   tooltip (title attr); click opens the explanation modal. */
+.rr-toggle-help {
+    background: none;
+    border: none;
+    color: var(--rr-muted);
+    font-size: 16px;
+    line-height: 1;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: color 0.15s, background-color 0.15s;
+}
+.rr-toggle-help:hover {
+    color: var(--rr-teal);
+    background-color: var(--rr-mint-bg);
+}
+.rr-toggle-help:focus {
+    outline: 2px solid var(--rr-teal);
+    outline-offset: 2px;
+}
+
 /* ── Registry title & owner line ────────────────────────────────────────── */
 .rr-registry-header { margin-bottom: 20px; }
 
@@ -415,6 +437,31 @@
 .rr-item-row__fulfilled--done,
 .rr-item-card__fulfilled--done { color: var(--rr-teal); }
 
+.rr-fulfilled-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+.rr-fulfilled-toggle input[disabled] { cursor: not-allowed; opacity: 0.4; }
+.rr-fulfilled-toggle input[disabled] + .rr-fulfilled-status { opacity: 0.6; }
+
+.rr-form-group--checkbox {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+}
+.rr-form-group--checkbox label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--rr-font-ui);
+    font-size: 13px;
+    color: var(--rr-mid);
+    cursor: pointer;
+}
+
 .rr-item-row__actions,
 .rr-item-card__actions {
     text-align: right;
@@ -465,9 +512,12 @@
 
 .rr-item-row__note {
     display: block;
-    font-size: 12px;
-    color: var(--rr-muted);
-    font-style: italic;
+    font-size: 13px;
+    color: var(--rr-mid);
+    margin-top: 4px;
+    padding-left: 10px;
+    border-left: 2px solid var(--rr-mint);
+    line-height: 1.45;
 }
 
 /* ── Purchase button ────────────────────────────────────────────────────── */
@@ -817,6 +867,45 @@
     margin: 18px 0;
 }
 body.rr-modal-open { overflow: hidden; }
+
+/* ── Invitees list (inside Share modal) ─────────────────────────────────── */
+.rr-invitees { margin-top: 18px; }
+.rr-invitees__heading {
+    font-family: var(--rr-font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--rr-mid);
+    margin: 0 0 8px;
+}
+.rr-invitees__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 180px;
+    overflow-y: auto;
+}
+.rr-invitees__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--rr-border);
+    font-size: 13px;
+}
+.rr-invitees__item:last-child { border-bottom: none; }
+.rr-invitees__email {
+    flex: 1;
+    color: var(--rr-dark);
+    word-break: break-all;
+}
+.rr-invitees__empty {
+    padding: 6px 0;
+    color: var(--rr-muted);
+    font-size: 13px;
+    font-style: italic;
+}
 
 /* ── Share link row ─────────────────────────────────────────────────────── */
 .rr-share-link { display: flex; gap: 8px; margin-bottom: 4px; }
