@@ -166,3 +166,82 @@ class TestItemResponse:
         assert response.success is False
         assert response.data is None
         assert response.message == "Not found"
+
+
+class TestRegistryMeta:
+    """RegistryMeta round-trips through the WP REST API meta-field shape (flat
+    string dict). The new recipient fields default to "self-recipient" so older
+    registries that pre-date these fields keep working without a backfill.
+    """
+
+    def test_defaults(self):
+        from app.models.registry import RegistryMeta
+
+        meta = RegistryMeta()
+        assert meta.is_for_self is True
+        assert meta.recipient_name is None
+        assert meta.recipient_relationship is None
+        assert meta.recipient_email is None
+
+    def test_recipient_round_trip(self):
+        from app.models.registry import RegistryMeta
+
+        original = RegistryMeta(
+            is_for_self=False,
+            recipient_name="Sarah",
+            recipient_relationship="my sister",
+            recipient_email="sarah@example.com",
+        )
+        wp_meta = original.to_wp_meta()
+        assert wp_meta["restart_is_for_self"] == "0"
+        assert wp_meta["restart_recipient_name"] == "Sarah"
+        assert wp_meta["restart_recipient_relationship"] == "my sister"
+        assert wp_meta["restart_recipient_email"] == "sarah@example.com"
+
+        restored = RegistryMeta.from_wp_meta(wp_meta)
+        assert restored.is_for_self is False
+        assert restored.recipient_name == "Sarah"
+        assert restored.recipient_relationship == "my sister"
+        assert restored.recipient_email == "sarah@example.com"
+
+    def test_self_recipient_round_trip(self):
+        from app.models.registry import RegistryMeta
+
+        original = RegistryMeta(is_for_self=True)
+        wp_meta = original.to_wp_meta()
+        assert wp_meta["restart_is_for_self"] == "1"
+        assert wp_meta["restart_recipient_name"] == ""
+        assert wp_meta["restart_recipient_email"] == ""
+
+        restored = RegistryMeta.from_wp_meta(wp_meta)
+        assert restored.is_for_self is True
+        assert restored.recipient_name is None
+
+    def test_legacy_meta_defaults_to_self(self):
+        """Pre-existing registries with no is_for_self meta should round-trip
+        as is_for_self=True so they keep rendering the owner-as-recipient view."""
+        from app.models.registry import RegistryMeta
+
+        legacy_meta = {
+            "restart_invitees": "[]",
+            "restart_item_ids": "[]",
+            "restart_event_type": "",
+            "restart_event_date": "",
+        }
+        restored = RegistryMeta.from_wp_meta(legacy_meta)
+        assert restored.is_for_self is True
+        assert restored.recipient_name is None
+        assert restored.recipient_email is None
+
+    def test_string_false_is_for_self(self):
+        """WP REST API can return meta as strings; "0" / "false" should both
+        coerce is_for_self to False."""
+        from app.models.registry import RegistryMeta
+
+        for raw in ("0", "false", "False"):
+            restored = RegistryMeta.from_wp_meta({"restart_is_for_self": raw})
+            assert restored.is_for_self is False, f"Expected False for {raw!r}"
+
+        for raw in ("1", "true", "True"):
+            restored = RegistryMeta.from_wp_meta({"restart_is_for_self": raw})
+            assert restored.is_for_self is True, f"Expected True for {raw!r}"
