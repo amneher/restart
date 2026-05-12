@@ -91,7 +91,7 @@ $WP plugin activate restart-registry 2>/dev/null || true
 echo "→ Creating demo user..."
 if ! $WP user get demo 2>/dev/null | grep -q demo; then
     $WP user create demo demo@example.com \
-        --role=subscriber \
+        --role=registry-user \
         --user_pass=demo \
         --display_name="Alex Demo"
 fi

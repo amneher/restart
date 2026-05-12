@@ -21,6 +21,7 @@ if (!class_exists('WP_Post')) {
         public int    $ID           = 0;
         public int    $post_author  = 0;
         public string $post_title   = '';
+        public string $post_name    = '';
         public string $post_content = '';
         public string $post_status  = 'publish';
         public string $post_type    = 'restart-registry';
@@ -37,10 +38,12 @@ if (!class_exists('WP_User')) {
 }
 
 // Plugin classes under test
+require_once dirname(__DIR__) . '/includes/class-restart-registry-activator.php';
 require_once dirname(__DIR__) . '/includes/class-retailer-api.php';
 require_once dirname(__DIR__) . '/includes/class-affiliate-converter.php';
 require_once dirname(__DIR__) . '/includes/class-lambda-api-client.php';
 require_once dirname(__DIR__) . '/includes/class-restart-registry-controller.php';
+require_once dirname(__DIR__) . '/includes/class-product-scraper.php';
 
 // Test fakes
 require_once __DIR__ . '/Fakes/LambdaClientFake.php';
