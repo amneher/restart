@@ -1552,15 +1552,19 @@
 
 
 <h1 id="plugin-testing">Plugin Testing<a class="headerlink" href="#plugin-testing" title="Permanent link">&para;</a></h1>
-<p>The plugin ships <strong>70 PHPUnit tests</strong> — 34 unit and 36 integration. The
-boundary between the two is the controller seam: anything that exercises
-<code>Restart_Registry_Controller</code> against fakes is integration; anything else is
-unit.</p>
+<p>The plugin ships <strong>89 PHPUnit tests</strong> in the default suite — 53 unit and 36
+integration — plus 2 real-HTTP scraper tests in a separate <code>scraper</code> suite that
+is excluded from CI. The boundary between the two main tiers is the controller
+seam: anything that exercises <code>Restart_Registry_Controller</code> against fakes is
+integration; anything else is unit.</p>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>plugin/tests/
 ├── bootstrap.php
-├── Fakes/                     # Test doubles (LambdaClientFake, etc.)
+├── assets/
+│   └── TestItemUrls.txt          # Static retailer URLs for the scraper regression set
+├── Fakes/                        # Test doubles (LambdaClientFake, etc.)
 ├── unit/
+│   ├── ActivatorCreatePagesTest.php
 │   ├── AffiliateConverterTest.php
 │   ├── ControllerTruncateNameTest.php
 │   └── RetailerApiTest.php
@@ -1569,23 +1573,34 @@ unit.</p>
     │   ├── AccessControlTest.php
     │   ├── MarkItemPurchasedTest.php
     │   └── InviteTest.php
-    └── LambdaClient/
-        ├── LambdaClientTest.php
-        └── wp-clean.sql
+    ├── LambdaClient/
+    │   ├── LambdaClientTest.php
+    │   └── wp-clean.sql
+    └── Scraper/
+        └── ProductScraperTest.php   # Real-HTTP — excluded from default suite
 </code></pre></div>
 <h2 id="running-the-suite">Running the suite<a class="headerlink" href="#running-the-suite" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>plugin
 composer<span class="w"> </span>install
-./vendor/bin/phpunit<span class="w">              </span><span class="c1"># all tests</span>
+./vendor/bin/phpunit<span class="w">              </span><span class="c1"># default suite (unit + integration, no real HTTP)</span>
 ./vendor/bin/phpunit<span class="w"> </span>--testsuite<span class="o">=</span>unit
 ./vendor/bin/phpunit<span class="w"> </span>--testsuite<span class="o">=</span>integration
+./vendor/bin/phpunit<span class="w"> </span>--testsuite<span class="o">=</span>scraper<span class="w">   </span><span class="c1"># real HTTP — needs internet access</span>
 ./vendor/bin/phpunit<span class="w"> </span>--filter<span class="w"> </span>MarkItemPurchased<span class="w">   </span><span class="c1"># by class</span>
 </code></pre></div>
 <p>The Make targets are equivalent:</p>
 <div class="highlight"><pre><span></span><code>make<span class="w"> </span>plugin-test<span class="w">          </span><span class="c1"># PHP + JS</span>
 make<span class="w"> </span>plugin-test-php<span class="w">      </span><span class="c1"># only PHP</span>
 make<span class="w"> </span>plugin-test-js<span class="w">       </span><span class="c1"># only Jest (admin UI)</span>
+make<span class="w"> </span>plugin-test-scraper<span class="w">  </span><span class="c1"># real-HTTP scraper suite (makes live requests to retailers)</span>
 </code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Scraper tests make real HTTP requests</p>
+<p><code>plugin-test-scraper</code> (and <code>--testsuite=scraper</code>) hits live retailer pages. Run
+it to validate scraping logic after changes to <code>class-product-scraper.php</code>, not
+as part of the standard CI loop. Bot-detection failures cause individual tests to
+be skipped, not fatal failures.</p>
+</div>
 <h2 id="mocking-strategy">Mocking strategy<a class="headerlink" href="#mocking-strategy" title="Permanent link">&para;</a></h2>
 <h3 id="brainmonkey-for-wordpress-functions">Brain\Monkey for WordPress functions<a class="headerlink" href="#brainmonkey-for-wordpress-functions" title="Permanent link">&para;</a></h3>
 <p>Unit tests stub global WP functions (<code>get_post</code>, <code>update_post_meta</code>,
@@ -1626,6 +1641,10 @@ injected via the controller constructor:</p>
 <td><code>unit/RetailerApiTest.php</code></td>
 </tr>
 <tr>
+<td>Activation page creation (ensure_page idempotency, template assignment, copy backfill)</td>
+<td><code>unit/ActivatorCreatePagesTest.php</code></td>
+</tr>
+<tr>
 <td><code>can_view_registry</code> / <code>can_edit_registry</code> matrix</td>
 <td><code>integration/Controller/AccessControlTest.php</code></td>
 </tr>
@@ -1640,6 +1659,10 @@ injected via the controller constructor:</p>
 <tr>
 <td><code>Lambda_Client</code> HTTP behavior (auth headers, error mapping)</td>
 <td><code>integration/LambdaClient/LambdaClientTest.php</code></td>
+</tr>
+<tr>
+<td>Product scraper — static URL regression set + live discovery (real HTTP)</td>
+<td><code>integration/Scraper/ProductScraperTest.php</code></td>
 </tr>
 </tbody>
 </table>

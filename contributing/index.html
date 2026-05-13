@@ -1602,11 +1602,17 @@ changes — explain <em>why</em>, not <em>what</em>.</p>
 <ul>
 <li><strong>Unit tests</strong> (<code>plugin/tests/unit/</code>) for pure functions and small classes —
   <code>Restart_Registry_Affiliate_Converter</code>, <code>Restart_Retailer_Api</code>, controller
-  helpers like <code>truncate_name</code>. Brain\Monkey stubs out WordPress globals.</li>
+  helpers like <code>truncate_name</code>, activator page-creation logic. Brain\Monkey
+  stubs out WordPress globals.</li>
 <li><strong>Integration tests</strong> (<code>plugin/tests/integration/Controller/</code>,
   <code>plugin/tests/integration/LambdaClient/</code>) for anything that crosses the
   controller seam — access control, mark-purchased, invites, the Lambda HTTP
   client. Use <code>LambdaClientFake</code> to keep the Lambda out of the loop.</li>
+<li><strong>Scraper tests</strong> (<code>plugin/tests/integration/Scraper/</code>) make real HTTP
+  requests to live retailer pages. Run with <code>make plugin-test-scraper</code>. These
+  are intentionally excluded from the default PHPUnit suite and from CI —
+  bot-detection on retailer sites is expected and causes individual tests to
+  be skipped, not failed.</li>
 <li>A bug fix must add a failing-then-passing test in the matching directory.</li>
 </ul>
 <h3 id="lambda">Lambda<a class="headerlink" href="#lambda" title="Permanent link">&para;</a></h3>

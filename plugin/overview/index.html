@@ -715,6 +715,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#activation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#custom-post-type" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1443,6 +1454,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#activation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#custom-post-type" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1563,7 +1585,8 @@ list of Lambda item IDs in post meta to preserve order.</p>
 │   ├── class-lambda-api-client.php            # Lambda HTTP client
 │   ├── class-affiliate-converter.php          # URL → affiliate URL
 │   ├── class-retailer-api.php                 # Etsy/etc. metadata fetch
-│   ├── class-restart-registry-activator.php   # CPT registration on activate
+│   ├── class-product-scraper.php              # Retailer URL → product metadata
+│   ├── class-restart-registry-activator.php   # CPT + page creation on activate
 │   ├── class-restart-registry-deactivator.php
 │   └── class-restart-registry-i18n.php
 ├── public/
@@ -1573,7 +1596,8 @@ list of Lambda item IDs in post meta to preserve order.</p>
 ├── tests/
 │   ├── unit/                      # Brain\Monkey-mocked PHPUnit
 │   ├── integration/Controller/    # Controller against fakes
-│   └── integration/LambdaClient/  # HTTP client tests
+│   ├── integration/LambdaClient/  # HTTP client tests
+│   └── integration/Scraper/       # Real-HTTP scraper tests (separate suite)
 └── public/js/, public/css/        # Front-end assets
 </code></pre></div>
 <h2 id="key-classes">Key classes<a class="headerlink" href="#key-classes" title="Permanent link">&para;</a></h2>
@@ -1598,6 +1622,10 @@ list of Lambda item IDs in post meta to preserve order.</p>
 <td>Maps product URLs to affiliate URLs by retailer.</td>
 </tr>
 <tr>
+<td><code>Restart_Registry_Product_Scraper</code></td>
+<td>Fetches product name, price, image, and description from a retailer URL. Amazon uses a URL-only fast path (no HTTP); Etsy retries with a social-crawler UA; all others use og: tags and JSON-LD.</td>
+</tr>
+<tr>
 <td><code>Restart_Retailer_Api</code></td>
 <td>Optional richer-metadata fetch (currently Etsy).</td>
 </tr>
@@ -1607,6 +1635,22 @@ list of Lambda item IDs in post meta to preserve order.</p>
 </tr>
 </tbody>
 </table>
+<h2 id="activation">Activation<a class="headerlink" href="#activation" title="Permanent link">&para;</a></h2>
+<p><code>Restart_Registry_Activator::activate()</code> runs once on plugin activation. It:</p>
+<ol>
+<li>Registers the <code>restart-registry</code> custom post type (see below).</li>
+<li>Creates eleven WordPress pages — Home, Login, Register, My Account, My
+   Registries, Start a Registry, Find a Registry, FAQ, About Us, Terms and
+   Conditions, and Privacy Policy — each with the matching page template slug
+   (<code>page-login</code>, <code>page-register</code>, etc.). Pages that already exist are left
+   alone; empty pages get their content backfilled from
+   <code>theme/assets/copy/&lt;slug&gt;.html</code>. The Home page is set as the static front
+   page.</li>
+<li>Enables open user registration (<code>users_can_register = 1</code>) and sets the
+   default role to <code>subscriber</code>.</li>
+</ol>
+<p>Running activation twice is safe — <code>ensure_page()</code> skips pages that already
+exist and never overwrites real content.</p>
 <h2 id="custom-post-type">Custom post type<a class="headerlink" href="#custom-post-type" title="Permanent link">&para;</a></h2>
 <p>Registered on activation by <code>Restart_Registry_Activator</code>:</p>
 <ul>
