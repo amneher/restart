@@ -1,17 +1,21 @@
 # Plugin Testing
 
-The plugin ships **70 PHPUnit tests** — 34 unit and 36 integration. The
-boundary between the two is the controller seam: anything that exercises
-`Restart_Registry_Controller` against fakes is integration; anything else is
-unit.
+The plugin ships **89 PHPUnit tests** in the default suite — 53 unit and 36
+integration — plus 2 real-HTTP scraper tests in a separate `scraper` suite that
+is excluded from CI. The boundary between the two main tiers is the controller
+seam: anything that exercises `Restart_Registry_Controller` against fakes is
+integration; anything else is unit.
 
 ## Layout
 
 ```
 plugin/tests/
 ├── bootstrap.php
-├── Fakes/                     # Test doubles (LambdaClientFake, etc.)
+├── assets/
+│   └── TestItemUrls.txt          # Static retailer URLs for the scraper regression set
+├── Fakes/                        # Test doubles (LambdaClientFake, etc.)
 ├── unit/
+│   ├── ActivatorCreatePagesTest.php
 │   ├── AffiliateConverterTest.php
 │   ├── ControllerTruncateNameTest.php
 │   └── RetailerApiTest.php
@@ -20,9 +24,11 @@ plugin/tests/
     │   ├── AccessControlTest.php
     │   ├── MarkItemPurchasedTest.php
     │   └── InviteTest.php
-    └── LambdaClient/
-        ├── LambdaClientTest.php
-        └── wp-clean.sql
+    ├── LambdaClient/
+    │   ├── LambdaClientTest.php
+    │   └── wp-clean.sql
+    └── Scraper/
+        └── ProductScraperTest.php   # Real-HTTP — excluded from default suite
 ```
 
 ## Running the suite
@@ -30,9 +36,10 @@ plugin/tests/
 ```bash
 cd plugin
 composer install
-./vendor/bin/phpunit              # all tests
+./vendor/bin/phpunit              # default suite (unit + integration, no real HTTP)
 ./vendor/bin/phpunit --testsuite=unit
 ./vendor/bin/phpunit --testsuite=integration
+./vendor/bin/phpunit --testsuite=scraper   # real HTTP — needs internet access
 ./vendor/bin/phpunit --filter MarkItemPurchased   # by class
 ```
 
@@ -42,7 +49,14 @@ The Make targets are equivalent:
 make plugin-test          # PHP + JS
 make plugin-test-php      # only PHP
 make plugin-test-js       # only Jest (admin UI)
+make plugin-test-scraper  # real-HTTP scraper suite (makes live requests to retailers)
 ```
+
+!!! warning "Scraper tests make real HTTP requests"
+    `plugin-test-scraper` (and `--testsuite=scraper`) hits live retailer pages. Run
+    it to validate scraping logic after changes to `class-product-scraper.php`, not
+    as part of the standard CI loop. Bot-detection failures cause individual tests to
+    be skipped, not fatal failures.
 
 ## Mocking strategy
 
@@ -80,10 +94,12 @@ This is also why `LambdaClient::request()` is `private` rather than
 | Affiliate URL conversion (per retailer + edge cases) | `unit/AffiliateConverterTest.php` |
 | Item-name truncation logic | `unit/ControllerTruncateNameTest.php` |
 | Etsy retailer API metadata fetching | `unit/RetailerApiTest.php` |
+| Activation page creation (ensure_page idempotency, template assignment, copy backfill) | `unit/ActivatorCreatePagesTest.php` |
 | `can_view_registry` / `can_edit_registry` matrix | `integration/Controller/AccessControlTest.php` |
 | `mark_item_purchased` happy path + quantity exceeded + opt-out | `integration/Controller/MarkItemPurchasedTest.php` |
 | `send_invite` + dedupe + email branching | `integration/Controller/InviteTest.php` |
 | `Lambda_Client` HTTP behavior (auth headers, error mapping) | `integration/LambdaClient/LambdaClientTest.php` |
+| Product scraper — static URL regression set + live discovery (real HTTP) | `integration/Scraper/ProductScraperTest.php` |
 
 ## JavaScript tests
 

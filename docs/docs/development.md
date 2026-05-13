@@ -38,6 +38,7 @@ The top-level `Makefile` delegates to component sub-makes:
 make plugin-test           # PHP (PHPUnit) + JS (Jest) for the plugin
 make plugin-test-php       # only PHP
 make plugin-test-js        # only JS
+make plugin-test-scraper   # scraper integration suite (real HTTP — not run in CI)
 
 make lambda-test           # pytest
 
