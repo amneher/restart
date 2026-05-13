@@ -62,11 +62,17 @@ Before opening a PR:
 
 - **Unit tests** (`plugin/tests/unit/`) for pure functions and small classes —
   `Restart_Registry_Affiliate_Converter`, `Restart_Retailer_Api`, controller
-  helpers like `truncate_name`. Brain\\Monkey stubs out WordPress globals.
+  helpers like `truncate_name`, activator page-creation logic. Brain\\Monkey
+  stubs out WordPress globals.
 - **Integration tests** (`plugin/tests/integration/Controller/`,
   `plugin/tests/integration/LambdaClient/`) for anything that crosses the
   controller seam — access control, mark-purchased, invites, the Lambda HTTP
   client. Use `LambdaClientFake` to keep the Lambda out of the loop.
+- **Scraper tests** (`plugin/tests/integration/Scraper/`) make real HTTP
+  requests to live retailer pages. Run with `make plugin-test-scraper`. These
+  are intentionally excluded from the default PHPUnit suite and from CI —
+  bot-detection on retailer sites is expected and causes individual tests to
+  be skipped, not failed.
 - A bug fix must add a failing-then-passing test in the matching directory.
 
 ### Lambda
