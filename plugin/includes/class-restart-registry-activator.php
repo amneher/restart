@@ -38,8 +38,8 @@ class Restart_Registry_Activator {
     }
 
     public static function register_registry_user_role(): void {
-        if (!get_role('registry_user')) {
-            add_role('registry_user', __('Registry User', 'restart-registry'), [
+        if (!get_role('registry-user')) {
+            add_role('registry-user', __('Registry User', 'restart-registry'), [
                 'read' => true,
             ]);
         }
@@ -61,7 +61,7 @@ class Restart_Registry_Activator {
         if ($subscriber) {
             $subscriber->add_cap('upload_files');
         }
-        $registry_user = get_role('registry_user');
+        $registry_user = get_role('registry-user');
         if ($registry_user) {
             $registry_user->add_cap('upload_files');
         }
