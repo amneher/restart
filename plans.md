@@ -5,7 +5,7 @@ This is too big for one PR — it spans CSS one-liners, schema additions, new mo
 ## Inventory + classification
 
 | # | Item | Surface | Size | Phase |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 1 | Footer copyright: © + year + "ReStart Group, LLC" | theme | XS | A |
 | 2 | Archive hero/CTA: -1/4 height | theme CSS | XS | A |
 | 3 | "Your Items" → "My Items" | plugin | XS | A |
@@ -33,21 +33,27 @@ This is too big for one PR — it spans CSS one-liners, schema additions, new mo
 ## Phases (one PR each)
 
 ### Phase A — quick wins (CSS + copy)
+
 Items 1–10. Pure presentation/text. No schema, no new files of substance. Single PR, atomic commits per item. ~30–45 min of work.
 
 ### Phase B — page background images
+
 Item 11. Pick a fitting image per page from `theme/assets/background_images/`, add a hero/cover block to each template (or use a CSS `background-image` on the page wrapper). Theme version bump, atomic commit per page. ~60 min.
 
 ### Phase C — registry UX features (plugin-only, no schema)
+
 Items 12–17. All bounded to plugin markup + plugin CSS + small JS. Builds on existing data shapes (invitees already exist; fulfilled = derivable from `quantity_purchased >= quantity_needed`, but might warrant an explicit field — see decision below). Single PR with atomic commits. ~2–3 hrs.
 
 ### Phase D — registry schema additions (lambda + plugin + theme)
+
 Items 18, 19. Adds optional fields to the registry model + start-a-registry form + display in single registry. Lambda model migration, schema test additions, plugin save/render code, theme display.
 
 Sub-decisions (#18 and #19) live below. ~3–4 hrs.
 
 ### Phase E — price scraping subsystem
+
 Item 20 only. Its own architectural plan. Touches:
+
 - Lambda: scraping fn (per-retailer parsers, fallback strategies), scheduled task runner
 - Plugin admin: manual "Refresh prices" button, schedule UI
 - DB: price_last_checked_at column
@@ -80,5 +86,5 @@ This deserves its own /plan-eng-review pass. I'd rather not touch it in the same
 - [x] Phase A PR (items 1–10).
 - [x] Phase B PR (item 11).
 - [x] Phase C PR (items 12–17).
-- [ ] Phase D PR (items 18–19).
+- [x] Phase D PR (items 18–19).
 - [ ] Phase E plan + PR (item 20).

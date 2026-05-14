@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 .PHONY: help up down logs reset seed seed-reset \
-        test plugin-test plugin-test-php plugin-test-js \
+        test plugin-test plugin-test-php plugin-test-js plugin-test-scraper \
         lambda-test lambda-test-staging lambda-test-prod \
         theme-test theme-test-php theme-test-js \
         install lint typecheck clean \
@@ -51,6 +51,9 @@ plugin-test-php:
 
 plugin-test-js:
 	cd plugin && npm test
+
+plugin-test-scraper:
+	cd plugin && ./vendor/bin/phpunit --testsuite scraper
 
 lambda-test:
 	$(MAKE) -C lambda/ test
@@ -204,6 +207,7 @@ help:
 	@echo "  plugin-test          Run plugin PHP + JS tests"
 	@echo "  plugin-test-php      Run plugin PHPUnit suite"
 	@echo "  plugin-test-js       Run plugin JS tests"
+	@echo "  plugin-test-scraper  Run plugin scraper integration tests (makes real HTTP requests)"
 	@echo "  lambda-test          Run lambda unit tests (in-memory SQLite)"
 	@echo "  lambda-test-staging  Run lambda WP integration/e2e tests against staging"
 	@echo "  lambda-test-prod     Run lambda WP integration/e2e tests against production"

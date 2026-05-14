@@ -136,6 +136,37 @@ class Restart_Registry_Controller {
     // =========================================================================
 
     /**
+     * Generate a unique 6-character alphanumeric slug for a new registry.
+     * Uses an unambiguous character set (no 0/O/1/I/l) and retries on collision.
+     */
+    private function _generate_short_code(): string {
+        $chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+        $len   = strlen($chars);
+
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $code = '';
+            for ($i = 0; $i < 6; $i++) {
+                $code .= $chars[random_int(0, $len - 1)];
+            }
+
+            // Confirm no existing post uses this slug.
+            $collision = get_posts([
+                'post_type'      => 'restart-registry',
+                'name'           => $code,
+                'posts_per_page' => 1,
+                'post_status'    => 'any',
+            ]);
+
+            if (empty($collision)) {
+                return $code;
+            }
+        }
+
+        // Virtually impossible, but fall back to a longer code rather than failing.
+        return bin2hex(random_bytes(5));
+    }
+
+    /**
      * Create a new registry WP post for a user.
      * Returns ['id' => post_id, 'share_key' => post_id] or WP_Error.
      */
@@ -154,6 +185,7 @@ class Restart_Registry_Controller {
         $post_id = wp_insert_post([
             'post_type'    => 'restart-registry',
             'post_title'   => sanitize_text_field($title),
+            'post_name'    => $this->_generate_short_code(),
             'post_content' => sanitize_textarea_field($description),
             'post_status'  => $is_public ? 'publish' : 'private',
             'post_author'  => $user_id,

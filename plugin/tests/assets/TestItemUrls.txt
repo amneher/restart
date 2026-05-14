@@ -1,0 +1,36 @@
+# Product URLs for scraper integration tests.
+# Static, curated list — discovery updates individual retailer sections when it
+# finds live URLs, but never deletes a section it did not scrape.
+# Regenerate: ./vendor/bin/phpunit --testsuite scraper
+
+
+# amazon
+https://www.amazon.com/dp/B00004RFMH
+https://www.amazon.com/dp/B00006JSUA
+https://www.amazon.com/KitchenAid-KSM150PSER-Artisan-Series-Mixer/dp/B00005UP2P/
+
+# brooklinen
+https://www.brooklinen.com/products/classic-hardcore-sheet-bundle?variant=41405021880410
+https://www.brooklinen.com/products/washed-linen-quilt?variant=43188816216154
+https://www.brooklinen.com/products/washed-linen-core-sheet-set?variant=41807620407386
+https://www.brooklinen.com/products/weekend-wash-bed-blanket?variant=43312491069530
+https://www.brooklinen.com/products/dedcool-brooklinen-the-sleep-mode-duo?component0=43266040528986
+https://www.brooklinen.com/products/waffle-bath-towel-bundle?variant=43297826439258
+https://www.brooklinen.com/products/pride-throw-blanket?variant=43220676280410
+https://www.brooklinen.com/products/surfside-stripe-terry-tote?variant=43312490938458
+https://www.brooklinen.com/products/reversible-looped-bath-mat?variant=43188766998618
+
+# westelm
+https://www.westelm.com/products/organic-washed-cotton-sheet-set-b2125/?pkey=cbedding&sb=WE
+https://www.westelm.com/products/european-down-pillow-insert-b3383/?pkey=cbedding&sb=WE
+https://www.westelm.com/products/mid-century-executive-desk-h9719/?pkey=cwest-elm-office&sb=WE
+https://www.westelm.com/products/mid-century-bookshelf-wide-h1056/?pkey=cwest-elm-office&sb=WE
+https://www.westelm.com/products/mid-century-modular-3-tier-wide-shelf-h11865/?pkey=cwest-elm-office&sb=WE
+
+# potterybarn
+https://www.potterybarn.com/products/balboa-upholstered-swivel-armchair/?sku=3637965
+https://www.potterybarn.com/products/delaney-oval-marble-c-table/?sku=3180193
+https://www.potterybarn.com/products/emery-linen-pole-pocket-drape-white/?sku=7572333
+https://www.potterybarn.com/products/classic-organic-loop-bath-mat/
+https://www.potterybarn.com/products/pb-classic-organic-towels/?sku=6830555
+https://www.potterybarn.com/products/linden-marble-triple-shelf/

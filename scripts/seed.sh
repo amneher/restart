@@ -91,7 +91,7 @@ $WP plugin activate restart-registry 2>/dev/null || true
 echo "→ Creating demo user..."
 if ! $WP user get demo 2>/dev/null | grep -q demo; then
     $WP user create demo demo@example.com \
-        --role=subscriber \
+        --role=registry-user \
         --user_pass=demo \
         --display_name="Alex Demo"
 fi
@@ -158,7 +158,7 @@ $WP rewrite flush >/dev/null
 
 echo "→ Enabling user registration..."
 $WP option update users_can_register 1 >/dev/null
-$WP option update default_role subscriber >/dev/null
+$WP option update default_role registry-user >/dev/null
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
 

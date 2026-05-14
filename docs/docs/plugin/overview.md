@@ -27,7 +27,8 @@ plugin/
 │   ├── class-lambda-api-client.php            # Lambda HTTP client
 │   ├── class-affiliate-converter.php          # URL → affiliate URL
 │   ├── class-retailer-api.php                 # Etsy/etc. metadata fetch
-│   ├── class-restart-registry-activator.php   # CPT registration on activate
+│   ├── class-product-scraper.php              # Retailer URL → product metadata
+│   ├── class-restart-registry-activator.php   # CPT + page creation on activate
 │   ├── class-restart-registry-deactivator.php
 │   └── class-restart-registry-i18n.php
 ├── public/
@@ -37,7 +38,8 @@ plugin/
 ├── tests/
 │   ├── unit/                      # Brain\Monkey-mocked PHPUnit
 │   ├── integration/Controller/    # Controller against fakes
-│   └── integration/LambdaClient/  # HTTP client tests
+│   ├── integration/LambdaClient/  # HTTP client tests
+│   └── integration/Scraper/       # Real-HTTP scraper tests (separate suite)
 └── public/js/, public/css/        # Front-end assets
 ```
 
@@ -48,8 +50,27 @@ plugin/
 | [`Restart_Registry_Controller`](controller-api.md) | Single façade for registry/item CRUD. Bridges the WP CPT and the Lambda. |
 | [`Restart_Registry_Lambda_Client`](lambda-client.md) | HTTP client to FastAPI. Reads URL/key/auth from options or env. |
 | [`Restart_Registry_Affiliate_Converter`](affiliate-converter.md) | Maps product URLs to affiliate URLs by retailer. |
+| `Restart_Registry_Product_Scraper` | Fetches product name, price, image, and description from a retailer URL. Amazon uses a URL-only fast path (no HTTP); Etsy retries with a social-crawler UA; all others use og: tags and JSON-LD. |
 | `Restart_Retailer_Api` | Optional richer-metadata fetch (currently Etsy). |
 | `Restart_Registry_Public` | Shortcodes + AJAX endpoints. |
+
+## Activation
+
+`Restart_Registry_Activator::activate()` runs once on plugin activation. It:
+
+1. Registers the `restart-registry` custom post type (see below).
+2. Creates eleven WordPress pages — Home, Login, Register, My Account, My
+   Registries, Start a Registry, Find a Registry, FAQ, About Us, Terms and
+   Conditions, and Privacy Policy — each with the matching page template slug
+   (`page-login`, `page-register`, etc.). Pages that already exist are left
+   alone; empty pages get their content backfilled from
+   `theme/assets/copy/<slug>.html`. The Home page is set as the static front
+   page.
+3. Enables open user registration (`users_can_register = 1`) and sets the
+   default role to `subscriber`.
+
+Running activation twice is safe — `ensure_page()` skips pages that already
+exist and never overwrites real content.
 
 ## Custom post type
 
