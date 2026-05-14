@@ -2,8 +2,18 @@
 
 ---
 
+**What is a divorce registry?**
+A divorce registry is a gift registry for people rebuilding their lives after divorce. It works the same way a wedding or baby registry does: you create a list of things you need, share a link, and the people who care about you can buy something directly from the retailer. reStart is a free platform built specifically for this. You add items from any online retailer, and gift-givers click through to purchase — no fees, no middleman.
+
+---
+
+**Is a divorce registry appropriate?**
+Yes. Divorce is one of the most disruptive transitions a person can go through, and people often emerge from it needing to rebuild an entire household from scratch. A registry gives friends and family a clear, practical way to help. Most people genuinely want to do something — a registry just tells them what to do. If a wedding or a new baby warrants a registry, a divorce does too.
+
+---
+
 **What is reStart?**
-reStart is a gift registry platform built for people rebuilding their lives after divorce. Whether you need a new toaster, a set of sheets, or a couch to call your own, reStart makes it easy for the people who love you to help you start fresh.
+reStart is a free gift registry platform built for people rebuilding their lives after divorce. Whether you need a new set of sheets, a toaster, or a couch to call your own, reStart makes it easy for the people who love you to help you start fresh. You create a registry, add items from any retailer you like, and share the link however works best for you.
 
 ---
 
@@ -12,13 +22,28 @@ Yes. Creating an account and building a registry is completely free. We don't ta
 
 ---
 
+**What do you put on a divorce registry?**
+Anything you need to make a new place feel like home. Common items include bedding, towels, cookware, a coffee maker, small appliances, and furniture. Think about what you shared with your former partner that you no longer have — then work from there. You can also add things that feel more like a fresh start than a replacement: a nice set of knives, a piece of art, a good lamp. There's no rulebook. Add what you actually need.
+
+---
+
+**Do I need to be legally divorced to use reStart?**
+No. You can create a registry at any stage of separation or divorce. Some people start one when they first move out; others wait until things are settled. There's no requirement and no verification — it's your registry, on your timeline.
+
+---
+
 **How do I create a registry?**
-Create an account, then head to Start a Registry. You'll give your registry a name, add a short description, and start adding items from any retailer you like. The whole setup takes about five minutes.
+Create an account, then go to Start a Registry. You'll give your registry a name, add a short description, and start adding items from any retailer you like. The whole setup takes about five minutes.
 
 ---
 
 **How do I add items to my registry?**
-From your registry dashboard, paste in a link to any product from any online retailer. reStart pulls in the product name, image, and price automatically. You can also add a note to let gift-givers know why you want it.
+From your registry dashboard, paste in a link to any product from any online retailer. reStart pulls in the product name, image, and price automatically. You can also add a note to let gift-givers know why you want it or what it's replacing.
+
+---
+
+**How does a divorce registry work for gift-givers?**
+When someone visits your registry and clicks an item, they're taken directly to the retailer's website to complete the purchase. reStart doesn't handle payments — the transaction is entirely between the gift-giver and the retailer. Once they've bought something, they can mark it as purchased on your registry so others know it's taken care of.
 
 ---
 
@@ -28,7 +53,7 @@ By default, your registry is private — only people with your direct link can v
 ---
 
 **How do I share my registry?**
-Every registry has a unique link you can copy from your dashboard and share however you like — text, email, a group chat, or a note in a card.
+Every registry has a unique link you can copy from your dashboard and share however you like — text message, email, a group chat, or a note in a card. You don't have to announce it any particular way; just send the link when it feels right.
 
 ---
 
@@ -53,9 +78,9 @@ Absolutely. You can add, remove, and reorder items at any time. Changes are refl
 ---
 
 **How do I delete my account?**
-You can request account deletion by emailing us at hello@the-restart.co. We'll remove your account and all associated data within 30 days.
+You can request account deletion by emailing us at [hello@the-restart.co](mailto:hello@the-restart.co). We'll remove your account and all associated data within 30 days.
 
 ---
 
 **I have a question that isn't answered here.**
-Reach out to us at hello@the-restart.co — we're happy to help.
+Reach out to us at [hello@the-restart.co](mailto:hello@the-restart.co) — we're happy to help.
