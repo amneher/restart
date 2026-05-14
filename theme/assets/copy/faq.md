@@ -38,7 +38,7 @@ Yes. If someone you love is going through a divorce and you want to help, you ca
 ---
 
 **How do I create a registry?**
-Create an account, then go to Start a Registry. You'll give your registry a name and a short description — a few words about yourself, or a brief bio of the person whose independence you're celebrating. Then start adding items from any retailer you like. The whole setup takes about five minutes.
+Create an account, then go to [Start a Registry](/start-a-registry). You'll give your registry a name and a short description — a few words about yourself, or a brief bio of the person whose independence you're celebrating. Then start adding items from any retailer you like. The whole setup takes about five minutes.
 
 ---
 
@@ -52,7 +52,7 @@ When someone visits your registry and clicks an item, they're taken directly to 
 ---
 
 **Who can see my registry?**
-By default, your registry is private — only people with your direct link can view it. You can switch it to public at any time from your registry settings, which makes it discoverable on the Find a Registry page.
+By default, your registry is private — only people with your direct link can view it. You can switch it to public at any time from your registry settings, which makes it discoverable on the [Find a Registry](/find-a-registry) page.
 
 ---
 

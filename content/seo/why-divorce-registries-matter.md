@@ -34,4 +34,4 @@ It lets the people in your life feel useful. It removes the awkwardness of askin
 
 That's not a small thing.
 
-reStart is free to use. If you're ready to build your registry, it takes about five minutes to get started.
+reStart is free to use. If you're ready to build your registry, [here's how to create one](/articles/how-to-create-a-divorce-registry).

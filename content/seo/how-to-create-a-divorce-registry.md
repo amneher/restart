@@ -4,11 +4,11 @@ Creating a divorce registry on reStart takes about five minutes. This is a guide
 
 ## Step 1: Create Your Account
 
-Go to reStart and create a free account. You'll need an email address and a password — that's it. No credit card, no subscription.
+Go to reStart and [create a free account](/register). You'll need an email address and a password — that's it. No credit card, no subscription.
 
 ## Step 2: Start a Registry
 
-From your account dashboard, click "Start a Registry." You'll be asked to give it a name and a short description and an optional photo. The name can be anything: your name, "My Fresh Start," or simply "Alex's Registry." The description is optional but gives gift-givers a little context — something like "Starting over after 12 years and in need of basically everything" or just "New apartment, new chapter."
+From your account dashboard, click "[Start a Registry](/start-a-registry)." You'll be asked to give it a name and a short description and an optional photo. The name can be anything: your name, "My Fresh Start," or simply "Alex's Registry." The description is optional but gives gift-givers a little context — something like "Starting over after 12 years and in need of basically everything" or just "New apartment, new chapter."
 
 ## Step 3: Add Items
 
@@ -41,6 +41,6 @@ This is the one people skip and shouldn't. A good book. A yoga mat. That kitchen
 
 ## No Rulebook Required
 
-There's no standard template for a divorce registry, and that's part of the point. You know what you need. Build the list that reflects your actual life, share it with the people you trust, and let them do the rest.
+There's no standard template for a divorce registry, and that's part of the point. You know what you need. Build the list that reflects your actual life, [share it with the people you trust](/articles/how-to-share-your-divorce-registry), and let them do the rest.
 
 You can edit your registry at any time — add items, remove them, reorder them. It's yours.

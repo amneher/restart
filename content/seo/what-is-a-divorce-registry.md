@@ -30,4 +30,4 @@ When someone you love goes through a divorce, the impulse to show up is real. Bu
 
 That's what a divorce registry does. It doesn't ask for sympathy. It just gives people a way in.
 
-If you're ready to create one, reStart is free to use and takes about five minutes to set up.
+If you're ready to create one, reStart is free to use — [here's how to get started](/articles/how-to-create-a-divorce-registry).

@@ -40,7 +40,7 @@ None of these require an explanation of your divorce. None of them make it a big
 
 This one's up to you. Some people share their registry widely — friends, family, coworkers, anyone who's offered to help. Others keep it tight, sharing only with close friends and immediate family. Neither is wrong.
 
-Your registry on reStart is private by default, which means only people with your link can see it. If you want it to be discoverable more broadly — say, so that an aunt or a college friend who heard through the grapevine can find it without you having to reach out directly — you can switch it to public in your settings. That makes it findable on the Find a Registry page.
+Your registry on reStart is private by default, which means only people with your link can see it. If you want it to be discoverable more broadly — say, so that an aunt or a college friend who heard through the grapevine can find it without you having to reach out directly — you can switch it to public in your settings. That makes it findable on the [Find a Registry](/find-a-registry) page.
 
 ## The Hardest Part Is Already Done
 
