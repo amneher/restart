@@ -253,26 +253,51 @@ echo "→ Creating demo registries..."
 
 create_registry() {
     local title="$1" event_type="$2" event_date="$3"
-    local slug post_id
-    # Derive slug matching WordPress sanitize_title: remove punctuation, lowercase, spaces→hyphens
-    slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed "s/'//g" | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//g')
-    # Use wp eval for exact slug match — wp post list --post_name uses LIKE, not =
+    local post_id php_title
+    # Escape single quotes so the title embeds safely in the PHP string below.
+    php_title=$(echo "$title" | sed "s/'/\\\\'/g")
+
+    # Idempotency: return existing registry post ID if one with this title already exists.
     post_id=$($WP eval "
-        \$posts = get_posts(['post_type'=>'restart-registry','post_status'=>'publish','name'=>'$slug','fields'=>'ids','numberposts'=>1]);
-        echo empty(\$posts) ? '' : \$posts[0];
+        \$posts = get_posts([
+            'post_type'   => 'restart-registry',
+            'author'      => $DEMO_ID,
+            'post_status' => ['publish','private','draft'],
+            'numberposts' => -1,
+            'fields'      => 'ids',
+        ]);
+        foreach (\$posts as \$id) {
+            if (get_the_title(\$id) === '$php_title') { echo \$id; exit; }
+        }
     " 2>/dev/null | tr -d '[:space:]')
+
     if [ -z "$post_id" ]; then
-        post_id=$($WP post create \
-            --post_type=restart-registry \
-            --post_status=publish \
-            --post_title="$title" \
-            --post_name="$slug" \
-            --post_author="$DEMO_ID" \
-            --porcelain)
-        $WP post meta update "$post_id" restart_event_type "$event_type" >/dev/null
-        $WP post meta update "$post_id" restart_event_date "$event_date" >/dev/null
-        $WP post meta update "$post_id" restart_invitees '[]' >/dev/null
-        $WP post meta update "$post_id" restart_item_ids '[]' >/dev/null
+        # Use Closure::bind to call the private _generate_short_code() from the
+        # controller — so seed registries get the real 6-char alphanumeric slugs
+        # (collision-resistant, unambiguous charset) instead of title-derived slugs.
+        # We bypass the one-per-user guard here intentionally; the seed creates
+        # multiple demo registries for one user for demo purposes.
+        post_id=$($WP eval "
+            \$controller = new Restart_Registry_Controller();
+            \$get_slug = Closure::bind(
+                function() { return \$this->_generate_short_code(); },
+                \$controller, \$controller
+            );
+            \$slug = \$get_slug();
+            \$id = wp_insert_post([
+                'post_type'    => 'restart-registry',
+                'post_title'   => '$php_title',
+                'post_name'    => \$slug,
+                'post_status'  => 'publish',
+                'post_author'  => $DEMO_ID,
+            ], true);
+            if (is_wp_error(\$id)) { exit(1); }
+            update_post_meta(\$id, 'restart_event_type', '$event_type');
+            update_post_meta(\$id, 'restart_event_date', '$event_date');
+            update_post_meta(\$id, 'restart_invitees', '[]');
+            update_post_meta(\$id, 'restart_item_ids', '[]');
+            echo \$id;
+        " 2>/dev/null | tr -d '[:space:]')
     fi
     echo "$post_id"
 }
