@@ -8,7 +8,7 @@ A divorce registry is a list of things you need for that new start, shared with 
 
 ## How a Divorce Registry Works
 
-A divorce registry functions exactly like any other gift registry. You create a list, add items from any retailer you like, and share a link with the people you want to invite in. When someone wants to buy something, they click through to the retailer's website and complete the purchase there. The item gets marked as claimed on your registry so no one doubles up.
+A divorce registry functions exactly like any other gift registry. You create a list, add items from any retailer you like, and share a link with the people you want to invite in. When someone wants to buy something, they click through to the retailer's website and complete the purchase there. Once they've bought it, they come back and mark the item as purchased on your registry so no one buys the same thing twice.
 
 With reStart, you can add items from any online store — not just a single retailer. Paste in a link, and the product name, image, and price are pulled in automatically. You can add a note to any item if you want to explain what it's replacing or why it matters.
 

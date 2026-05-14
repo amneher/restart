@@ -8,7 +8,7 @@ Go to reStart and create a free account. You'll need an email address and a pass
 
 ## Step 2: Start a Registry
 
-From your account dashboard, click "Start a Registry." You'll be asked to give it a name and a short description. The name can be anything: your name, "My Fresh Start," or simply "Alex's Registry." The description is optional but gives gift-givers a little context — something like "Starting over after 12 years and in need of basically everything" or just "New apartment, new chapter."
+From your account dashboard, click "Start a Registry." You'll be asked to give it a name and a short description and an optional photo. The name can be anything: your name, "My Fresh Start," or simply "Alex's Registry." The description is optional but gives gift-givers a little context — something like "Starting over after 12 years and in need of basically everything" or just "New apartment, new chapter."
 
 ## Step 3: Add Items
 
@@ -18,7 +18,7 @@ You can add items from as many different retailers as you want. There's no restr
 
 ## Step 4: Set Your Privacy Preference
 
-By default, your registry is private. Only people with your direct link can see it. If you want your registry to be discoverable on the Find a Registry page — so that extended family or acquaintances can find it without you having to send them a link directly — you can switch it to public in your settings. Both options work; it's just a matter of how widely you want to share.
+By default, your registry is private. Only people with your direct link can see it. If you want your registry to be discoverable on the [Find a Registry](/find-a-registry) page — so that extended family or acquaintances can find it without you having to send them a link directly — you can switch it to public in your settings. Both options work; it's just a matter of how widely you want to share.
 
 ## What to Put on a Divorce Registry
 
