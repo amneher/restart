@@ -26,6 +26,7 @@ This is too big for one PR — it spans CSS one-liners, schema additions, new mo
 | 18 | Optional registry hero image | lambda + plugin + theme | M | D |
 | 19 | Optional recipient/divorcee fields (when creator ≠ recipient) | lambda + plugin + theme | M | D |
 | 20 | Price scraping from URL + scheduled refresh + admin trigger | lambda (scraper) + plugin (admin UI + schedule) | L | E |
+| 21 | Auto-mark item purchased after gift-giver completes checkout (currently manual — purchaser must return to site and click "purchased") | plugin + lambda | M | F |
 
 (I split #4 and #6 because you listed them separately; they're the same fix — single article category alignment.)
 
