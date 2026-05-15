@@ -405,8 +405,40 @@ class Restart_Registry_Controller {
         $result = $this->lambda->update_item($item_id, ['quantity_purchased' => $current + $quantity]);
         if (!is_wp_error($result)) {
             $this->send_purchase_notification($item, $purchaser_name, $purchaser_note);
+            if (trim($purchaser_note) !== '') {
+                $this->persist_purchase_message($item, $is_anonymous ? '' : $purchaser_name, $purchaser_note);
+            }
         }
         return $result;
+    }
+
+    /**
+     * Append a purchase message record to the registry's message board.
+     * Only called when the gift-giver left a non-empty note.
+     */
+    private function persist_purchase_message(array $item, string $purchaser_name, string $purchaser_note): void {
+        $registry_id = (int) ($item['registry_id'] ?? 0);
+        if (!$registry_id) return;
+
+        $messages   = json_decode(get_post_meta($registry_id, 'restart_purchase_messages', true) ?: '[]', true) ?: [];
+        $messages[] = [
+            'item_id'          => (int) ($item['id'] ?? 0),
+            'item_name'        => $item['name'] ?? '',
+            'item_image_url'   => $item['image_url'] ?? '',
+            'item_description' => $item['description'] ?? '',
+            'purchaser_name'   => $purchaser_name,
+            'purchaser_note'   => $purchaser_note,
+            'timestamp'        => time(),
+        ];
+        update_post_meta($registry_id, 'restart_purchase_messages', json_encode($messages));
+    }
+
+    /**
+     * Return stored purchase messages for a registry, newest first.
+     */
+    public function get_purchase_messages(int $registry_id): array {
+        $messages = json_decode(get_post_meta($registry_id, 'restart_purchase_messages', true) ?: '[]', true) ?: [];
+        return array_reverse($messages);
     }
 
     // =========================================================================
