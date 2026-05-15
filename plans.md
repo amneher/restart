@@ -1,3 +1,135 @@
+# Plan: Archive and delete registry (GH #23)
+
+## What
+Let owners archive (soft-disable) or permanently delete their registry from the settings panel.
+
+## What already exists
+- `delete_registry()` (controller:272) — deletes Lambda items + WP post. Already correct, just needs an AJAX handler wired up.
+- `update_registry()` handles `post_status` changes — archive can extend this pattern.
+- `can_view_registry()` (controller:594) — only grants access to `publish` / owner / admin / invitee. A custom archived status is automatically hidden from public without any extra guards.
+- `get_user_registry()` searches `['publish','private','draft']` — archived will be excluded automatically.
+- `get_registry_by_share_key()` searches `['publish','private']` — archived returns a `not_found` WP_Error; we'll intercept and return a specific `registry_archived` error instead to show a better message.
+
+## Archive strategy
+Register a custom `restart-archived` post status on `init`. Items and purchase messages are preserved. The registry URL shows "This registry is no longer active" instead of a generic 404.
+
+## Scope
+
+### 1. Main plugin class — register post status
+- `register_post_status('restart-archived', [...])` on the `init` hook in `class-restart-registry.php`.
+
+### 2. Controller
+- `archive_registry(int $registry_id): bool` — sets `post_status = 'restart-archived'`, forces `is_public = false` first.
+- `restore_registry(int $registry_id): bool` — sets `post_status = 'private'`.
+- `get_user_archived_registries(int $user_id): array` — fetches registries with `post_status = 'restart-archived'` for the user, returns array of slim registry arrays (no Lambda round-trip needed).
+- `get_registry_by_share_key()`: when `get_posts(['publish','private'])` returns empty, do a second lookup with `post_status = 'restart-archived'`; if found, return `WP_Error('registry_archived')`.
+
+### 3. AJAX handlers (public class)
+- `ajax_archive_registry()` — action `restart_registry_archive`. Auth: owner only.
+- `ajax_restore_registry()` — action `restart_registry_restore`. Auth: owner only.
+- `ajax_delete_registry()` — action `restart_registry_delete`. Auth: owner only. Requires `confirm=1` in payload.
+
+### 4. UI (public class + CSS)
+**Settings modal** — add two buttons below existing settings:
+- "Archive Registry" (secondary) — opens archive confirm modal.
+- "Delete Registry" (danger/ghost) — opens delete confirm modal.
+
+**Archive confirm modal** — brief explanation ("Your registry will be hidden. Items and messages are preserved. You can restore it any time.") + confirm button.
+
+**Delete confirm modal** — stronger warning ("This cannot be undone. All items and data will be permanently removed.") + checkbox "I understand this is permanent" that enables the confirm button.
+
+**My Account / My Registries** — below the active registry, add an "Archived Registries" section (collapsed by default) listing archived registries with a Restore button per row.
+
+**Archived registry URL** — `render_registry_view_html()` / `render_registry_view()`: detect `registry_archived` WP_Error from `get_registry_by_share_key()` and render a "This registry is no longer active" message instead of the generic "not found" error.
+
+## What's NOT in scope
+- Bulk archive/delete
+- Admin-triggered archive (owners only, for now)
+- Auto-purge of archived registries after N days
+
+## Todo
+- [ ] Branch: `feat/archive-delete-registry`
+- [ ] Main class: register `restart-archived` post status
+- [ ] Controller: `archive_registry()`, `restore_registry()`, `get_user_archived_registries()`
+- [ ] Controller: `get_registry_by_share_key()` — detect archived, return `registry_archived` error
+- [ ] Tests: archive/restore/delete/archived-url
+- [ ] Public class: `ajax_archive_registry()`, `ajax_restore_registry()`, `ajax_delete_registry()`
+- [ ] Public class: archive + delete buttons in settings modal
+- [ ] Public class: archive confirm modal
+- [ ] Public class: delete confirm modal with checkbox gate
+- [ ] Public class: archived registries section in My Account
+- [ ] Public class: "no longer active" message for archived URL
+- [ ] CSS: archive/delete button styles, archived section, confirm modals
+- [ ] Close GH #23
+
+---
+
+# Plan: Purchase message board (GH #16)
+
+## What
+When a gift-giver marks an item as purchased they can leave a name and note. Currently those fields are captured in the modal and emailed to the owner, then discarded — nothing is stored. This feature persists the messages and surfaces them in a message board section on the owner's registry view.
+
+## What already exists
+- `mark_item_purchased()` (controller:391) already accepts `purchaser_name` and `purchaser_note`
+- The mark-purchased modal (public.php:843) already has both input fields
+- `ajax_mark_purchased()` already reads and passes both fields through to the controller
+- `send_purchase_notification()` already includes the note in the email
+
+## Storage decision
+**Post meta on the registry post** (`restart_purchase_messages`): JSON array of message objects. Consistent with how `restart_invitees` and `restart_item_ids` are stored. No Lambda schema change needed. Item data (name, image_url, description) is available at purchase time in the controller and is snapshotted into the record so the message board doesn't need a Lambda round-trip to render.
+
+Each record:
+```json
+{
+  "item_id": 42,
+  "item_name": "Chef's Knife",
+  "item_image_url": "https://...",
+  "item_description": "High-carbon stainless steel...",
+  "purchaser_name": "Aunt Carol",
+  "purchaser_note": "Hope this helps with the new kitchen!",
+  "timestamp": 1715000000
+}
+```
+
+Only records with a non-empty `purchaser_note` are stored (name-only purchase notifications stay email-only).
+
+## Scope
+
+### 1. Controller — persist message on purchase
+- In `mark_item_purchased()`: after the Lambda update succeeds, if `$purchaser_note` is non-empty, append a record to `restart_purchase_messages` post meta on the registry post.
+- New method `get_purchase_messages(int $registry_id): array` — returns the stored array, newest first.
+
+### 2. Public class — message board section
+- In the owner registry view, below the item list, render a `<div class="rr-message-board">` section.
+- Only rendered when `get_purchase_messages()` returns at least one record.
+- Each card shows:
+  - Item thumbnail (from `item_image_url`)
+  - Item name and description
+  - Purchaser name (falls back to "Someone" if empty)
+  - Date (formatted from `timestamp`)
+  - Note text
+- Section is owner-only — not rendered in the guest/invitee view.
+
+### 3. CSS
+- Message board section and card styles (consistent with existing `.rr-*` design system).
+
+## What's NOT in scope
+- Editing or deleting individual messages (future)
+- Anonymous toggle for message board (the existing `is_anonymous` field suppresses the name in the email; same logic applies here — name shows as "Someone")
+- Pagination (message counts will be small)
+
+## Todo
+- [x] Branch: `feat/purchase-message-board` (1184371)
+- [x] Controller: persist message in `mark_item_purchased()` (1184371)
+- [x] Controller: `get_purchase_messages()` method (1184371)
+- [x] Controller test: message is stored; empty note produces no record (1184371)
+- [x] Public class: message board section in owner view (1184371)
+- [x] Public class: confirm board absent from guest view — in render_manage_registry() only, not render_registry_view_html()
+- [x] CSS: message board and card styles (1184371)
+- [ ] Close GH #16
+
+---
+
 # Plan: 18-item backlog (multi-PR)
 
 This is too big for one PR — it spans CSS one-liners, schema additions, new modal UIs, and a price-scraping subsystem. Proposed staging below; sequence is rough — items can move between phases if dependencies show up.
@@ -5,7 +137,7 @@ This is too big for one PR — it spans CSS one-liners, schema additions, new mo
 ## Inventory + classification
 
 | # | Item | Surface | Size | Phase |
-| --- | --- | --- | --- | --- |
+|---|---|---|---|---|
 | 1 | Footer copyright: © + year + "ReStart Group, LLC" | theme | XS | A |
 | 2 | Archive hero/CTA: -1/4 height | theme CSS | XS | A |
 | 3 | "Your Items" → "My Items" | plugin | XS | A |
@@ -33,27 +165,21 @@ This is too big for one PR — it spans CSS one-liners, schema additions, new mo
 ## Phases (one PR each)
 
 ### Phase A — quick wins (CSS + copy)
-
 Items 1–10. Pure presentation/text. No schema, no new files of substance. Single PR, atomic commits per item. ~30–45 min of work.
 
 ### Phase B — page background images
-
 Item 11. Pick a fitting image per page from `theme/assets/background_images/`, add a hero/cover block to each template (or use a CSS `background-image` on the page wrapper). Theme version bump, atomic commit per page. ~60 min.
 
 ### Phase C — registry UX features (plugin-only, no schema)
-
 Items 12–17. All bounded to plugin markup + plugin CSS + small JS. Builds on existing data shapes (invitees already exist; fulfilled = derivable from `quantity_purchased >= quantity_needed`, but might warrant an explicit field — see decision below). Single PR with atomic commits. ~2–3 hrs.
 
 ### Phase D — registry schema additions (lambda + plugin + theme)
-
 Items 18, 19. Adds optional fields to the registry model + start-a-registry form + display in single registry. Lambda model migration, schema test additions, plugin save/render code, theme display.
 
 Sub-decisions (#18 and #19) live below. ~3–4 hrs.
 
 ### Phase E — price scraping subsystem
-
 Item 20 only. Its own architectural plan. Touches:
-
 - Lambda: scraping fn (per-retailer parsers, fallback strategies), scheduled task runner
 - Plugin admin: manual "Refresh prices" button, schedule UI
 - DB: price_last_checked_at column

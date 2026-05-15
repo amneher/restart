@@ -43,6 +43,9 @@ class Restart_Registry_Public {
         add_action('wp_ajax_restart_registry_update',                [$this, 'ajax_update_registry']);
         add_action('wp_ajax_restart_registry_fetch_url',                    [$this, 'ajax_fetch_url']);
         add_action('wp_ajax_restart_registry_update_notification_prefs',   [$this, 'ajax_update_notification_prefs']);
+        add_action('wp_ajax_restart_registry_archive',                     [$this, 'ajax_archive_registry']);
+        add_action('wp_ajax_restart_registry_restore',                     [$this, 'ajax_restore_registry']);
+        add_action('wp_ajax_restart_registry_delete',                      [$this, 'ajax_delete_registry']);
     }
 
     // =========================================================================
@@ -77,8 +80,9 @@ class Restart_Registry_Public {
         );
 
         wp_localize_script($this->plugin_name, 'restartRegistry', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce'   => wp_create_nonce('restart_registry_nonce'),
+            'ajaxUrl'         => admin_url('admin-ajax.php'),
+            'nonce'           => wp_create_nonce('restart_registry_nonce'),
+            'myRegistriesUrl' => home_url('/my-registries/'),
             'strings' => [
                 'confirmDelete'   => __('Are you sure you want to remove this item?', 'restart-registry'),
                 'confirmPurchase' => __('Mark this item as purchased?', 'restart-registry'),
@@ -642,6 +646,62 @@ class Restart_Registry_Public {
                                 <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
                             </div>
                         </form>
+                        <div class="rr-settings-danger-zone">
+                            <h4 class="rr-settings-danger-zone__title"><?php _e('Danger zone', 'restart-registry'); ?></h4>
+                            <div class="rr-settings-danger-zone__actions">
+                                <button type="button" class="rr-button rr-button-secondary" id="rr-archive-registry-btn">
+                                    <?php _e('Archive Registry', 'restart-registry'); ?>
+                                </button>
+                                <button type="button" class="rr-button rr-button-danger" id="rr-delete-registry-btn">
+                                    <?php _e('Delete Registry', 'restart-registry'); ?>
+                                </button>
+                            </div>
+                            <p class="rr-settings-danger-zone__hint">
+                                <?php _e('Archive hides your registry and preserves all your data. Delete permanently removes everything.', 'restart-registry'); ?>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Archive confirm modal -->
+            <div class="rr-modal" id="rr-archive-confirm-modal" aria-hidden="true">
+                <div class="rr-modal__backdrop"></div>
+                <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-archive-confirm-title" aria-modal="true">
+                    <div class="rr-modal__header">
+                        <h3 id="rr-archive-confirm-title"><?php _e('Archive this registry?', 'restart-registry'); ?></h3>
+                        <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                    </div>
+                    <div class="rr-modal__body">
+                        <p><?php _e('Your registry will be hidden from everyone, including people with your link. Your items, messages, and settings are all preserved — you can restore it at any time from My Account.', 'restart-registry'); ?></p>
+                        <div class="rr-form-actions">
+                            <button type="button" class="rr-button" id="rr-archive-confirm-btn"><?php _e('Archive Registry', 'restart-registry'); ?></button>
+                            <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete confirm modal -->
+            <div class="rr-modal" id="rr-delete-confirm-modal" aria-hidden="true">
+                <div class="rr-modal__backdrop"></div>
+                <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-delete-confirm-title" aria-modal="true">
+                    <div class="rr-modal__header">
+                        <h3 id="rr-delete-confirm-title"><?php _e('Delete this registry?', 'restart-registry'); ?></h3>
+                        <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                    </div>
+                    <div class="rr-modal__body">
+                        <p class="rr-delete-warning"><?php _e('This cannot be undone. All items, messages, and data will be permanently removed.', 'restart-registry'); ?></p>
+                        <label class="rr-checkbox-label rr-delete-confirm-check">
+                            <input type="checkbox" id="rr-delete-understand">
+                            <?php _e('I understand this is permanent and cannot be undone', 'restart-registry'); ?>
+                        </label>
+                        <div class="rr-form-actions">
+                            <button type="button" class="rr-button rr-button-danger" id="rr-delete-confirm-btn" disabled>
+                                <?php _e('Permanently Delete', 'restart-registry'); ?>
+                            </button>
+                            <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -740,6 +800,16 @@ class Restart_Registry_Public {
     private function render_registry_view(string $key): string {
         $registry = $this->controller->get_registry_by_share_key($key);
         if (is_wp_error($registry)) {
+            if ($registry->get_error_code() === 'registry_archived') {
+                return '<div class="rr-archived-notice">'
+                    . '<p class="rr-archived-notice__message">' . esc_html__('This registry is no longer active.', 'restart-registry') . '</p>'
+                    . '<p class="rr-archived-notice__hint">' . wp_kses_post(sprintf(
+                        /* translators: %s = Find a Registry page URL */
+                        __('Looking for a registry? You can search on the <a href="%s">Find a Registry</a> page.', 'restart-registry'),
+                        esc_url(home_url('/find-a-registry/'))
+                    )) . '</p>'
+                    . '</div>';
+            }
             return '<p class="rr-error">' . esc_html($registry->get_error_message()) . '</p>';
         }
 
@@ -1269,5 +1339,49 @@ class Restart_Registry_Public {
             'retailer'     => $aff['retailer'],
             'is_affiliate' => $aff['is_affiliate'],
         ]));
+    }
+
+    public function ajax_archive_registry(): void {
+        check_ajax_referer('restart_registry_nonce', 'nonce');
+        $registry_id = (int) ($_POST['registry_id'] ?? 0);
+        if (!$registry_id || !$this->controller->can_edit_registry($registry_id, get_current_user_id())) {
+            wp_send_json_error(['message' => __('Permission denied.', 'restart-registry')]);
+        }
+        if ($this->controller->archive_registry($registry_id)) {
+            wp_send_json_success(['message' => __('Registry archived.', 'restart-registry')]);
+        }
+        wp_send_json_error(['message' => __('Could not archive registry.', 'restart-registry')]);
+    }
+
+    public function ajax_restore_registry(): void {
+        check_ajax_referer('restart_registry_nonce', 'nonce');
+        $registry_id = (int) ($_POST['registry_id'] ?? 0);
+        if (!$registry_id) {
+            wp_send_json_error(['message' => __('Invalid registry.', 'restart-registry')]);
+        }
+        $post = get_post($registry_id);
+        if (!$post || (int) $post->post_author !== get_current_user_id()) {
+            wp_send_json_error(['message' => __('Permission denied.', 'restart-registry')]);
+        }
+        if ($this->controller->restore_registry($registry_id)) {
+            wp_send_json_success(['message' => __('Registry restored.', 'restart-registry')]);
+        }
+        wp_send_json_error(['message' => __('Could not restore registry.', 'restart-registry')]);
+    }
+
+    public function ajax_delete_registry(): void {
+        check_ajax_referer('restart_registry_nonce', 'nonce');
+        $registry_id = (int) ($_POST['registry_id'] ?? 0);
+        $confirmed   = ($_POST['confirm'] ?? '') === '1';
+        if (!$registry_id || !$confirmed) {
+            wp_send_json_error(['message' => __('Confirmation required.', 'restart-registry')]);
+        }
+        if (!$this->controller->can_edit_registry($registry_id, get_current_user_id())) {
+            wp_send_json_error(['message' => __('Permission denied.', 'restart-registry')]);
+        }
+        if ($this->controller->delete_registry($registry_id)) {
+            wp_send_json_success(['message' => __('Registry deleted.', 'restart-registry'), 'redirect' => home_url('/my-registries/')]);
+        }
+        wp_send_json_error(['message' => __('Could not delete registry.', 'restart-registry')]);
     }
 }

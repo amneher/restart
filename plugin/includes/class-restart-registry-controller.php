@@ -103,6 +103,16 @@ class Restart_Registry_Controller {
         ]);
 
         if (empty($posts)) {
+            // Check if it exists but is archived before returning a generic 404.
+            $archived = get_posts([
+                'post_type'      => 'restart-registry',
+                'name'           => $key,
+                'posts_per_page' => 1,
+                'post_status'    => ['restart-archived'],
+            ]);
+            if (!empty($archived)) {
+                return new WP_Error('registry_archived', __('This registry is no longer active.', 'restart-registry'));
+            }
             return new WP_Error('not_found', __('Registry not found.', 'restart-registry'));
         }
 
@@ -264,6 +274,47 @@ class Restart_Registry_Controller {
         }
 
         return true;
+    }
+
+    /**
+     * Archive a registry: sets post_status to 'restart-archived'.
+     * Items and purchase messages are preserved.
+     */
+    public function archive_registry(int $registry_id): bool {
+        $post = get_post($registry_id);
+        if (!$post || $post->post_type !== 'restart-registry') {
+            return false;
+        }
+        wp_update_post(['ID' => $registry_id, 'post_status' => 'restart-archived']);
+        return true;
+    }
+
+    /**
+     * Restore an archived registry to private (non-public) status.
+     */
+    public function restore_registry(int $registry_id): bool {
+        $post = get_post($registry_id);
+        if (!$post || $post->post_type !== 'restart-registry' || $post->post_status !== 'restart-archived') {
+            return false;
+        }
+        wp_update_post(['ID' => $registry_id, 'post_status' => 'private']);
+        return true;
+    }
+
+    /**
+     * Return slim registry arrays for all archived registries belonging to a user.
+     * Does not load Lambda items — for listing only.
+     */
+    public function get_user_archived_registries(int $user_id): array {
+        $posts = get_posts([
+            'post_type'      => 'restart-registry',
+            'author'         => $user_id,
+            'post_status'    => ['restart-archived'],
+            'posts_per_page' => -1,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+        ]);
+        return array_map([$this, 'post_to_registry'], $posts);
     }
 
     /**

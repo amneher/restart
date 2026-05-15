@@ -1121,3 +1121,62 @@ body.rr-modal-open { overflow: hidden; }
     .rr-invite-form__row { flex-direction: column; }
     .rr-modal__dialog { margin: 10px; }
 }
+
+/* ── Danger zone (settings modal) ───────────────────────────────────────── */
+.rr-settings-danger-zone {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #fad0cc;
+}
+.rr-settings-danger-zone__title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #c0392b;
+    margin: 0 0 12px;
+}
+.rr-settings-danger-zone__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+.rr-settings-danger-zone__hint {
+    font-size: 12px;
+    color: var(--rr-muted);
+    margin: 0;
+}
+
+/* Delete confirm modal */
+.rr-delete-warning {
+    color: #c0392b;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+.rr-delete-confirm-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* ── Archived registry notice ────────────────────────────────────────────── */
+.rr-archived-notice {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--rr-mint-bg);
+    border-radius: var(--rr-radius-lg);
+}
+.rr-archived-notice__message {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--rr-dark);
+    margin: 0 0 12px;
+}
+.rr-archived-notice__hint {
+    color: var(--rr-mid);
+    margin: 0;
+}

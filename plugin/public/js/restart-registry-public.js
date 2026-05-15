@@ -123,6 +123,53 @@
             openModal('#rr-settings-modal');
         });
 
+        // Archive flow
+        $('#rr-archive-registry-btn').on('click', function() {
+            closeModal('#rr-settings-modal');
+            openModal('#rr-archive-confirm-modal');
+        });
+
+        $('#rr-archive-confirm-btn').on('click', function() {
+            var $btn = $(this).prop('disabled', true).text('Archiving…');
+            $.post(restartRegistry.ajaxUrl, {
+                action:      'restart_registry_archive',
+                nonce:        restartRegistry.nonce,
+                registry_id: registryId
+            }).done(function() {
+                window.location.href = restartRegistry.myRegistriesUrl || '/my-registries/';
+            }).fail(function() {
+                $btn.prop('disabled', false).text('Archive Registry');
+                showNotice('Could not archive the registry. Please try again.', 'error');
+            });
+        });
+
+        // Delete flow
+        $('#rr-delete-registry-btn').on('click', function() {
+            closeModal('#rr-settings-modal');
+            $('#rr-delete-understand').prop('checked', false);
+            $('#rr-delete-confirm-btn').prop('disabled', true);
+            openModal('#rr-delete-confirm-modal');
+        });
+
+        $('#rr-delete-understand').on('change', function() {
+            $('#rr-delete-confirm-btn').prop('disabled', !this.checked);
+        });
+
+        $('#rr-delete-confirm-btn').on('click', function() {
+            var $btn = $(this).prop('disabled', true).text('Deleting…');
+            $.post(restartRegistry.ajaxUrl, {
+                action:      'restart_registry_delete',
+                nonce:        restartRegistry.nonce,
+                registry_id: registryId,
+                confirm:     '1'
+            }).done(function(res) {
+                window.location.href = (res.data && res.data.redirect) ? res.data.redirect : (restartRegistry.myRegistriesUrl || '/my-registries/');
+            }).fail(function() {
+                $btn.prop('disabled', false).text('Permanently Delete');
+                showNotice('Could not delete the registry. Please try again.', 'error');
+            });
+        });
+
         // Recipient toggle: a UX-only checkbox the user sees ("This registry
         // is for someone else") drives a hidden is_for_self field server-side.
         // Keeping the visible label phrased positively while the data field
