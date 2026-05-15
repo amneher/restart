@@ -104,4 +104,96 @@
         });
     });
 
+    // ── Account danger zone ────────────────────────────────────────────────────
+
+    function openAccountModal(id) {
+        $(id).removeAttr('hidden').find('input, button').first().focus();
+    }
+
+    $(document).on('click', '#rr-account-danger-toggle', function (e) {
+        e.preventDefault();
+        var $panel = $('#rr-account-danger-panel');
+        if ($panel.is(':hidden')) {
+            $panel.removeAttr('hidden').hide().slideDown(200);
+        } else {
+            $panel.slideUp(200, function () { $panel.attr('hidden', ''); });
+        }
+    });
+
+    $(document).on('click', '.restart-modal__overlay, .restart-modal__close, .rr-modal-dismiss', function () {
+        $(this).closest('.restart-modal').attr('hidden', '');
+    });
+
+    // Deactivate flow
+    $(document).on('click', '#rr-deactivate-account-btn', function () {
+        openAccountModal('#rr-deactivate-confirm-modal');
+    });
+
+    $(document).on('click', '#rr-deactivate-confirm-btn', function () {
+        var $btn = $(this).prop('disabled', true).text('Deactivating…');
+        var $err = $('#rr-deactivate-error');
+        $err.attr('hidden', '');
+
+        $.post(restartAuth.ajaxUrl, {
+            action: 'restart_deactivate_account',
+            nonce:  restartAuth.deactivateAccountNonce,
+        })
+        .done(function (res) {
+            if (res.success && res.data.redirect) {
+                window.location.href = res.data.redirect;
+            } else {
+                $err.text((res.data && res.data.message) || 'Something went wrong.').removeAttr('hidden');
+                $btn.prop('disabled', false).text('Deactivate My Account');
+            }
+        })
+        .fail(function () {
+            $err.text('Something went wrong. Please try again.').removeAttr('hidden');
+            $btn.prop('disabled', false).text('Deactivate My Account');
+        });
+    });
+
+    // Delete account flow
+    $(document).on('click', '#rr-delete-account-btn', function () {
+        $('#rr-delete-account-password').val('');
+        $('#rr-delete-account-understand').prop('checked', false);
+        $('#rr-delete-account-confirm-btn').prop('disabled', true);
+        $('#rr-delete-account-error').attr('hidden', '');
+        openAccountModal('#rr-delete-account-modal');
+    });
+
+    $(document).on('change', '#rr-delete-account-understand', function () {
+        $('#rr-delete-account-confirm-btn').prop('disabled', !this.checked);
+    });
+
+    $(document).on('click', '#rr-delete-account-confirm-btn', function () {
+        var $btn = $(this).prop('disabled', true).text('Deleting…');
+        var $err = $('#rr-delete-account-error');
+        var pwd  = $('#rr-delete-account-password').val();
+        $err.attr('hidden', '');
+
+        if (!pwd) {
+            $err.text('Please enter your current password.').removeAttr('hidden');
+            $btn.prop('disabled', false).text('Permanently Delete My Account');
+            return;
+        }
+
+        $.post(restartAuth.ajaxUrl, {
+            action:   'restart_delete_account',
+            nonce:    restartAuth.deleteAccountNonce,
+            password: pwd,
+        })
+        .done(function (res) {
+            if (res.success && res.data.redirect) {
+                window.location.href = res.data.redirect;
+            } else {
+                $err.text((res.data && res.data.message) || 'Something went wrong.').removeAttr('hidden');
+                $btn.prop('disabled', false).text('Permanently Delete My Account');
+            }
+        })
+        .fail(function () {
+            $err.text('Something went wrong. Please try again.').removeAttr('hidden');
+            $btn.prop('disabled', false).text('Permanently Delete My Account');
+        });
+    });
+
 }(jQuery));

@@ -44,6 +44,111 @@ add_action('admin_init', function (): void {
     }
 });
 
+// Block login for deactivated accounts.
+add_filter('authenticate', function ($user, string $username, string $password) {
+    if (!($user instanceof WP_User)) {
+        return $user;
+    }
+    if (get_user_meta($user->ID, 'restart_account_deactivated', true) === '1') {
+        return new WP_Error(
+            'account_deactivated',
+            'Your account has been deactivated. Please contact us at hello@the-restart.co to reactivate it.'
+        );
+    }
+    return $user;
+}, 30, 3);
+
+// AJAX: deactivate the current user's account.
+add_action('wp_ajax_restart_deactivate_account', function (): void {
+    check_ajax_referer('restart_deactivate_account_nonce', 'nonce');
+
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_send_json_error(['message' => 'Not logged in.']);
+    }
+
+    // Force all public registries to private so they disappear from public views.
+    $public_registries = get_posts([
+        'post_type'      => 'restart-registry',
+        'author'         => $user_id,
+        'post_status'    => ['publish'],
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+    ]);
+    foreach ($public_registries as $registry_id) {
+        wp_update_post(['ID' => $registry_id, 'post_status' => 'private']);
+    }
+
+    update_user_meta($user_id, 'restart_account_deactivated', '1');
+    wp_logout();
+    wp_send_json_success(['redirect' => home_url('/')]);
+});
+
+// AJAX: permanently delete the current user's account and all their data.
+add_action('wp_ajax_restart_delete_account', function (): void {
+    check_ajax_referer('restart_delete_account_nonce', 'nonce');
+
+    $user_id  = get_current_user_id();
+    $password = wp_unslash($_POST['password'] ?? '');
+
+    if (!$user_id || !$password) {
+        wp_send_json_error(['message' => 'Password is required.']);
+    }
+
+    $user = get_userdata($user_id);
+    if (!$user || !wp_check_password($password, $user->user_pass, $user_id)) {
+        wp_send_json_error(['message' => 'Incorrect password. Please try again.']);
+    }
+
+    // Delete all registries (and their Lambda items) via the plugin controller.
+    if (class_exists('Restart_Registry_Controller')) {
+        $registries = get_posts([
+            'post_type'      => 'restart-registry',
+            'author'         => $user_id,
+            'post_status'    => 'any',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+        ]);
+        $controller = new Restart_Registry_Controller();
+        foreach ($registries as $registry_id) {
+            $controller->delete_registry((int) $registry_id);
+        }
+    }
+
+    // Send confirmation email to the user before we lose their address.
+    $site_name = get_bloginfo('name');
+    wp_mail(
+        $user->user_email,
+        sprintf('[%s] Your account has been deleted', $site_name),
+        sprintf(
+            "Hi %s,\n\nYour account and all associated data have been permanently deleted from %s.\n\nIf you did not request this, please contact us at hello@the-restart.co.\n\nTake care,\nThe %s team",
+            $user->display_name,
+            $site_name,
+            $site_name
+        )
+    );
+
+    // Notify admin.
+    $admin_email = get_option('admin_email');
+    if ($admin_email) {
+        wp_mail(
+            $admin_email,
+            sprintf('[%s] Account deleted: %s', $site_name, $user->user_login),
+            sprintf(
+                "User %s (%s, ID %d) has deleted their account and all associated data.",
+                $user->display_name,
+                $user->user_email,
+                $user_id
+            )
+        );
+    }
+
+    wp_logout();
+    require_once ABSPATH . 'wp-admin/includes/user.php';
+    wp_delete_user($user_id);
+    wp_send_json_success(['redirect' => home_url('/')]);
+});
+
 // AJAX: register a new account (unauthenticated).
 add_action('wp_ajax_nopriv_restart_register', function (): void {
     check_ajax_referer('restart_register_nonce', 'nonce');
