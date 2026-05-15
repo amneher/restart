@@ -327,6 +327,99 @@ a:hover { color: var(--wp--preset--color--primary); }
     border-color: #193540;
 }
 
+.restart-btn--danger {
+    background-color: #c0392b;
+    color: #fff !important;
+}
+
+.restart-btn--danger:hover {
+    background-color: #96281b;
+    color: #fff !important;
+}
+
+/* ── Account danger zone ────────────────────────────────────────────────── */
+.restart-account-danger-zone {
+    border: 1px solid #fad0cc;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 1.5rem;
+}
+.restart-account-danger-zone__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.25rem 1.5rem;
+}
+.restart-account-danger-zone__row + .restart-account-danger-zone__row {
+    border-top: 1px solid #fad0cc;
+}
+.restart-account-danger-zone__row--delete {
+    background: #fff8f8;
+}
+.restart-account-danger-zone__row strong {
+    display: block;
+    font-size: 14px;
+    color: #193540;
+    margin-bottom: 0.2rem;
+}
+.restart-account-danger-zone__row p {
+    font-size: 13px;
+    color: #8a9ea0;
+    margin: 0;
+}
+.restart-account-delete-warning {
+    color: #c0392b;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+}
+
+/* ── Account modals (reuse contact-modal shape) ─────────────────────────── */
+.restart-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.restart-modal[hidden] { display: none; }
+.restart-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(25,53,64,0.5);
+}
+.restart-modal__dialog {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    padding: 2rem;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(25,53,64,0.18);
+}
+.restart-modal__close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: #8a9ea0;
+    line-height: 1;
+}
+.restart-modal__close:hover { color: #193540; }
+.restart-modal__title {
+    font-family: var(--wp--preset--font-family--libre-caslon-display);
+    font-size: clamp(20px, 2.5vw, 26px);
+    font-weight: 400;
+    color: #193540;
+    margin: 0 0 1rem;
+    padding-right: 2rem;
+}
+
 .restart-form__success {
     padding: 0.75rem 1rem;
     background: #f0fff8;

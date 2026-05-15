@@ -208,6 +208,7 @@ add_shortcode('restart_my_account', function () {
                 <li><a href="#edit-profile" id="rr-edit-profile-toggle">Edit Profile</a></li>
                 <li><a href="#notification-prefs" id="rr-notification-prefs-toggle">Notifications</a></li>
                 <li><a href="<?php echo esc_url(wp_logout_url(home_url('/'))); ?>">Log Out</a></li>
+                <li><a href="#account-danger" id="rr-account-danger-toggle">Account</a></li>
             </ul>
         </nav>
 
@@ -260,6 +261,64 @@ add_shortcode('restart_my_account', function () {
 
             <div class="restart-form__actions" style="margin-top:1.5rem">
                 <button type="button" class="restart-btn restart-btn--ghost" id="rr-notification-prefs-close">Close</button>
+            </div>
+        </div>
+
+        <div id="rr-account-danger-panel" class="restart-my-account__edit-panel" hidden>
+            <h2 class="restart-my-account__section-title">Account</h2>
+            <div class="restart-account-danger-zone">
+                <div class="restart-account-danger-zone__row">
+                    <div>
+                        <strong>Deactivate account</strong>
+                        <p>Your account will be locked and your registries hidden. Your data is preserved. Contact us to reactivate.</p>
+                    </div>
+                    <button type="button" class="restart-btn restart-btn--ghost" id="rr-deactivate-account-btn">Deactivate</button>
+                </div>
+                <div class="restart-account-danger-zone__row restart-account-danger-zone__row--delete">
+                    <div>
+                        <strong>Delete account</strong>
+                        <p>Permanently removes your account, all registries, and all data. This cannot be undone.</p>
+                    </div>
+                    <button type="button" class="restart-btn restart-btn--danger" id="rr-delete-account-btn">Delete Account</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deactivate confirm modal -->
+        <div id="rr-deactivate-confirm-modal" class="restart-modal" hidden aria-modal="true" role="dialog">
+            <div class="restart-modal__overlay"></div>
+            <div class="restart-modal__dialog">
+                <button class="restart-modal__close" aria-label="Close">&times;</button>
+                <h2 class="restart-modal__title">Deactivate your account?</h2>
+                <p>You will be logged out and unable to log back in. Your registries will be set to private. All data is preserved — contact us at hello@the-restart.co to reactivate.</p>
+                <div class="restart-form__actions">
+                    <button type="button" class="restart-btn" id="rr-deactivate-confirm-btn">Deactivate My Account</button>
+                    <button type="button" class="restart-btn restart-btn--ghost rr-modal-dismiss">Cancel</button>
+                </div>
+                <p id="rr-deactivate-error" class="restart-form__error" hidden></p>
+            </div>
+        </div>
+
+        <!-- Delete account confirm modal -->
+        <div id="rr-delete-account-modal" class="restart-modal" hidden aria-modal="true" role="dialog">
+            <div class="restart-modal__overlay"></div>
+            <div class="restart-modal__dialog">
+                <button class="restart-modal__close" aria-label="Close">&times;</button>
+                <h2 class="restart-modal__title">Delete your account?</h2>
+                <p class="restart-account-delete-warning">This cannot be undone. Your account, all registries, and all data will be permanently removed.</p>
+                <div class="restart-form__group">
+                    <label class="restart-form__label" for="rr-delete-account-password">Enter your current password to confirm</label>
+                    <input class="restart-form__input" type="password" id="rr-delete-account-password" autocomplete="current-password">
+                </div>
+                <label class="rr-checkbox-label" style="margin-bottom:1.25rem">
+                    <input type="checkbox" id="rr-delete-account-understand">
+                    I understand this is permanent and cannot be undone
+                </label>
+                <div class="restart-form__actions">
+                    <button type="button" class="restart-btn restart-btn--danger" id="rr-delete-account-confirm-btn" disabled>Permanently Delete My Account</button>
+                    <button type="button" class="restart-btn restart-btn--ghost rr-modal-dismiss">Cancel</button>
+                </div>
+                <p id="rr-delete-account-error" class="restart-form__error" hidden></p>
             </div>
         </div>
 
@@ -467,9 +526,11 @@ add_action('wp_enqueue_scripts', function () {
     );
 
     wp_localize_script('restart-auth', 'restartAuth', [
-        'ajaxUrl'            => admin_url('admin-ajax.php'),
-        'registerNonce'      => wp_create_nonce('restart_register_nonce'),
-        'updateProfileNonce' => wp_create_nonce('restart_update_profile_nonce'),
+        'ajaxUrl'                 => admin_url('admin-ajax.php'),
+        'registerNonce'           => wp_create_nonce('restart_register_nonce'),
+        'updateProfileNonce'      => wp_create_nonce('restart_update_profile_nonce'),
+        'deactivateAccountNonce'  => wp_create_nonce('restart_deactivate_account_nonce'),
+        'deleteAccountNonce'      => wp_create_nonce('restart_delete_account_nonce'),
     ]);
 });
 
