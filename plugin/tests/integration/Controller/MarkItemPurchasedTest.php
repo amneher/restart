@@ -29,6 +29,8 @@ class MarkItemPurchasedTest extends TestCase {
             default                       => $default ?: '',
         });
         Functions\when('get_user_meta')->justReturn('');
+        Functions\when('get_post_meta')->justReturn('[]');
+        Functions\when('update_post_meta')->justReturn(true);
 
         $owner               = new WP_User();
         $owner->ID           = 10;
@@ -153,5 +155,80 @@ class MarkItemPurchasedTest extends TestCase {
         $result = $this->controller->mark_item_purchased(1, 1, 'Jordan');
 
         $this->assertNotInstanceOf(WP_Error::class, $result);
+    }
+
+    public function test_purchase_message_stored_when_note_provided(): void {
+        $item = $this->fixture(['name' => 'Coffee Maker', 'image_url' => 'https://img.example.com/coffee.jpg', 'description' => 'Great coffee']);
+        $this->fake->setItem(1, $item);
+        Functions\when('wp_mail')->justReturn(true);
+
+        $stored = null;
+        Functions\when('update_post_meta')->alias(function($id, $key, $val) use (&$stored) {
+            if ($key === 'restart_purchase_messages') {
+                $stored = json_decode($val, true);
+            }
+            return true;
+        });
+
+        $this->controller->mark_item_purchased(1, 1, 'Jordan', '', 'Thinking of you!');
+
+        $this->assertNotNull($stored, 'restart_purchase_messages should have been saved');
+        $this->assertCount(1, $stored);
+        $this->assertSame('Jordan', $stored[0]['purchaser_name']);
+        $this->assertSame('Thinking of you!', $stored[0]['purchaser_note']);
+        $this->assertSame('Coffee Maker', $stored[0]['item_name']);
+        $this->assertSame(1, $stored[0]['item_id']);
+        $this->assertArrayHasKey('timestamp', $stored[0]);
+    }
+
+    public function test_purchase_message_not_stored_when_note_empty(): void {
+        $this->fake->setItem(1, $this->fixture());
+        Functions\when('wp_mail')->justReturn(true);
+
+        $messageMetaSaved = false;
+        Functions\when('update_post_meta')->alias(function($id, $key, $val) use (&$messageMetaSaved) {
+            if ($key === 'restart_purchase_messages') {
+                $messageMetaSaved = true;
+            }
+            return true;
+        });
+
+        $this->controller->mark_item_purchased(1, 1, 'Jordan', '', '');
+
+        $this->assertFalse($messageMetaSaved, 'No message record should be stored for an empty note');
+    }
+
+    public function test_purchase_message_anonymous_suppresses_name(): void {
+        $this->fake->setItem(1, $this->fixture());
+        Functions\when('wp_mail')->justReturn(true);
+
+        $stored = null;
+        Functions\when('update_post_meta')->alias(function($id, $key, $val) use (&$stored) {
+            if ($key === 'restart_purchase_messages') {
+                $stored = json_decode($val, true);
+            }
+            return true;
+        });
+
+        $this->controller->mark_item_purchased(1, 1, 'Jordan', '', 'Great choice!', true);
+
+        $this->assertNotNull($stored);
+        $this->assertSame('', $stored[0]['purchaser_name'], 'Anonymous purchase should store empty name');
+    }
+
+    public function test_get_purchase_messages_returns_newest_first(): void {
+        $data = json_encode([
+            ['item_id' => 1, 'item_name' => 'Knife', 'item_image_url' => '', 'item_description' => '',
+             'purchaser_name' => 'Alice', 'purchaser_note' => 'First!', 'timestamp' => 1000],
+            ['item_id' => 2, 'item_name' => 'Pan', 'item_image_url' => '', 'item_description' => '',
+             'purchaser_name' => 'Bob', 'purchaser_note' => 'Second!', 'timestamp' => 2000],
+        ]);
+        Functions\when('get_post_meta')->alias(fn($id, $key) => $key === 'restart_purchase_messages' ? $data : '');
+
+        $messages = $this->controller->get_purchase_messages(42);
+
+        $this->assertCount(2, $messages);
+        $this->assertSame('Bob', $messages[0]['purchaser_name'], 'Newest (timestamp 2000) should be first');
+        $this->assertSame('Alice', $messages[1]['purchaser_name']);
     }
 }

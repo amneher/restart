@@ -395,6 +395,43 @@ class Restart_Registry_Public {
                 <?php endif; ?>
             </div>
 
+            <?php
+            $purchase_messages = $this->controller->get_purchase_messages($registry['id']);
+            if (!empty($purchase_messages)):
+            ?>
+            <div class="rr-message-board">
+                <h2 class="rr-message-board__title"><?php _e('Messages', 'restart-registry'); ?></h2>
+                <ul class="rr-message-board__list">
+                    <?php foreach ($purchase_messages as $msg): ?>
+                    <li class="rr-message-card">
+                        <?php if (!empty($msg['item_image_url'])): ?>
+                            <div class="rr-message-card__thumb">
+                                <img src="<?php echo esc_url($msg['item_image_url']); ?>"
+                                     alt="<?php echo esc_attr($msg['item_name']); ?>"
+                                     loading="lazy">
+                            </div>
+                        <?php endif; ?>
+                        <div class="rr-message-card__body">
+                            <p class="rr-message-card__item-name"><?php echo esc_html($msg['item_name']); ?></p>
+                            <?php if (!empty($msg['item_description'])): ?>
+                                <p class="rr-message-card__item-desc"><?php echo esc_html($msg['item_description']); ?></p>
+                            <?php endif; ?>
+                            <blockquote class="rr-message-card__note"><?php echo esc_html($msg['purchaser_note']); ?></blockquote>
+                            <p class="rr-message-card__meta">
+                                <span class="rr-message-card__from">
+                                    <?php echo esc_html($msg['purchaser_name'] ?: __('Someone', 'restart-registry')); ?>
+                                </span>
+                                <span class="rr-message-card__date">
+                                    <?php echo esc_html(date_i18n(get_option('date_format'), $msg['timestamp'])); ?>
+                                </span>
+                            </p>
+                        </div>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php endif; ?>
+
             <!-- Public-toggle help modal -->
             <div class="rr-modal" id="rr-public-help-modal" aria-inert="true">
                 <div class="rr-modal__backdrop"></div>
