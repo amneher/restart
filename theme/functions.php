@@ -447,6 +447,40 @@ add_shortcode('restart_my_registries', function () {
         </section>
         <?php endif; ?>
 
+        <?php
+        $archived = get_posts([
+            'post_type'      => 'restart-registry',
+            'post_status'    => ['restart-archived'],
+            'author'         => $user_id,
+            'posts_per_page' => -1,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+        ]);
+        if (!empty($archived)) : ?>
+        <section class="restart-my-registries__section restart-my-registries__archived">
+            <h2 class="restart-my-registries__heading restart-my-registries__heading--archived">Archived Registries</h2>
+            <ul class="restart-registry-list">
+                <?php foreach ($archived as $post) :
+                    $event_type = get_post_meta($post->ID, 'restart_event_type', true);
+                    ?>
+                    <li class="restart-registry-list__item restart-registry-list__item--archived">
+                        <span class="restart-registry-list__title"><?php echo esc_html($post->post_title); ?></span>
+                        <span class="restart-registry-list__meta">
+                            <?php if ($event_type) : ?><span class="restart-registry-list__type"><?php echo esc_html(ucfirst(str_replace('-', ' ', $event_type))); ?></span><?php endif; ?>
+                            <span class="restart-registry-list__status restart-registry-list__status--archived">Archived</span>
+                        </span>
+                        <button type="button"
+                                class="restart-registry-list__restore rr-btn-ghost"
+                                data-registry-id="<?php echo esc_attr($post->ID); ?>"
+                                data-nonce="<?php echo esc_attr(wp_create_nonce('restart_registry_nonce')); ?>">
+                            Restore
+                        </button>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </section>
+        <?php endif; ?>
+
     </div>
     <?php
     return ob_get_clean();
@@ -471,6 +505,34 @@ add_action('wp_enqueue_scripts', function () {
         'registerNonce'      => wp_create_nonce('restart_register_nonce'),
         'updateProfileNonce' => wp_create_nonce('restart_update_profile_nonce'),
     ]);
+});
+
+// My Registries — Restore archived registry buttons.
+add_action('wp_footer', function () {
+    if (!is_page('my-registries') || !is_user_logged_in()) {
+        return;
+    }
+    ?>
+    <script>
+    (function($) {
+        $(document).on('click', '.restart-registry-list__restore', function() {
+            var $btn        = $(this).prop('disabled', true).text('Restoring…');
+            var registryId  = $btn.data('registry-id');
+            var nonce       = $btn.data('nonce');
+            $.post('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', {
+                action:      'restart_registry_restore',
+                nonce:        nonce,
+                registry_id: registryId
+            }).done(function() {
+                window.location.reload();
+            }).fail(function() {
+                $btn.prop('disabled', false).text('Restore');
+                alert('Could not restore the registry. Please try again.');
+            });
+        });
+    })(jQuery);
+    </script>
+    <?php
 });
 
 // Contact modal — enqueue JS and inject modal HTML into every page footer.

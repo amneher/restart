@@ -67,6 +67,15 @@ class Restart_Registry {
             if (!get_role('registry_user')) {
                 add_role('registry_user', __('Registry User', 'restart-registry'), ['read' => true]);
             }
+
+            register_post_status('restart-archived', [
+                'label'                     => _x('Archived', 'post status', 'restart-registry'),
+                'public'                    => false,
+                'exclude_from_search'       => true,
+                'show_in_admin_all_list'    => false,
+                'show_in_admin_status_list' => true,
+                'label_count'               => _n_noop('Archived <span class="count">(%s)</span>', 'Archived <span class="count">(%s)</span>', 'restart-registry'),
+            ]);
         });
 
         // Block admin page access for registry_user; AJAX must remain open
