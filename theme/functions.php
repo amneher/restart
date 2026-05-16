@@ -171,9 +171,9 @@ add_shortcode('restart_start_registry', function () {
         </div>
 
         <div class="restart-form__group" id="invitees-group" hidden>
-            <label class="restart-form__label" for="invitees">Invite by Username</label>
-            <input class="restart-form__input" type="text" id="invitees" name="invitees" placeholder="username1, username2">
-            <p class="restart-form__hint">Enter WordPress usernames separated by commas.</p>
+            <label class="restart-form__label" for="invitees">Invite by Username or Email</label>
+            <input class="restart-form__input" type="text" id="invitees" name="invitees" placeholder="username or email">
+            <p class="restart-form__hint">Enter ReStart usernames or email addresses separated by commas.</p>
         </div>
 
         <div id="restart-form-error" class="restart-form__error" hidden></div>
