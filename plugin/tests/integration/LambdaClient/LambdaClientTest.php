@@ -107,6 +107,9 @@ class LambdaClientTest extends TestCase {
             default                  => '',
         });
 
+        $mockUser = (object) ['ID' => 0, 'user_login' => '', 'roles' => []];
+        Functions\when('wp_get_current_user')->justReturn($mockUser);
+
         $capturedArgs = [];
         Functions\expect('wp_remote_request')->once()->andReturnUsing(
             function ($url, $args) use (&$capturedArgs) {
