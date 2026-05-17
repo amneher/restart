@@ -52,4 +52,9 @@ app.include_router(health_router)
 app.include_router(items_router)
 app.include_router(registry_router)
 
+# init_db at module level ensures tables exist on every cold start.
+# Mangum runs with lifespan="off" so the FastAPI lifespan context is not
+# invoked automatically — this call compensates for that.
+init_db()
+
 handler = Mangum(app, lifespan="off")
