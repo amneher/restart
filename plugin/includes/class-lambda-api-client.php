@@ -136,6 +136,8 @@ class Restart_Registry_Lambda_Client {
 
         if ($service_key) {
             $user = wp_get_current_user();
+            // API gateway expects the x-api-key, include it with every request.
+            $headers['x-api-key'] = $service_key;
             $headers['X-Service-Key']  = $service_key;
             $headers['X-WP-User-ID']   = (string) $user->ID;
             $headers['X-WP-Username']  = $user->user_login;

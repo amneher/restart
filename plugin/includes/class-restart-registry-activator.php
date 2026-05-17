@@ -98,7 +98,7 @@ class Restart_Registry_Activator {
         }
 
         update_option( 'users_can_register', 1 );
-        update_option( 'default_role', 'subscriber' );
+        update_option( 'default_role', 'registry-user' );
     }
 
     private static function ensure_page( string $title, string $slug, string $template = '', string $content = '' ): ?int {

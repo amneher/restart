@@ -137,7 +137,7 @@ deploy-staging:
 	$(MAKE) -C lambda/ deploy-staging FORCE=yes
 
 deploy-prod:
-	$(MAKE) -C lambda/ deploy-prod FORCE=yes
+	$(MAKE) -C lambda/ deploy-prod
 
 publish-layer:
 	$(MAKE) -C lambda/ publish-layer
