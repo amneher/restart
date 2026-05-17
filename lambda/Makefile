@@ -224,7 +224,8 @@ configure-layer:
 # test — run the full unit-test suite (in-memory SQLite, no network)
 # ─────────────────────────────────────────────────────────────────────────────
 test:
-	.venv/bin/pytest tests/ -v --cov=app --cov-report=term --cov-report=xml --cov-fail-under=0
+	uv run tests -v --cov=app --cov-report=term --cov-report=xml --cov-fail-under=0
+	# .venv/bin/pytest tests/ -v --cov=app --cov-report=term --cov-report=xml --cov-fail-under=0
 
 # ─────────────────────────────────────────────────────────────────────────────
 # test-staging — run WordPress integration + e2e tests against staging

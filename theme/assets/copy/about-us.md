@@ -1,6 +1,6 @@
 # About Us
 
-The ReStart is a gift registry built for people starting over. Divorce is its own kind of fresh start — and like any fresh start, it deserves its own moment, its own table set, its own first night in a new apartment.
+The ReStart is a gift registry built for people starting over. Divorce is its own kind of restart — and like any new beginning, it deserves its own moment, its own table set, its own first night in a new apartment.
 
 We built the ReStart because the people we love wanted to help, and they didn't know how. A registry gives them a way in: a list of the small, ordinary things that make a house feel like a home again. Sheets. A coffee maker. A good knife. The pan you've been borrowing from your sister.
 

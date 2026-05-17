@@ -131,11 +131,18 @@ class Restart_Registry_Lambda_Client {
             );
         }
 
-        $headers = ['Content-Type' => 'application/json'];
-        if ($this->api_key) {
+        $headers     = ['Content-Type' => 'application/json'];
+        $service_key = get_option('restart_lambda_api_key') ?: getenv('WP_SERVICE_KEY') ?: null;
+
+        if ($service_key) {
+            $user = wp_get_current_user();
+            $headers['X-Service-Key']  = $service_key;
+            $headers['X-WP-User-ID']   = (string) $user->ID;
+            $headers['X-WP-Username']  = $user->user_login;
+            $headers['X-WP-Roles']     = implode(',', (array) $user->roles);
+        } elseif ($this->api_key) {
             $headers['x-api-key'] = $this->api_key;
-        }
-        if ($this->auth) {
+        } elseif ($this->auth) {
             $headers['Authorization'] = 'Basic ' . $this->auth;
         }
 

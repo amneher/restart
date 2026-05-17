@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Restart Registry API",
     description="A FastAPI application designed for AWS Lambda with SQLite",
-    version="0.1.0",
+    version="1.1.0",
     lifespan=lifespan,
 )
 
@@ -34,11 +34,17 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     body = await request.body()
-    logger.warning("422 Validation error on %s %s | body: %s | errors: %s",
-                   request.method, request.url.path, body.decode()[:500], exc.errors())
+    logger.warning(
+        "422 Validation error on %s %s | body: %s | errors: %s",
+        request.method,
+        request.url.path,
+        body.decode()[:500],
+        exc.errors(),
+    )
     return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 

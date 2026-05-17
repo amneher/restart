@@ -1,10 +1,10 @@
 # How to Create a Divorce Registry
 
-Creating a divorce registry on reStart takes about five minutes. This is a guide to the process, and to the slightly harder question underneath it: what do you actually put on the list?
+Creating a divorce registry on the ReStart takes about five minutes. This is a guide to the process, and to the slightly harder question underneath it: what do you actually put on the list?
 
 ## Step 1: Create Your Account
 
-Go to reStart and [create a free account](/register). You'll need an email address and a password — that's it. No credit card, no subscription.
+Go to the ReStart and [create a free account](/register). You'll need an email address and a password — that's it. No credit card, no subscription.
 
 ## Step 2: Start a Registry
 

@@ -72,17 +72,16 @@
             },
         };
 
-        const credentials = btoa(restartRegistry.username + ':' + restartRegistry.apiKey);
         const submitBtn = form.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
         submitBtn.textContent = 'Creating\u2026';
 
         try {
-            const res = await fetch(restartRegistry.lambdaUrl + '/registries', {
+            const res = await fetch(restartRegistry.ajaxUrl + '?action=restart_create_registry', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Basic ' + credentials,
+                    'X-WP-Nonce': restartRegistry.nonce,
                 },
                 body: JSON.stringify(payload),
             });

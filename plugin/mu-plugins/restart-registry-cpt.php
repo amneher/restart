@@ -3,10 +3,9 @@
  * MU-Plugin: Register the restart-registry custom post type with REST API support.
  */
 
-// Enable Application Password auth over plain HTTP in local environments only.
-if ( defined( 'WP_ENVIRONMENT_TYPE' ) && WP_ENVIRONMENT_TYPE === 'local' ) {
-    add_filter( 'wp_is_application_passwords_available', '__return_true' );
-}
+// Enable Application Password auth. Required for local HTTP and for production
+// where Bluehost's security layer disables them by default.
+add_filter( 'wp_is_application_passwords_available', '__return_true' );
 
 add_action('init', function () {
     if (!get_role('registry_user')) {

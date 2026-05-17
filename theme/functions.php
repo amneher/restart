@@ -67,20 +67,7 @@ add_action('wp_enqueue_scripts', function () {
     if (!is_page('start-a-registry') || !is_user_logged_in()) {
         return;
     }
-    $user    = wp_get_current_user();
-    $api_key = get_user_meta($user->ID, '_restart_api_key', true);
-
-    if (!$api_key && class_exists('WP_Application_Passwords')) {
-        $result = WP_Application_Passwords::create_new_application_password($user->ID, ['name' => 'Restart Registry']);
-        if (!is_wp_error($result)) {
-            $api_key = $result[0];
-            update_user_meta($user->ID, '_restart_api_key', $api_key);
-        }
-    }
-
-    if (!$api_key) {
-        return;
-    }
+    $user = wp_get_current_user();
 
     wp_enqueue_script(
         'restart-start-registry',
@@ -90,11 +77,57 @@ add_action('wp_enqueue_scripts', function () {
         true
     );
     wp_localize_script('restart-start-registry', 'restartRegistry', [
-        'lambdaUrl'    => defined('RESTART_LAMBDA_URL') ? constant('RESTART_LAMBDA_URL') : 'http://localhost:5000',
+        'ajaxUrl'      => admin_url('admin-ajax.php'),
+        'nonce'        => wp_create_nonce('restart_create_registry'),
         'username'     => $user->user_login,
-        'apiKey'       => $api_key,
         'myAccountUrl' => home_url('/my-account/'),
     ]);
+});
+
+add_action('wp_ajax_restart_create_registry', function () {
+    $nonce = $_SERVER['HTTP_X_WP_NONCE'] ?? '';
+    if (!wp_verify_nonce($nonce, 'restart_create_registry')) {
+        wp_send_json_error(['message' => 'Invalid nonce.'], 403);
+    }
+
+    $user = wp_get_current_user();
+    if (!$user->exists()) {
+        wp_send_json_error(['message' => 'Not logged in.'], 401);
+    }
+
+    $body  = json_decode(file_get_contents('php://input'), true) ?? [];
+    $title = sanitize_text_field($body['title'] ?? '');
+    if (!$title) {
+        wp_send_json_error(['message' => 'Registry title is required.'], 400);
+    }
+
+    $is_private = !empty($body['is_private']);
+    $story      = sanitize_textarea_field($body['story'] ?? '');
+    $meta       = is_array($body['meta'] ?? null) ? $body['meta'] : [];
+
+    $post_id = wp_insert_post([
+        'post_type'    => 'restart-registry',
+        'post_title'   => $title,
+        'post_status'  => $is_private ? 'private' : 'publish',
+        'post_author'  => $user->ID,
+        'post_content' => $story,
+        'meta_input'   => [
+            'restart_invitees'               => wp_json_encode($meta['invitees'] ?? []),
+            'restart_item_ids'               => wp_json_encode($meta['item_ids'] ?? []),
+            'restart_event_type'             => sanitize_text_field($meta['event_type'] ?? ''),
+            'restart_event_date'             => sanitize_text_field($meta['event_date'] ?? ''),
+            'restart_is_for_self'            => empty($meta['is_for_self']) ? '0' : '1',
+            'restart_recipient_name'         => sanitize_text_field($meta['recipient_name'] ?? ''),
+            'restart_recipient_relationship' => sanitize_text_field($meta['recipient_relationship'] ?? ''),
+            'restart_recipient_email'        => sanitize_email($meta['recipient_email'] ?? ''),
+        ],
+    ], true);
+
+    if (is_wp_error($post_id)) {
+        wp_send_json_error(['message' => $post_id->get_error_message()], 500);
+    }
+
+    wp_send_json_success(['id' => $post_id]);
 });
 
 add_shortcode('restart_start_registry', function () {

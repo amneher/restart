@@ -41,3 +41,4 @@ uv.lock
 lambda_service_app_pwd.txt
 build/
 iam/
+.diag_scripts/
