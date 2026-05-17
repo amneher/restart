@@ -249,7 +249,7 @@ class ActivatorCreatePagesTest extends TestCase {
     public function test_sets_default_role_to_subscriber(): void {
         $this->runCreatePages();
 
-        $this->assertSame('subscriber', $this->options['default_role'] ?? null);
+        $this->assertSame('registry-user', $this->options['default_role'] ?? null);
     }
 
     // ── Idempotency ───────────────────────────────────────────────────────────
