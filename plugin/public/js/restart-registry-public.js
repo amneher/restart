@@ -326,7 +326,7 @@
                 success: function(response) {
                     if (response.success) {
                         var $list = $('#rr-items-container');
-                        $list.find('.rr-no-items').remove();
+                        $('.rr-no-items').remove();
                         if (!$list.find('.rr-item-list').length) {
                             $list.html('<ul class="rr-item-list"></ul>');
                         }
