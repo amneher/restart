@@ -214,3 +214,111 @@ This deserves its own /plan-eng-review pass. I'd rather not touch it in the same
 - [x] Phase C PR (items 12–17).
 - [x] Phase D PR (items 18–19).
 - [ ] Phase E plan + PR (item 20).
+
+---
+
+# Research: Scraper UA matrix + stable data sources (GH #31)
+
+## What
+Issue #31 asks for two things:
+1. **Part 1** — a UA capability matrix: test all major UA strings against our retailers, build a per-retailer UA config
+2. **Part 2** — stable data source research: evaluate affiliate APIs, third-party extractors, headless browser as alternatives to HTML scraping
+
+## Key findings (2026-05-18)
+
+### UA test results
+
+| Retailer | Working UAs | Blocked UAs | Action |
+|---|---|---|---|
+| Brooklinen | ALL (8/8) | none | No change needed |
+| West Elm | **LinkedInBot only** | Chrome, Safari, Firefox, Facebook, Twitter, Google, Bing (all 403) | Switch to LinkedInBot |
+| Pottery Barn | **LinkedInBot only** | same | Switch to LinkedInBot |
+| Amazon | none | all (CAPTCHA/500) | URL-only path confirmed correct |
+| Etsy | inconclusive | all 403/429 from server IP | IP reputation matters as much as UA; migrate to Etsy Open API v3 |
+
+The current scraper uses Chrome desktop UA for West Elm and Pottery Barn → **silently broken** (returns empty strings in production). Fix is immediate: use `LinkedInBot` UA for the Williams-Sonoma family.
+
+### Stable data sources
+
+| Source | Best for | Cost | Viability |
+|---|---|---|---|
+| **Etsy Open API v3** | Etsy listings | Free (10k req/day, dev account) | ✅ Viable Now |
+| **CJ Affiliate GraphQL API** | West Elm, Pottery Barn | Free (publisher account) | ✅ Viable With Work (apply now) |
+| **Rakuten** | West Elm, Pottery Barn | Free (publisher account) | ✅ Viable With Work |
+| **Amazon Creators API** | Amazon | Free but requires 10 qualifying sales/30 days | ❌ Unreliable for small registry |
+| **Scrapfly** (extraction API) | Any URL, anti-bot bypass, structured JSON | ~$30/mo starter | ✅ Best general fallback |
+| **Diffbot Product API** | Any product URL, dedicated product model | Free tier (10k/mo) or $299/mo | ✅ Good; free tier tight |
+| **Playwright on Lambda** | JS-rendered pages, full browser | ~$6–12/mo compute | ⚠️ High setup cost, moderate bot evasion |
+| **Zinc API** | Amazon/Walmart only | $0.01/req | ❌ Wrong retailers |
+| **Haunt API** | Unknown — no public pricing/benchmarks | Unknown | ⚠️ Unverified |
+
+**Note:** Amazon PA-API 5.0 was deprecated April 30, 2026 and retires May 15, 2026. Any Amazon affiliate integration must target the new **Creators API**.
+
+### Architecture findings (Issue #20 prereqs)
+
+- Lambda backend is **FastAPI + Python + SQLite on EFS** (not DynamoDB). `price_last_checked_at` belongs as a column on the `items` SQLite table.
+- Price refresh trigger: EventBridge cron → SQS FIFO (retailer as MessageGroupId) → worker Lambda. Manual "Refresh prices" button in plugin admin writes to the same queue.
+- Scraper port: Python port of `class-product-scraper.php` into `lambda/app/services/scraper.py`. Keep PHP for interactive add-item flow; Python owns scheduled refresh.
+- Fallback chain for price refresh: Python scraper → Scrapfly (on parse failure) → preserve previous value + mark `price_refresh_status = 'failed'`.
+
+## Immediate actions before Issue #20 implementation
+
+- [ ] **Bug fix**: update `class-product-scraper.php` to use `LinkedInBot` UA for `westelm.com` and `potterybarn.com` (and add catch for other Williams-Sonoma domains). This is a production bug, not a feature.
+- [ ] Apply as CJ Affiliate publisher and apply to West Elm + Pottery Barn programs (async — kicks off the 1-2 week approval clock)
+- [ ] Apply for Etsy Open API v3 developer account
+- [ ] Run a 1-day Scrapfly free trial against all 5 retailers to validate extraction accuracy
+
+## Raw data
+See `plugin/tests/assets/ua-matrix/` for full JSON results and `summary.md`.
+
+---
+
+# Plan: Phase E — Price refresh subsystem (GH #20)
+
+## Prerequisite
+The UA research above (GH #31) must be resolved first. Specifically: LinkedInBot fix deployed, parsing-rules spec locked, Scrapfly/fallback decision made.
+
+## What
+Automatically scrape and refresh product prices on registry items so displayed prices stay accurate over time.
+
+## Architecture (confirmed 2026-05-18)
+
+### Data model
+Add to `items` SQLite table in Lambda:
+```sql
+ALTER TABLE items ADD COLUMN price_last_checked_at TIMESTAMP NULL;
+ALTER TABLE items ADD COLUMN price_refresh_status TEXT NULL; -- 'ok'|'stale'|'failed'|'anomaly'
+ALTER TABLE items ADD COLUMN price_previous REAL NULL;
+ALTER TABLE items ADD COLUMN price_refresh_error TEXT NULL;
+```
+Follow the migration pattern in `lambda/app/database/migrations/__init__.py`.
+
+### Lambda architecture
+- **Trigger**: EventBridge cron (hourly) + on-demand from plugin admin button
+- **Enqueuer Lambda**: reads items WHERE `price_last_checked_at < now() - 6h`, pushes to SQS FIFO with retailer as MessageGroupId
+- **Worker Lambda**: single Lambda with per-retailer routing (not 5 separate Lambdas); port of scraper logic in Python; concurrency capped at 5; 2s sleep between requests per retailer; exponential backoff on 4xx/5xx
+- **Fallback chain**: Python scraper → Scrapfly API (on parse failure) → preserve previous + mark failed
+
+### Plugin admin
+- REST endpoint: `POST /wp-json/restart/v1/registry/{id}/price-refresh` → 202 Accepted + job_id
+- REST endpoint: `GET /wp-json/restart/v1/registry/{id}/price-refresh/{job_id}` → status + per-item results
+- Admin UI: "Refresh prices" button + schedule selector (Manual / Weekly / Daily) stored in `restart_price_refresh_schedule` post meta
+- Owner display: price change callout ("↓ $5 from last week"), stale indicator if >14 days
+
+### Error handling
+- **Never replace a known price with a blank** on failure
+- Large price delta (>50% change) → anomaly flag, email owner for confirmation, do NOT auto-apply
+- Dead URL (404 after 3 retries) → auto-archive item + notify owner
+
+## Scope
+- [ ] `/plan-eng-review` pass for this architecture before implementation
+- [ ] Lambda: DB migration (4 new columns on items table)
+- [ ] Lambda: Python scraper port (`lambda/app/services/scraper.py`)
+- [ ] Lambda: enqueuer Lambda + SQS FIFO + EventBridge cron (IaC)
+- [ ] Lambda: worker Lambda with per-retailer routing + anomaly detection
+- [ ] Plugin: REST endpoints for refresh job status
+- [ ] Plugin admin: Refresh button + schedule UI
+- [ ] Plugin admin: per-item price change indicators
+- [ ] Plugin: owner email notification on price anomaly / dead URL
+- [ ] Tests
+- [ ] Close GH #20

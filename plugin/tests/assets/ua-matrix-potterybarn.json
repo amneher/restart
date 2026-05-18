@@ -1,0 +1,383 @@
+[
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/balboa-upholstered-swivel-armchair/?sku=3637965",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:41.468981Z",
+    "duration_ms": 258
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/balboa-upholstered-swivel-armchair/?sku=3637965",
+    "ua_family": "safari_desktop",
+    "ua_string": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:42.670247Z",
+    "duration_ms": 200
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/balboa-upholstered-swivel-armchair/?sku=3637965",
+    "ua_family": "firefox_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:43.897335Z",
+    "duration_ms": 226
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/balboa-upholstered-swivel-armchair/?sku=3637965",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:45.122488Z",
+    "duration_ms": 221
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/balboa-upholstered-swivel-armchair/?sku=3637965",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:46.362121Z",
+    "duration_ms": 237
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/balboa-upholstered-swivel-armchair/?sku=3637965",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Balboa Swivel Chair",
+      "image": "https://assets.pbimgs.com/pbimgs/ab/images/dp/wcm/202611/0019/balboa-swivel-chair-m.jpg",
+      "price": "$39.99",
+      "title_tag": "Balboa Swivel Chair | Pottery Barn"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:47.982331Z",
+    "duration_ms": 465
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/balboa-upholstered-swivel-armchair/?sku=3637965",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:49.163767Z",
+    "duration_ms": 180
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/balboa-upholstered-swivel-armchair/?sku=3637965",
+    "ua_family": "bingbot",
+    "ua_string": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:50.324813Z",
+    "duration_ms": 159
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/delaney-oval-marble-c-table/?sku=3180193",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:51.543888Z",
+    "duration_ms": 217
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/delaney-oval-marble-c-table/?sku=3180193",
+    "ua_family": "safari_desktop",
+    "ua_string": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:52.779054Z",
+    "duration_ms": 234
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/delaney-oval-marble-c-table/?sku=3180193",
+    "ua_family": "firefox_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:54.003331Z",
+    "duration_ms": 223
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/delaney-oval-marble-c-table/?sku=3180193",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:55.186976Z",
+    "duration_ms": 182
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/delaney-oval-marble-c-table/?sku=3180193",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:56.391856Z",
+    "duration_ms": 203
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/delaney-oval-marble-c-table/?sku=3180193",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Delaney Oval Marble C-Table (19&amp;quot;)",
+      "image": "https://assets.pbimgs.com/pbimgs/ab/images/dp/wcm/202609/0015/delaney-oval-marble-c-table-19-3-m.jpg",
+      "price": "$39.99",
+      "title_tag": "Delaney Oval Marble C-Table (19&quot;) | Pottery Barn"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:58.422014Z",
+    "duration_ms": 896
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/delaney-oval-marble-c-table/?sku=3180193",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:59.648020Z",
+    "duration_ms": 224
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/delaney-oval-marble-c-table/?sku=3180193",
+    "ua_family": "bingbot",
+    "ua_string": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:01.168704Z",
+    "duration_ms": 519
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/pb-classic-organic-towels/?sku=6830555",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:02.464672Z",
+    "duration_ms": 295
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/pb-classic-organic-towels/?sku=6830555",
+    "ua_family": "safari_desktop",
+    "ua_string": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:03.833174Z",
+    "duration_ms": 368
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/pb-classic-organic-towels/?sku=6830555",
+    "ua_family": "firefox_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:05.011266Z",
+    "duration_ms": 177
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/pb-classic-organic-towels/?sku=6830555",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:06.283947Z",
+    "duration_ms": 269
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/pb-classic-organic-towels/?sku=6830555",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:07.604560Z",
+    "duration_ms": 319
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/pb-classic-organic-towels/?sku=6830555",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Classic Organic Towel",
+      "image": "https://assets.pbimgs.com/pbimgs/ab/images/dp/wcm/202611/0013/classic-organic-towel-2-m.jpg",
+      "price": "$39.99",
+      "title_tag": "Classic Organic Towel | Pottery Barn"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:10.419796Z",
+    "duration_ms": 1659
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/pb-classic-organic-towels/?sku=6830555",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:16.607452Z",
+    "duration_ms": 5186
+  },
+  {
+    "retailer": "potterybarn",
+    "url": "https://www.potterybarn.com/products/pb-classic-organic-towels/?sku=6830555",
+    "ua_family": "bingbot",
+    "ua_string": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Pottery Barn: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:17.783953Z",
+    "duration_ms": 175
+  }
+]
