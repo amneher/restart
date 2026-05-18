@@ -10,7 +10,8 @@
  * @subpackage Restart_Registry/public
  */
 
-class Restart_Registry_Public {
+class Restart_Registry_Public
+{
 
     /** @var string */
     private $plugin_name;
@@ -21,7 +22,8 @@ class Restart_Registry_Public {
     /** @var Restart_Registry_Controller */
     private $controller;
 
-    public function __construct(string $plugin_name, string $version) {
+    public function __construct(string $plugin_name, string $version)
+    {
         $this->plugin_name = $plugin_name;
         $this->version     = $version;
 
@@ -52,7 +54,8 @@ class Restart_Registry_Public {
     // Asset enqueuing
     // =========================================================================
 
-    public function enqueue_styles(): void {
+    public function enqueue_styles(): void
+    {
         wp_enqueue_style(
             $this->plugin_name,
             plugin_dir_url(__FILE__) . 'css/restart-registry-public.css',
@@ -62,12 +65,15 @@ class Restart_Registry_Public {
         );
     }
 
-    public function enqueue_scripts(): void {
+    public function enqueue_scripts(): void
+    {
         // Owner pages need wp.media for the hero-image picker. Loading on
         // every page is wasteful; load only when viewing a registry the user
         // can edit.
-        if (is_singular('restart-registry') && is_user_logged_in()
-            && $this->controller->can_edit_registry((int) get_the_ID(), get_current_user_id())) {
+        if (
+            is_singular('restart-registry') && is_user_logged_in()
+            && $this->controller->can_edit_registry((int) get_the_ID(), get_current_user_id())
+        ) {
             wp_enqueue_media();
         }
 
@@ -106,7 +112,8 @@ class Restart_Registry_Public {
      * • With ?registry=<post_id|slug> query param: public/invitee read view.
      * • Otherwise: logged-in user sees their own manage view (or create form).
      */
-    public function registry_shortcode($atts): string {
+    public function registry_shortcode($atts): string
+    {
         // --- Single CPT page (e.g. /registry/johns-registry/) ---
         if (is_singular('restart-registry')) {
             $post_id = get_the_ID();
@@ -158,7 +165,8 @@ class Restart_Registry_Public {
     /**
      * [restart_registry_view registry="<post_id|slug>"]
      */
-    public function registry_view_shortcode($atts): string {
+    public function registry_view_shortcode($atts): string
+    {
         $atts = shortcode_atts(['registry' => ''], $atts, 'restart_registry_view');
         $key  = !empty($atts['registry'])
             ? $atts['registry']
@@ -174,7 +182,8 @@ class Restart_Registry_Public {
     /**
      * [restart_registry_create]
      */
-    public function registry_create_shortcode($atts): string {
+    public function registry_create_shortcode($atts): string
+    {
         if (!is_user_logged_in()) {
             return $this->render_login_prompt();
         }
@@ -200,14 +209,16 @@ class Restart_Registry_Public {
      * do_blocks/do_shortcode assembles the output) cannot inject <br> or <p>
      * tags between our table-row/table-cell elements.
      */
-    private function compact_html(string $html): string {
+    private function compact_html(string $html): string
+    {
         return preg_replace('/>\s+</', '><', $html);
     }
     // =========================================================================
 
-    private function render_login_prompt(): string {
+    private function render_login_prompt(): string
+    {
         ob_start();
-        ?>
+?>
         <div class="rr-login-prompt">
             <h3><?php _e('Login Required', 'restart-registry'); ?></h3>
             <p><?php _e('You need to be logged in to create or manage a gift registry.', 'restart-registry'); ?></p>
@@ -216,31 +227,32 @@ class Restart_Registry_Public {
                 <a href="<?php echo esc_url(wp_registration_url()); ?>" class="rr-button rr-button-secondary"><?php _e('Register', 'restart-registry'); ?></a>
             <?php endif; ?>
         </div>
-        <?php
+    <?php
         return $this->compact_html(ob_get_clean());
     }
 
-    private function render_create_form(): string {
+    private function render_create_form(): string
+    {
         ob_start();
-        ?>
+    ?>
         <div class="rr-create-form">
             <h3><?php _e('Create Your Gift Registry', 'restart-registry'); ?></h3>
             <form id="rr-create-registry-form" class="rr-form">
                 <div class="rr-form-group">
                     <label for="rr-registry-title"><?php _e('Registry Title', 'restart-registry'); ?></label>
                     <input type="text" id="rr-registry-title" name="title" required
-                           placeholder="<?php esc_attr_e('e.g., Wedding Registry, Baby Shower', 'restart-registry'); ?>">
+                        placeholder="<?php esc_attr_e('e.g., Wedding Registry, Baby Shower', 'restart-registry'); ?>">
                 </div>
                 <div class="rr-form-group">
                     <label for="rr-registry-description"><?php _e('Description (optional)', 'restart-registry'); ?></label>
                     <textarea id="rr-registry-description" name="description" rows="3"
-                              placeholder="<?php esc_attr_e('Tell your guests about this registry…', 'restart-registry'); ?>"></textarea>
+                        placeholder="<?php esc_attr_e('Tell your guests about this registry…', 'restart-registry'); ?>"></textarea>
                 </div>
                 <div class="rr-form-row">
                     <div class="rr-form-group">
                         <label for="rr-registry-event-type"><?php _e('Event Type (optional)', 'restart-registry'); ?></label>
                         <input type="text" id="rr-registry-event-type" name="event_type"
-                               placeholder="<?php esc_attr_e('e.g., Wedding, Baby Shower, Birthday', 'restart-registry'); ?>">
+                            placeholder="<?php esc_attr_e('e.g., Wedding, Baby Shower, Birthday', 'restart-registry'); ?>">
                     </div>
                     <div class="rr-form-group">
                         <label for="rr-registry-event-date"><?php _e('Event Date (optional)', 'restart-registry'); ?></label>
@@ -256,18 +268,19 @@ class Restart_Registry_Public {
                 <button type="submit" class="rr-button"><?php _e('Create Registry', 'restart-registry'); ?></button>
             </form>
         </div>
-        <?php
+    <?php
         return $this->compact_html(ob_get_clean());
     }
 
-    private function render_manage_registry(array $registry): string {
+    private function render_manage_registry(array $registry): string
+    {
         $disclosure = get_option('restart_registry_affiliate_disclosure', __('Some links on this registry are affiliate links.', 'restart-registry'));
         $event_type = $registry['meta']['event_type'] ?? '';
         $event_date = $registry['meta']['event_date'] ?? '';
         $hero_url   = get_the_post_thumbnail_url($registry['id'], 'large');
 
         ob_start();
-        ?>
+    ?>
         <div class="rr-manage-registry" data-registry-id="<?php echo esc_attr($registry['id']); ?>">
 
             <!-- Toolbar -->
@@ -320,8 +333,8 @@ class Restart_Registry_Public {
             <?php if ($hero_url): ?>
                 <div class="rr-registry-hero">
                     <img src="<?php echo esc_url($hero_url); ?>"
-                         alt="<?php echo esc_attr($registry['title']); ?>"
-                         loading="lazy">
+                        alt="<?php echo esc_attr($registry['title']); ?>"
+                        loading="lazy">
                 </div>
             <?php endif; ?>
 
@@ -348,18 +361,18 @@ class Restart_Registry_Public {
                     <form id="rr-add-item-form">
                         <div class="rr-add-item-url-row">
                             <input type="url" id="rr-item-url" name="url" required
-                                   placeholder="<?php esc_attr_e('Paste a product link…', 'restart-registry'); ?>">
+                                placeholder="<?php esc_attr_e('Paste a product link…', 'restart-registry'); ?>">
                             <button type="button" id="rr-fetch-url" class="rr-btn-ghost"><?php _e('Fetch', 'restart-registry'); ?></button>
                         </div>
                         <div class="rr-add-item-fields">
                             <input type="text" id="rr-item-name" name="name" required
-                                   placeholder="<?php esc_attr_e('Item name', 'restart-registry'); ?>">
+                                placeholder="<?php esc_attr_e('Item name', 'restart-registry'); ?>">
                             <input type="number" id="rr-item-quantity" name="quantity" min="1" value="1"
-                                   title="<?php esc_attr_e('Quantity', 'restart-registry'); ?>">
+                                title="<?php esc_attr_e('Quantity', 'restart-registry'); ?>">
                             <input type="number" id="rr-item-price" name="price" step="0.01" min="0.01"
-                                   placeholder="<?php esc_attr_e('Price', 'restart-registry'); ?>">
+                                placeholder="<?php esc_attr_e('Price', 'restart-registry'); ?>">
                             <input type="text" id="rr-item-description" name="description"
-                                   placeholder="<?php esc_attr_e('Notes (optional)', 'restart-registry'); ?>">
+                                placeholder="<?php esc_attr_e('Notes (optional)', 'restart-registry'); ?>">
                             <input type="hidden" id="rr-item-image-url" name="image_url">
                             <button type="submit" class="rr-button"><?php _e('Add', 'restart-registry'); ?></button>
                             <button type="button" class="rr-btn-ghost" id="rr-add-item-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
@@ -399,37 +412,37 @@ class Restart_Registry_Public {
             $purchase_messages = $this->controller->get_purchase_messages($registry['id']);
             if (!empty($purchase_messages)):
             ?>
-            <div class="rr-message-board">
-                <h2 class="rr-message-board__title"><?php _e('Messages', 'restart-registry'); ?></h2>
-                <ul class="rr-message-board__list">
-                    <?php foreach ($purchase_messages as $msg): ?>
-                    <li class="rr-message-card">
-                        <?php if (!empty($msg['item_image_url'])): ?>
-                            <div class="rr-message-card__thumb">
-                                <img src="<?php echo esc_url($msg['item_image_url']); ?>"
-                                     alt="<?php echo esc_attr($msg['item_name']); ?>"
-                                     loading="lazy">
-                            </div>
-                        <?php endif; ?>
-                        <div class="rr-message-card__body">
-                            <p class="rr-message-card__item-name"><?php echo esc_html($msg['item_name']); ?></p>
-                            <?php if (!empty($msg['item_description'])): ?>
-                                <p class="rr-message-card__item-desc"><?php echo esc_html($msg['item_description']); ?></p>
-                            <?php endif; ?>
-                            <blockquote class="rr-message-card__note"><?php echo esc_html($msg['purchaser_note']); ?></blockquote>
-                            <p class="rr-message-card__meta">
-                                <span class="rr-message-card__from">
-                                    <?php echo esc_html($msg['purchaser_name'] ?: __('Someone', 'restart-registry')); ?>
-                                </span>
-                                <span class="rr-message-card__date">
-                                    <?php echo esc_html(date_i18n(get_option('date_format'), $msg['timestamp'])); ?>
-                                </span>
-                            </p>
-                        </div>
-                    </li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
+                <div class="rr-message-board">
+                    <h2 class="rr-message-board__title"><?php _e('Messages', 'restart-registry'); ?></h2>
+                    <ul class="rr-message-board__list">
+                        <?php foreach ($purchase_messages as $msg): ?>
+                            <li class="rr-message-card">
+                                <?php if (!empty($msg['item_image_url'])): ?>
+                                    <div class="rr-message-card__thumb">
+                                        <img src="<?php echo esc_url($msg['item_image_url']); ?>"
+                                            alt="<?php echo esc_attr($msg['item_name']); ?>"
+                                            loading="lazy">
+                                    </div>
+                                <?php endif; ?>
+                                <div class="rr-message-card__body">
+                                    <p class="rr-message-card__item-name"><?php echo esc_html($msg['item_name']); ?></p>
+                                    <?php if (!empty($msg['item_description'])): ?>
+                                        <p class="rr-message-card__item-desc"><?php echo esc_html($msg['item_description']); ?></p>
+                                    <?php endif; ?>
+                                    <blockquote class="rr-message-card__note"><?php echo esc_html($msg['purchaser_note']); ?></blockquote>
+                                    <p class="rr-message-card__meta">
+                                        <span class="rr-message-card__from">
+                                            <?php echo esc_html($msg['purchaser_name'] ?: __('Someone', 'restart-registry')); ?>
+                                        </span>
+                                        <span class="rr-message-card__date">
+                                            <?php echo esc_html(date_i18n(get_option('date_format'), $msg['timestamp'])); ?>
+                                        </span>
+                                    </p>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
             <?php endif; ?>
 
             <!-- Public-toggle help modal -->
@@ -516,7 +529,7 @@ class Restart_Registry_Public {
                                 <div class="rr-form-group">
                                     <label for="rr-edit-item-price"><?php _e('Price', 'restart-registry'); ?></label>
                                     <input type="number" id="rr-edit-item-price" name="price" step="0.01" min="0.01"
-                                           placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
+                                        placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
                                 </div>
                                 <div class="rr-form-group">
                                     <label for="rr-edit-item-quantity"><?php _e('Quantity needed', 'restart-registry'); ?></label>
@@ -526,7 +539,7 @@ class Restart_Registry_Public {
                             <div class="rr-form-group">
                                 <label for="rr-edit-item-description"><?php _e('Notes', 'restart-registry'); ?></label>
                                 <input type="text" id="rr-edit-item-description" name="description"
-                                       placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
+                                    placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
                             </div>
                             <input type="hidden" id="rr-edit-item-image-url" name="image_url">
                             <div class="rr-form-group rr-form-group--checkbox">
@@ -565,7 +578,7 @@ class Restart_Registry_Public {
                             <div class="rr-form-group">
                                 <label for="rr-edit-title"><?php _e('Title', 'restart-registry'); ?></label>
                                 <input type="text" id="rr-edit-title" name="title"
-                                       value="<?php echo esc_attr($registry['title']); ?>" required>
+                                    value="<?php echo esc_attr($registry['title']); ?>" required>
                             </div>
                             <div class="rr-form-group">
                                 <label for="rr-edit-description"><?php _e('Description', 'restart-registry'); ?></label>
@@ -575,13 +588,13 @@ class Restart_Registry_Public {
                                 <div class="rr-form-group">
                                     <label for="rr-edit-event-type"><?php _e('Event Type', 'restart-registry'); ?></label>
                                     <input type="text" id="rr-edit-event-type" name="event_type"
-                                           value="<?php echo esc_attr($event_type); ?>"
-                                           placeholder="<?php esc_attr_e('e.g., Divorce, Fresh Start', 'restart-registry'); ?>">
+                                        value="<?php echo esc_attr($event_type); ?>"
+                                        placeholder="<?php esc_attr_e('e.g., Divorce, Fresh Start', 'restart-registry'); ?>">
                                 </div>
                                 <div class="rr-form-group">
                                     <label for="rr-edit-event-date"><?php _e('Event Date', 'restart-registry'); ?></label>
                                     <input type="date" id="rr-edit-event-date" name="event_date"
-                                           value="<?php echo esc_attr($event_date); ?>">
+                                        value="<?php echo esc_attr($event_date); ?>">
                                 </div>
                             </div>
 
@@ -617,21 +630,21 @@ class Restart_Registry_Public {
                                     <div class="rr-form-group">
                                         <label for="rr-edit-recipient-name"><?php _e('Recipient name', 'restart-registry'); ?></label>
                                         <input type="text" id="rr-edit-recipient-name" name="recipient_name"
-                                               value="<?php echo esc_attr($recipient_name); ?>"
-                                               placeholder="<?php esc_attr_e('e.g., Sarah', 'restart-registry'); ?>">
+                                            value="<?php echo esc_attr($recipient_name); ?>"
+                                            placeholder="<?php esc_attr_e('e.g., Sarah', 'restart-registry'); ?>">
                                     </div>
                                     <div class="rr-form-group">
                                         <label for="rr-edit-recipient-relationship"><?php _e('Your relationship', 'restart-registry'); ?></label>
                                         <input type="text" id="rr-edit-recipient-relationship" name="recipient_relationship"
-                                               value="<?php echo esc_attr($recipient_relationship); ?>"
-                                               placeholder="<?php esc_attr_e('e.g., my sister', 'restart-registry'); ?>">
+                                            value="<?php echo esc_attr($recipient_relationship); ?>"
+                                            placeholder="<?php esc_attr_e('e.g., my sister', 'restart-registry'); ?>">
                                     </div>
                                 </div>
                                 <div class="rr-form-group">
                                     <label for="rr-edit-recipient-email"><?php _e('Recipient email (optional)', 'restart-registry'); ?></label>
                                     <input type="email" id="rr-edit-recipient-email" name="recipient_email"
-                                           value="<?php echo esc_attr($recipient_email); ?>"
-                                           placeholder="<?php esc_attr_e('So they can claim the registry later', 'restart-registry'); ?>">
+                                        value="<?php echo esc_attr($recipient_email); ?>"
+                                        placeholder="<?php esc_attr_e('So they can claim the registry later', 'restart-registry'); ?>">
                                 </div>
                             </div>
 
@@ -730,14 +743,15 @@ class Restart_Registry_Public {
             </div>
 
         </div>
-        <?php
+    <?php
         return $this->compact_html(ob_get_clean());
     }
 
     /**
      * Render a single item as a table row for the owner's manage view.
      */
-    private function render_item_row(array $item): string {
+    private function render_item_row(array $item): string
+    {
         $qty_needed    = (int) ($item['quantity_needed']    ?? 1);
         $qty_purchased = (int) ($item['quantity_purchased'] ?? 0);
         $remaining     = $qty_needed - $qty_purchased;
@@ -797,7 +811,8 @@ class Restart_Registry_Public {
     /**
      * Look up a registry by share key (post ID or slug) and render the guest view.
      */
-    private function render_registry_view(string $key): string {
+    private function render_registry_view(string $key): string
+    {
         $registry = $this->controller->get_registry_by_share_key($key);
         if (is_wp_error($registry)) {
             if ($registry->get_error_code() === 'registry_archived') {
@@ -823,7 +838,8 @@ class Restart_Registry_Public {
         return $this->render_registry_view_html($registry);
     }
 
-    private function render_registry_view_html(array $registry): string {
+    private function render_registry_view_html(array $registry): string
+    {
         $user         = get_userdata($registry['user_id']);
         $owner_name   = $user ? $user->display_name : __('Someone', 'restart-registry');
         $disclosure   = get_option('restart_registry_affiliate_disclosure', __('Some links on this registry are affiliate links.', 'restart-registry'));
@@ -833,7 +849,7 @@ class Restart_Registry_Public {
         $hero_url     = get_the_post_thumbnail_url($registry['id'], 'large');
 
         ob_start();
-        ?>
+    ?>
         <div class="rr-view-registry" data-registry-id="<?php echo esc_attr($registry['id']); ?>">
 
             <!-- Two-column header: story left, hero right -->
@@ -847,20 +863,20 @@ class Restart_Registry_Public {
                     ?>
                     <?php if (!$is_for_self && $recipient_name): ?>
                         <p class="rr-owner"><?php echo wp_kses_post(sprintf(
-                            /* translators: 1: recipient name, 2: owner name */
-                            __('A gift registry for <strong>%1$s</strong>, created by %2$s', 'restart-registry'),
-                            esc_html($recipient_name),
-                            esc_html($owner_name)
-                        )); ?></p>
+                                                /* translators: 1: recipient name, 2: owner name */
+                                                __('A gift registry for <strong>%1$s</strong>, created by %2$s', 'restart-registry'),
+                                                esc_html($recipient_name),
+                                                esc_html($owner_name)
+                                            )); ?></p>
                         <?php if ($recipient_rel): ?>
                             <p class="rr-recipient">(<?php echo esc_html($recipient_rel); ?>)</p>
                         <?php endif; ?>
                     <?php else: ?>
                         <p class="rr-owner"><?php printf(
-                            /* translators: %s = owner display name */
-                            __('A gift registry by %s', 'restart-registry'),
-                            '<strong>' . esc_html($owner_name) . '</strong>'
-                        ); ?></p>
+                                                /* translators: %s = owner display name */
+                                                __('A gift registry by %s', 'restart-registry'),
+                                                '<strong>' . esc_html($owner_name) . '</strong>'
+                                            ); ?></p>
                     <?php endif; ?>
                     <?php if ($event_type || $event_date): ?>
                         <p class="rr-event-meta">
@@ -890,8 +906,8 @@ class Restart_Registry_Public {
                 <?php if ($hero_url): ?>
                     <div class="rr-registry-top__hero">
                         <img src="<?php echo esc_url($hero_url); ?>"
-                             alt="<?php echo esc_attr($registry['title']); ?>"
-                             loading="lazy">
+                            alt="<?php echo esc_attr($registry['title']); ?>"
+                            loading="lazy">
                     </div>
                 <?php endif; ?>
             </div>
@@ -923,6 +939,43 @@ class Restart_Registry_Public {
                 <?php endif; ?>
             </div>
 
+            <?php
+            $purchase_messages = $this->controller->get_purchase_messages($registry['id']);
+            if (!empty($purchase_messages)):
+            ?>
+                <div class="rr-message-board">
+                    <h2 class="rr-message-board__title"><?php _e('Messages', 'restart-registry'); ?></h2>
+                    <ul class="rr-message-board__list">
+                        <?php foreach ($purchase_messages as $msg): ?>
+                            <li class="rr-message-card">
+                                <?php if (!empty($msg['item_image_url'])): ?>
+                                    <div class="rr-message-card__thumb">
+                                        <img src="<?php echo esc_url($msg['item_image_url']); ?>"
+                                            alt="<?php echo esc_attr($msg['item_name']); ?>"
+                                            loading="lazy">
+                                    </div>
+                                <?php endif; ?>
+                                <div class="rr-message-card__body">
+                                    <p class="rr-message-card__item-name"><?php echo esc_html($msg['item_name']); ?></p>
+                                    <?php if (!empty($msg['item_description'])): ?>
+                                        <p class="rr-message-card__item-desc"><?php echo esc_html($msg['item_description']); ?></p>
+                                    <?php endif; ?>
+                                    <blockquote class="rr-message-card__note"><?php echo esc_html($msg['purchaser_note']); ?></blockquote>
+                                    <p class="rr-message-card__meta">
+                                        <span class="rr-message-card__from">
+                                            <?php echo esc_html($msg['purchaser_name'] ?: __('Someone', 'restart-registry')); ?>
+                                        </span>
+                                        <span class="rr-message-card__date">
+                                            <?php echo esc_html(date_i18n(get_option('date_format'), $msg['timestamp'])); ?>
+                                        </span>
+                                    </p>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
             <!-- Item detail modal -->
             <div class="rr-modal" id="rr-item-detail-modal" aria-hidden="true">
                 <div class="rr-modal__backdrop"></div>
@@ -940,7 +993,7 @@ class Restart_Registry_Public {
                         <div class="rr-item-detail__qty-row"></div>
                         <div class="rr-item-detail__actions">
                             <a href="#" target="_blank" rel="noopener sponsored" class="rr-button rr-purchase-btn rr-item-detail__purchase-btn" style="display:none"><?php _e('Purchase', 'restart-registry'); ?></a>
-                            <button type="button" class="rr-button rr-button-small rr-button-secondary rr-mark-purchased rr-item-detail__mark-btn" style="display:none"><?php _e('Mark Fulfilled', 'restart-registry'); ?></button>
+                            <button type="button" class="rr-button rr-button-small rr-button-secondary rr-mark-purchased rr-item-detail__mark-btn" style="display:none"><?php _e('Mark Purchased', 'restart-registry'); ?></button>
                         </div>
                     </div>
                 </div>
@@ -962,12 +1015,12 @@ class Restart_Registry_Public {
                             <div class="rr-form-group">
                                 <label for="rr-purchaser-name"><?php _e('Your name', 'restart-registry'); ?> <span class="rr-optional"><?php _e('(optional)', 'restart-registry'); ?></span></label>
                                 <input type="text" id="rr-purchaser-name" name="purchaser_name"
-                                       placeholder="<?php esc_attr_e('e.g., Aunt Carol', 'restart-registry'); ?>">
+                                    placeholder="<?php esc_attr_e('e.g., Aunt Carol', 'restart-registry'); ?>">
                             </div>
                             <div class="rr-form-group">
                                 <label for="rr-purchaser-note"><?php _e('Leave a message', 'restart-registry'); ?> <span class="rr-optional"><?php _e('(optional)', 'restart-registry'); ?></span></label>
                                 <textarea id="rr-purchaser-note" name="purchaser_note" rows="3"
-                                          placeholder="<?php esc_attr_e('A note for the registry owner…', 'restart-registry'); ?>"></textarea>
+                                    placeholder="<?php esc_attr_e('A note for the registry owner…', 'restart-registry'); ?>"></textarea>
                             </div>
                             <div class="rr-form-actions">
                                 <button type="submit" class="rr-button"><?php _e('Confirm Purchase', 'restart-registry'); ?></button>
@@ -979,7 +1032,7 @@ class Restart_Registry_Public {
             </div>
 
         </div>
-        <?php
+<?php
         return $this->compact_html(ob_get_clean());
     }
 
@@ -989,7 +1042,8 @@ class Restart_Registry_Public {
      * Item fields (from Lambda): id, name, url, description, price,
      *   retailer, affiliate_status, quantity_needed, quantity_purchased, is_active.
      */
-    private function render_item_card(array $item, bool $is_owner = false, bool $can_purchase = true): string {
+    private function render_item_card(array $item, bool $is_owner = false, bool $can_purchase = true): string
+    {
         $qty_needed    = (int) ($item['quantity_needed']    ?? 1);
         $qty_purchased = (int) ($item['quantity_purchased'] ?? 0);
         $remaining     = $qty_needed - $qty_purchased;
@@ -1017,9 +1071,9 @@ class Restart_Registry_Public {
             $actions .= '<a href="' . esc_url($item_url) . '" target="_blank" rel="noopener sponsored" class="rr-purchase-btn rr-button rr-button-small">'
                 . esc_html__('Purchase', 'restart-registry') . '</a>';
         }
-        if (!$is_fulfilled && !$is_owner && $can_purchase) {
+        if (!$is_fulfilled && !$is_owner) {
             $actions .= '<button type="button" class="rr-button rr-button-small rr-button-secondary rr-mark-purchased">'
-                . esc_html__('Mark Fulfilled', 'restart-registry') . '</button>';
+                . esc_html__('Mark Purchased', 'restart-registry') . '</button>';
         }
         if ($is_owner) {
             $actions .= '<button type="button" class="rr-btn-icon rr-edit-item" title="' . esc_attr__('Edit', 'restart-registry') . '">&#9998;</button>'
@@ -1049,7 +1103,8 @@ class Restart_Registry_Public {
     // AJAX handlers
     // =========================================================================
 
-    public function ajax_create_registry(): void {
+    public function ajax_create_registry(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
@@ -1090,7 +1145,8 @@ class Restart_Registry_Public {
         ]);
     }
 
-    public function ajax_add_item(): void {
+    public function ajax_add_item(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
@@ -1128,7 +1184,8 @@ class Restart_Registry_Public {
         ]);
     }
 
-    public function ajax_delete_item(): void {
+    public function ajax_delete_item(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
@@ -1145,7 +1202,8 @@ class Restart_Registry_Public {
         wp_send_json_success(['message' => __('Item removed.', 'restart-registry')]);
     }
 
-    public function ajax_update_item(): void {
+    public function ajax_update_item(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
@@ -1187,7 +1245,8 @@ class Restart_Registry_Public {
         wp_send_json_success(['message' => __('Item updated.', 'restart-registry')]);
     }
 
-    public function ajax_mark_purchased(): void {
+    public function ajax_mark_purchased(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
 
         $item_id  = (int) ($_POST['item_id']  ?? 0);
@@ -1221,7 +1280,8 @@ class Restart_Registry_Public {
         wp_send_json_success(['message' => __('Thank you for purchasing this gift!', 'restart-registry')]);
     }
 
-    public function ajax_send_invite(): void {
+    public function ajax_send_invite(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
@@ -1246,7 +1306,8 @@ class Restart_Registry_Public {
         wp_send_json_success(['message' => __('Invitation sent!', 'restart-registry')]);
     }
 
-    public function ajax_remove_invitee(): void {
+    public function ajax_remove_invitee(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
@@ -1270,7 +1331,8 @@ class Restart_Registry_Public {
         wp_send_json_success(['message' => __('Invitee removed.', 'restart-registry')]);
     }
 
-    public function ajax_update_registry(): void {
+    public function ajax_update_registry(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
@@ -1297,7 +1359,8 @@ class Restart_Registry_Public {
         wp_send_json_success(['message' => __('Registry updated.', 'restart-registry')]);
     }
 
-    public function ajax_update_notification_prefs(): void {
+    public function ajax_update_notification_prefs(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         if (!is_user_logged_in()) {
             wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
@@ -1308,7 +1371,8 @@ class Restart_Registry_Public {
         wp_send_json_success(['message' => __('Preferences saved.', 'restart-registry')]);
     }
 
-    public function ajax_fetch_url(): void {
+    public function ajax_fetch_url(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
 
         $url = esc_url_raw($_POST['url'] ?? '');
@@ -1341,7 +1405,8 @@ class Restart_Registry_Public {
         ]));
     }
 
-    public function ajax_archive_registry(): void {
+    public function ajax_archive_registry(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         $registry_id = (int) ($_POST['registry_id'] ?? 0);
         if (!$registry_id || !$this->controller->can_edit_registry($registry_id, get_current_user_id())) {
@@ -1353,7 +1418,8 @@ class Restart_Registry_Public {
         wp_send_json_error(['message' => __('Could not archive registry.', 'restart-registry')]);
     }
 
-    public function ajax_restore_registry(): void {
+    public function ajax_restore_registry(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         $registry_id = (int) ($_POST['registry_id'] ?? 0);
         if (!$registry_id) {
@@ -1369,7 +1435,8 @@ class Restart_Registry_Public {
         wp_send_json_error(['message' => __('Could not restore registry.', 'restart-registry')]);
     }
 
-    public function ajax_delete_registry(): void {
+    public function ajax_delete_registry(): void
+    {
         check_ajax_referer('restart_registry_nonce', 'nonce');
         $registry_id = (int) ($_POST['registry_id'] ?? 0);
         $confirmed   = ($_POST['confirm'] ?? '') === '1';

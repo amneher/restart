@@ -21,10 +21,8 @@ def _get_service_user(request: Request) -> WPUser | None:
     try:
         user_id = int(request.headers.get("X-WP-User-ID", "0"))
     except ValueError:
-        return None
-    if not user_id:
-        return None
-    username = request.headers.get("X-WP-Username", "")
+        user_id = 0
+    username = request.headers.get("X-WP-Username", "") or "guest"
     roles = [r.strip() for r in request.headers.get("X-WP-Roles", "subscriber").split(",") if r.strip()]
     return WPUser(id=user_id, username=username, email="", display_name=username, roles=roles)
 
