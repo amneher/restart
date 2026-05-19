@@ -100,6 +100,10 @@ class Restart_Registry_Admin {
         register_setting('restart_registry_affiliates', 'restart_registry_cj_id');
         register_setting('restart_registry_affiliates', 'restart_registry_affiliate_disclosure');
 
+        register_setting('restart_registry_affiliates', 'restart_registry_custom_retailers', [
+            'sanitize_callback' => array($this, 'sanitize_custom_retailers'),
+        ]);
+
         // Retailer API keys
         register_setting('restart_registry_affiliates', 'restart_registry_etsy_api_key', [
             'sanitize_callback' => 'sanitize_text_field',
@@ -183,6 +187,31 @@ class Restart_Registry_Admin {
                 'get_key_label' => __('Get your Etsy API key →', 'restart-registry'),
             )
         );
+    }
+
+    public function sanitize_custom_retailers($value) {
+        if (!is_array($value)) {
+            return [];
+        }
+        $clean = [];
+        foreach ($value as $row) {
+            $name     = sanitize_text_field($row['name'] ?? '');
+            $domains  = sanitize_text_field($row['domains'] ?? '');
+            $template = sanitize_text_field($row['template'] ?? '');
+            $aff_id   = sanitize_text_field($row['affiliate_id'] ?? '');
+            $merch_id = sanitize_text_field($row['merchant_id'] ?? '');
+            if (empty($name) || empty($domains) || empty($template)) {
+                continue;
+            }
+            $clean[] = [
+                'name'         => $name,
+                'domains'      => $domains,
+                'template'     => $template,
+                'affiliate_id' => $aff_id,
+                'merchant_id'  => $merch_id,
+            ];
+        }
+        return $clean;
     }
 
     public function affiliate_section_callback() {
@@ -541,6 +570,49 @@ class Restart_Registry_Admin {
 
             <hr>
 
+            <h2><?php _e('Custom Retailers', 'restart-registry'); ?></h2>
+            <p><?php _e('Add retailers not in the built-in list. Use <code>{url}</code>, <code>{affiliate_id}</code>, and <code>{merchant_id}</code> as placeholders in the URL template.', 'restart-registry'); ?></p>
+
+            <form action="options.php" method="post" id="rr-custom-retailers-form">
+                <?php settings_fields('restart_registry_affiliates'); ?>
+                <table class="wp-list-table widefat fixed striped" id="rr-custom-retailers-table">
+                    <thead>
+                        <tr>
+                            <th style="width:14%"><?php _e('Retailer Name', 'restart-registry'); ?></th>
+                            <th style="width:18%"><?php _e('Domains', 'restart-registry'); ?></th>
+                            <th style="width:35%"><?php _e('Affiliate URL Template', 'restart-registry'); ?></th>
+                            <th style="width:13%"><?php _e('Affiliate ID', 'restart-registry'); ?></th>
+                            <th style="width:13%"><?php _e('Merchant ID', 'restart-registry'); ?></th>
+                            <th style="width:7%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="rr-custom-retailers-body">
+                        <?php
+                        $custom_retailers = get_option('restart_registry_custom_retailers', []);
+                        if (!is_array($custom_retailers)) $custom_retailers = [];
+                        foreach ($custom_retailers as $i => $row):
+                        ?>
+                        <tr class="rr-custom-retailer-row">
+                            <td><input type="text" name="restart_registry_custom_retailers[<?php echo $i; ?>][name]" value="<?php echo esc_attr($row['name'] ?? ''); ?>" class="widefat"></td>
+                            <td><input type="text" name="restart_registry_custom_retailers[<?php echo $i; ?>][domains]" value="<?php echo esc_attr($row['domains'] ?? ''); ?>" class="widefat" placeholder="example.com, shop.com"></td>
+                            <td><input type="text" name="restart_registry_custom_retailers[<?php echo $i; ?>][template]" value="<?php echo esc_attr($row['template'] ?? ''); ?>" class="widefat" placeholder="https://network.com/r?url={url}&id={affiliate_id}"></td>
+                            <td><input type="text" name="restart_registry_custom_retailers[<?php echo $i; ?>][affiliate_id]" value="<?php echo esc_attr($row['affiliate_id'] ?? ''); ?>" class="widefat"></td>
+                            <td><input type="text" name="restart_registry_custom_retailers[<?php echo $i; ?>][merchant_id]" value="<?php echo esc_attr($row['merchant_id'] ?? ''); ?>" class="widefat"></td>
+                            <td><button type="button" class="button rr-remove-retailer"><?php _e('Remove', 'restart-registry'); ?></button></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+
+                <p>
+                    <button type="button" id="rr-add-retailer" class="button button-secondary"><?php _e('+ Add Retailer', 'restart-registry'); ?></button>
+                </p>
+
+                <?php submit_button(__('Save Custom Retailers', 'restart-registry'), 'primary', 'submit', false); ?>
+            </form>
+
+            <hr>
+
             <h2><?php _e('Re-convert Affiliate Links', 'restart-registry'); ?></h2>
             <p><?php _e('Re-runs the affiliate converter on every item\'s original URL using your current affiliate IDs. Use this after updating an affiliate ID above.', 'restart-registry'); ?></p>
             <button type="button" id="rr-reconvert-affiliates" class="button button-secondary">
@@ -562,7 +634,7 @@ class Restart_Registry_Admin {
                     <li><strong>Home Depot</strong> - homedepot.com</li>
                     <li><strong>Wayfair</strong> - wayfair.com</li>
                 </ul>
-                <p><?php _e('More retailers can be added through custom filters in your theme or plugin.', 'restart-registry'); ?></p>
+                <p><?php _e('Additional retailers can be configured in the Custom Retailers section above.', 'restart-registry'); ?></p>
             </div>
         </div>
         <?php

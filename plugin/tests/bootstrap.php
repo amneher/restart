@@ -44,6 +44,7 @@ require_once dirname(__DIR__) . '/includes/class-affiliate-converter.php';
 require_once dirname(__DIR__) . '/includes/class-lambda-api-client.php';
 require_once dirname(__DIR__) . '/includes/class-restart-registry-controller.php';
 require_once dirname(__DIR__) . '/includes/class-product-scraper.php';
+require_once dirname(__DIR__) . '/admin/class-restart-registry-admin.php';
 
 // Test fakes
 require_once __DIR__ . '/Fakes/LambdaClientFake.php';
