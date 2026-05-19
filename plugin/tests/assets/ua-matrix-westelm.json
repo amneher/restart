@@ -1,0 +1,383 @@
+[
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/organic-washed-cotton-sheet-set-b2125/?pkey=cbedding&sb=WE",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:10.139226Z",
+    "duration_ms": 215
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/organic-washed-cotton-sheet-set-b2125/?pkey=cbedding&sb=WE",
+    "ua_family": "safari_desktop",
+    "ua_string": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:11.293749Z",
+    "duration_ms": 153
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/organic-washed-cotton-sheet-set-b2125/?pkey=cbedding&sb=WE",
+    "ua_family": "firefox_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:12.455499Z",
+    "duration_ms": 160
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/organic-washed-cotton-sheet-set-b2125/?pkey=cbedding&sb=WE",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:13.625017Z",
+    "duration_ms": 168
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/organic-washed-cotton-sheet-set-b2125/?pkey=cbedding&sb=WE",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:14.800920Z",
+    "duration_ms": 173
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/organic-washed-cotton-sheet-set-b2125/?pkey=cbedding&sb=WE",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Organic Washed Cotton Percale Sheet Set",
+      "image": "https://assets.weimgs.com/weimgs/ab/images/wcm/products/202551/0030/organic-washed-cotton-percale-sheet-set-1-d.jpg",
+      "price": "$39.99",
+      "title_tag": "Organic Washed Cotton Sheet Set, Bed Sheets | West Elm"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:16.906819Z",
+    "duration_ms": 987
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/organic-washed-cotton-sheet-set-b2125/?pkey=cbedding&sb=WE",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:18.162735Z",
+    "duration_ms": 254
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/organic-washed-cotton-sheet-set-b2125/?pkey=cbedding&sb=WE",
+    "ua_family": "bingbot",
+    "ua_string": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:19.461404Z",
+    "duration_ms": 297
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-executive-desk-h9719/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:20.900039Z",
+    "duration_ms": 437
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-executive-desk-h9719/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "safari_desktop",
+    "ua_string": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:22.228960Z",
+    "duration_ms": 327
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-executive-desk-h9719/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "firefox_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:23.405577Z",
+    "duration_ms": 175
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-executive-desk-h9719/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:24.641604Z",
+    "duration_ms": 235
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-executive-desk-h9719/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:25.873963Z",
+    "duration_ms": 231
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-executive-desk-h9719/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Mid-Century Executive Desk (74&amp;quot;)",
+      "image": "https://assets.weimgs.com/weimgs/ab/images/wcm/products/202603/1587/mid-century-executive-desk-74-2-d.jpg",
+      "price": "$39.99",
+      "title_tag": "Mid-Century Executive Desk (74&quot;) | West Elm"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:27.442174Z",
+    "duration_ms": 449
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-executive-desk-h9719/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:28.620516Z",
+    "duration_ms": 176
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-executive-desk-h9719/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "bingbot",
+    "ua_string": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:29.809094Z",
+    "duration_ms": 188
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-bookshelf-wide-h1056/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:31.004146Z",
+    "duration_ms": 194
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-bookshelf-wide-h1056/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "safari_desktop",
+    "ua_string": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:32.262182Z",
+    "duration_ms": 257
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-bookshelf-wide-h1056/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "firefox_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:33.454541Z",
+    "duration_ms": 191
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-bookshelf-wide-h1056/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:34.699922Z",
+    "duration_ms": 244
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-bookshelf-wide-h1056/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:35.964279Z",
+    "duration_ms": 263
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-bookshelf-wide-h1056/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Mid-Century Bookshelf w/ Drawer (38&amp;quot;)",
+      "image": "https://assets.weimgs.com/weimgs/ab/images/wcm/products/202605/0028/mid-century-bookshelf-w-drawer-38-d.jpg",
+      "price": "$39.99",
+      "title_tag": "Mid-Century Bookshelf w/ Drawer (38&quot;) | West Elm"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:37.817326Z",
+    "duration_ms": 709
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-bookshelf-wide-h1056/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:39.012043Z",
+    "duration_ms": 193
+  },
+  {
+    "retailer": "westelm",
+    "url": "https://www.westelm.com/products/mid-century-bookshelf-wide-h1056/?pkey=cwest-elm-office&sb=WE",
+    "ua_family": "bingbot",
+    "ua_string": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "West Elm: 403 - Restricted Access"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:40.206587Z",
+    "duration_ms": 193
+  }
+]

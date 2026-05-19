@@ -18,6 +18,9 @@ class Restart_Registry_Product_Scraper {
 
     private const UA_CHROME   = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
     private const UA_FACEBOOK = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
+    // Williams-Sonoma family (West Elm, Pottery Barn, etc.) blocks all common browser and social-crawler
+    // UAs with a hard 403 via Akamai. LinkedInBot is allowlisted for link-preview purposes.
+    private const UA_LINKEDIN = 'LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)';
 
     /**
      * Scrape product metadata from a retailer URL.
@@ -55,7 +58,7 @@ class Restart_Registry_Product_Scraper {
             ];
         }
 
-        $body = $this->http_get($url, self::UA_CHROME, 15);
+        $body = $this->http_get($url, $this->select_ua_for($url), 15);
         $data = ['name' => '', 'price' => '', 'image_url' => '', 'description' => ''];
 
         // og:title is the curated product name — preferred over <title> which adds site suffixes
@@ -191,6 +194,22 @@ class Restart_Registry_Product_Scraper {
         }
 
         return $data;
+    }
+
+    /**
+     * Pick the best primary User-Agent for a given URL based on empirical testing.
+     * See plugin/tests/assets/ua-matrix/summary.md for the test results that inform these choices.
+     */
+    private function select_ua_for(string $url): string {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        // Williams-Sonoma family: Akamai 403s all browser and social-crawler UAs; LinkedInBot passes.
+        if (str_contains($host, 'westelm.com') || str_contains($host, 'potterybarn.com') ||
+            str_contains($host, 'williams-sonoma.com') || str_contains($host, 'pbteen.com') ||
+            str_contains($host, 'pbkids.com') || str_contains($host, 'rejuvenation.com') ||
+            str_contains($host, 'markangraham.com')) {
+            return self::UA_LINKEDIN;
+        }
+        return self::UA_CHROME;
     }
 
     /**
