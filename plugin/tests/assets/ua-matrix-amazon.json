@@ -1,0 +1,108 @@
+[
+  {
+    "retailer": "amazon",
+    "url": "https://www.amazon.com/dp/B00004RFMH",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 200,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Amazon.com"
+    },
+    "block_indicators": [
+      "To discuss automated access",
+      "errors/validateCaptcha"
+    ],
+    "checked_at": "2026-05-18T12:25:19.023489Z",
+    "duration_ms": 233
+  },
+  {
+    "retailer": "amazon",
+    "url": "https://www.amazon.com/dp/B00004RFMH",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 500,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "503 - Service Unavailable Error"
+    },
+    "block_indicators": [
+      "To discuss automated access"
+    ],
+    "checked_at": "2026-05-18T12:25:21.245392Z",
+    "duration_ms": 220
+  },
+  {
+    "retailer": "amazon",
+    "url": "https://www.amazon.com/dp/B00004RFMH",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 500,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "503 - Service Unavailable Error"
+    },
+    "block_indicators": [
+      "To discuss automated access"
+    ],
+    "checked_at": "2026-05-18T12:25:23.405401Z",
+    "duration_ms": 158
+  },
+  {
+    "retailer": "amazon",
+    "url": "https://www.amazon.com/KitchenAid-KSM150PSER-Artisan-Series-Mixer/dp/B00005UP2P/",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 200,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {
+      "title_tag": "Amazon.com"
+    },
+    "block_indicators": [
+      "To discuss automated access",
+      "errors/validateCaptcha"
+    ],
+    "checked_at": "2026-05-18T12:25:25.564278Z",
+    "duration_ms": 157
+  },
+  {
+    "retailer": "amazon",
+    "url": "https://www.amazon.com/KitchenAid-KSM150PSER-Artisan-Series-Mixer/dp/B00005UP2P/",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 200,
+    "status": "product_missing",
+    "fields_found": [
+      "price"
+    ],
+    "evidence": {
+      "price": "$,",
+      "title_tag": "Amazon.com: KitchenAid Artisan Series 5 Quart Tilt Head Stand Mixer, Metal, KSM150PS, Empire Red: Electric Stand Mixers:"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:28.616393Z",
+    "duration_ms": 502
+  },
+  {
+    "retailer": "amazon",
+    "url": "https://www.amazon.com/KitchenAid-KSM150PSER-Artisan-Series-Mixer/dp/B00005UP2P/",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 200,
+    "status": "product_missing",
+    "fields_found": [
+      "price"
+    ],
+    "evidence": {
+      "price": "$,",
+      "title_tag": "Amazon.com: KitchenAid Artisan Series 5 Quart Tilt Head Stand Mixer, Metal, KSM150PS, Empire Red: Electric Stand Mixers:"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:25:31.515470Z",
+    "duration_ms": 470
+  }
+]

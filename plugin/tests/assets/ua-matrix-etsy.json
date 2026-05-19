@@ -1,0 +1,75 @@
+[
+  {
+    "retailer": "etsy",
+    "url": "https://www.etsy.com/listing/879946100/linen-throw-blanket",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {},
+    "block_indicators": [
+      "captcha-delivery"
+    ],
+    "checked_at": "2026-05-18T12:26:11.969127Z",
+    "duration_ms": 211
+  },
+  {
+    "retailer": "etsy",
+    "url": "https://www.etsy.com/listing/879946100/linen-throw-blanket",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {},
+    "block_indicators": [
+      "captcha-delivery"
+    ],
+    "checked_at": "2026-05-18T12:26:13.588365Z",
+    "duration_ms": 118
+  },
+  {
+    "retailer": "etsy",
+    "url": "https://www.etsy.com/listing/879946100/linen-throw-blanket",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {},
+    "block_indicators": [
+      "captcha-delivery"
+    ],
+    "checked_at": "2026-05-18T12:26:15.246967Z",
+    "duration_ms": 156
+  },
+  {
+    "retailer": "etsy",
+    "url": "https://www.etsy.com/listing/879946100/linen-throw-blanket",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 429,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {},
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:26:16.938018Z",
+    "duration_ms": 188
+  },
+  {
+    "retailer": "etsy",
+    "url": "https://www.etsy.com/listing/879946100/linen-throw-blanket",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 403,
+    "status": "blocked",
+    "fields_found": [],
+    "evidence": {},
+    "block_indicators": [
+      "captcha-delivery"
+    ],
+    "checked_at": "2026-05-18T12:26:18.573342Z",
+    "duration_ms": 134
+  }
+]

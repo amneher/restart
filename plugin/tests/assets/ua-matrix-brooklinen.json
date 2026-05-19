@@ -1,0 +1,530 @@
+[
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/classic-hardcore-sheet-bundle?variant=41405021880410",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Classic Percale Hardcore Sheet Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_25-05_Bedding_Classic_White_HCB_1x_WOgrey.jpg?v=1758736846&width=1200",
+      "price": "$25",
+      "title_tag": "Classic Percale Bedding Bundle | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:28.245941Z",
+    "duration_ms": 479
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/classic-hardcore-sheet-bundle?variant=41405021880410",
+    "ua_family": "safari_desktop",
+    "ua_string": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Classic Percale Hardcore Sheet Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_25-05_Bedding_Classic_White_HCB_1x_WOgrey.jpg?v=1758736846&width=1200",
+      "price": "$25",
+      "title_tag": "Classic Percale Bedding Bundle | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:30.412176Z",
+    "duration_ms": 875
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/classic-hardcore-sheet-bundle?variant=41405021880410",
+    "ua_family": "firefox_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Classic Percale Hardcore Sheet Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_25-05_Bedding_Classic_White_HCB_1x_WOgrey.jpg?v=1758736846&width=1200",
+      "price": "$25",
+      "title_tag": "Classic Percale Bedding Bundle | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:32.167905Z",
+    "duration_ms": 369
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/classic-hardcore-sheet-bundle?variant=41405021880410",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Classic Percale Hardcore Sheet Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_25-05_Bedding_Classic_White_HCB_1x_WOgrey.jpg?v=1758736846&width=1200",
+      "price": "$25",
+      "title_tag": "Classic Percale Bedding Bundle | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:34.109711Z",
+    "duration_ms": 465
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/classic-hardcore-sheet-bundle?variant=41405021880410",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Classic Percale Hardcore Sheet Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_25-05_Bedding_Classic_White_HCB_1x_WOgrey.jpg?v=1758736846&width=1200",
+      "price": "$25",
+      "title_tag": "Classic Percale Bedding Bundle | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:36.019131Z",
+    "duration_ms": 454
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/classic-hardcore-sheet-bundle?variant=41405021880410",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Classic Percale Hardcore Sheet Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_25-05_Bedding_Classic_White_HCB_1x_WOgrey.jpg?v=1758736846&width=1200",
+      "price": "$25",
+      "title_tag": "Classic Percale Bedding Bundle | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:37.917028Z",
+    "duration_ms": 445
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/classic-hardcore-sheet-bundle?variant=41405021880410",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Classic Percale Hardcore Sheet Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_25-05_Bedding_Classic_White_HCB_1x_WOgrey.jpg?v=1758736846&width=1200",
+      "price": "$25",
+      "title_tag": "Classic Percale Bedding Bundle | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:39.832466Z",
+    "duration_ms": 467
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/classic-hardcore-sheet-bundle?variant=41405021880410",
+    "ua_family": "bingbot",
+    "ua_string": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Classic Percale Hardcore Sheet Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_25-05_Bedding_Classic_White_HCB_1x_WOgrey.jpg?v=1758736846&width=1200",
+      "price": "$25",
+      "title_tag": "Classic Percale Bedding Bundle | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:41.755581Z",
+    "duration_ms": 437
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/washed-linen-quilt?variant=43188816216154",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Washed European Linen Quilt",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-02_Bedding_Linen_OxfordStripeInMiso_Quilt_2_x_PDP_WO.jpg?v=1773953272",
+      "price": "$25",
+      "title_tag": "Washed European Linen Quilt\n\n    &ndash; Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:43.354009Z",
+    "duration_ms": 340
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/washed-linen-quilt?variant=43188816216154",
+    "ua_family": "safari_desktop",
+    "ua_string": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Washed European Linen Quilt",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-02_Bedding_Linen_OxfordStripeInMiso_Quilt_2_x_PDP_WO.jpg?v=1773953272",
+      "price": "$25",
+      "title_tag": "Washed European Linen Quilt\n\n    &ndash; Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:45.325002Z",
+    "duration_ms": 714
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/washed-linen-quilt?variant=43188816216154",
+    "ua_family": "firefox_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Washed European Linen Quilt",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-02_Bedding_Linen_OxfordStripeInMiso_Quilt_2_x_PDP_WO.jpg?v=1773953272",
+      "price": "$25",
+      "title_tag": "Washed European Linen Quilt\n\n    &ndash; Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:46.988789Z",
+    "duration_ms": 370
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/washed-linen-quilt?variant=43188816216154",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Washed European Linen Quilt",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-02_Bedding_Linen_OxfordStripeInMiso_Quilt_2_x_PDP_WO.jpg?v=1773953272",
+      "price": "$25",
+      "title_tag": "Washed European Linen Quilt\n\n    &ndash; Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:48.599091Z",
+    "duration_ms": 393
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/washed-linen-quilt?variant=43188816216154",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Washed European Linen Quilt",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-02_Bedding_Linen_OxfordStripeInMiso_Quilt_2_x_PDP_WO.jpg?v=1773953272",
+      "price": "$25",
+      "title_tag": "Washed European Linen Quilt\n\n    &ndash; Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:50.278169Z",
+    "duration_ms": 399
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/washed-linen-quilt?variant=43188816216154",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Washed European Linen Quilt",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-02_Bedding_Linen_OxfordStripeInMiso_Quilt_2_x_PDP_WO.jpg?v=1773953272",
+      "price": "$25",
+      "title_tag": "Washed European Linen Quilt\n\n    &ndash; Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:51.925857Z",
+    "duration_ms": 355
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/washed-linen-quilt?variant=43188816216154",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Washed European Linen Quilt",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-02_Bedding_Linen_OxfordStripeInMiso_Quilt_2_x_PDP_WO.jpg?v=1773953272",
+      "price": "$25",
+      "title_tag": "Washed European Linen Quilt\n\n    &ndash; Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:53.617501Z",
+    "duration_ms": 430
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/washed-linen-quilt?variant=43188816216154",
+    "ua_family": "bingbot",
+    "ua_string": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Washed European Linen Quilt",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-02_Bedding_Linen_OxfordStripeInMiso_Quilt_2_x_PDP_WO.jpg?v=1773953272",
+      "price": "$25",
+      "title_tag": "Washed European Linen Quilt\n\n    &ndash; Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:55.313364Z",
+    "duration_ms": 417
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/waffle-bath-towel-bundle?variant=43297826439258",
+    "ua_family": "chrome_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Dreamweave Waffle Bath Towel Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-03_Bath_Waffle_BTB_WildMossTwoTone_1x_PDP_WOgrey.jpg?v=1776277600&wid",
+      "price": "$25",
+      "title_tag": "Dreamweave Waffle Bath Towel Bundle | Textured Waffle Towels | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:56.982427Z",
+    "duration_ms": 381
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/waffle-bath-towel-bundle?variant=43297826439258",
+    "ua_family": "safari_desktop",
+    "ua_string": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Dreamweave Waffle Bath Towel Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-03_Bath_Waffle_BTB_WildMossTwoTone_1x_PDP_WOgrey.jpg?v=1776277600&wid",
+      "price": "$25",
+      "title_tag": "Dreamweave Waffle Bath Towel Bundle | Textured Waffle Towels | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:23:59.043358Z",
+    "duration_ms": 765
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/waffle-bath-towel-bundle?variant=43297826439258",
+    "ua_family": "firefox_desktop",
+    "ua_string": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Dreamweave Waffle Bath Towel Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-03_Bath_Waffle_BTB_WildMossTwoTone_1x_PDP_WOgrey.jpg?v=1776277600&wid",
+      "price": "$25",
+      "title_tag": "Dreamweave Waffle Bath Towel Bundle | Textured Waffle Towels | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:00.631614Z",
+    "duration_ms": 357
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/waffle-bath-towel-bundle?variant=43297826439258",
+    "ua_family": "facebookbot",
+    "ua_string": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Dreamweave Waffle Bath Towel Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-03_Bath_Waffle_BTB_WildMossTwoTone_1x_PDP_WOgrey.jpg?v=1776277600&wid",
+      "price": "$25",
+      "title_tag": "Dreamweave Waffle Bath Towel Bundle | Textured Waffle Towels | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:02.359253Z",
+    "duration_ms": 412
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/waffle-bath-towel-bundle?variant=43297826439258",
+    "ua_family": "twitterbot",
+    "ua_string": "Twitterbot/1.0",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Dreamweave Waffle Bath Towel Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-03_Bath_Waffle_BTB_WildMossTwoTone_1x_PDP_WOgrey.jpg?v=1776277600&wid",
+      "price": "$25",
+      "title_tag": "Dreamweave Waffle Bath Towel Bundle | Textured Waffle Towels | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:04.026715Z",
+    "duration_ms": 359
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/waffle-bath-towel-bundle?variant=43297826439258",
+    "ua_family": "linkedinbot",
+    "ua_string": "LinkedInBot/1.0 (compatible; +http://www.linkedin.com/)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Dreamweave Waffle Bath Towel Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-03_Bath_Waffle_BTB_WildMossTwoTone_1x_PDP_WOgrey.jpg?v=1776277600&wid",
+      "price": "$25",
+      "title_tag": "Dreamweave Waffle Bath Towel Bundle | Textured Waffle Towels | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:05.633679Z",
+    "duration_ms": 362
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/waffle-bath-towel-bundle?variant=43297826439258",
+    "ua_family": "googlebot",
+    "ua_string": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Dreamweave Waffle Bath Towel Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-03_Bath_Waffle_BTB_WildMossTwoTone_1x_PDP_WOgrey.jpg?v=1776277600&wid",
+      "price": "$25",
+      "title_tag": "Dreamweave Waffle Bath Towel Bundle | Textured Waffle Towels | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:07.245211Z",
+    "duration_ms": 376
+  },
+  {
+    "retailer": "brooklinen",
+    "url": "https://www.brooklinen.com/products/waffle-bath-towel-bundle?variant=43297826439258",
+    "ua_family": "bingbot",
+    "ua_string": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "http_status": 200,
+    "status": "ok",
+    "fields_found": [
+      "og:title",
+      "og:image",
+      "price"
+    ],
+    "evidence": {
+      "title": "Dreamweave Waffle Bath Towel Bundle",
+      "image": "https:////www.brooklinen.com/cdn/shop/files/BKL_26-03_Bath_Waffle_BTB_WildMossTwoTone_1x_PDP_WOgrey.jpg?v=1776277600&wid",
+      "price": "$25",
+      "title_tag": "Dreamweave Waffle Bath Towel Bundle | Textured Waffle Towels | Brooklinen"
+    },
+    "block_indicators": [],
+    "checked_at": "2026-05-18T12:24:08.918928Z",
+    "duration_ms": 392
+  }
+]
