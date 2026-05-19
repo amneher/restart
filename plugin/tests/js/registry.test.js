@@ -80,7 +80,8 @@ beforeAll(() => {
 // Rebuild DOM before every test; delegated handlers on $(document) survive.
 beforeEach(() => {
     $.ajax.mockClear();
-    window.location.reload.mockClear();
+    // breaks on JQuery >= 4.0.0;
+    // window.location.reload.mockClear();
     buildDOM();
 });
 

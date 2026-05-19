@@ -2,6 +2,7 @@
 module.exports = {
     testEnvironment: 'jest-environment-jsdom',
     testMatch: ['**/tests/js/**/*.test.js'],
+    setupFiles: ['./tests/js/setup.js'],
     // jQuery doesn't export as a CommonJS module cleanly; transform is not needed
     // but we do need to tell Jest where to look for test files.
     globals: {},

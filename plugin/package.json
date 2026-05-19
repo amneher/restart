@@ -7,7 +7,7 @@
     },
     "devDependencies": {
         "jest": "^29",
-        "jest-environment-jsdom": "^29",
-        "jquery": "^3.7"
+        "jest-environment-jsdom": "^30.4.1",
+        "jquery": "^4.0.0"
     }
 }
