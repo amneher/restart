@@ -95,7 +95,8 @@
                 return;
             }
 
-            window.location.href = restartRegistry.myAccountUrl;
+            const created = await res.json().catch(() => ({}));
+            window.location.href = created?.data?.url || restartRegistry.myAccountUrl;
         } catch (err) {
             showError('Could not reach the server. Please try again.');
             submitBtn.disabled = false;

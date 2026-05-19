@@ -1111,3 +1111,59 @@ body.rr-modal-open { overflow: hidden; }
     line-height: 1.7;
     color: #193540;
 }
+
+/* ── User nav submenu ─────────────────────────────────────────────────────── */
+
+.site-header .wp-block-navigation-item.rr-has-submenu {
+    position: relative;
+}
+
+.site-header .wp-block-navigation-item.rr-has-submenu > a::after {
+    content: ' ▾';
+    font-size: 9px;
+    vertical-align: middle;
+    margin-left: 1px;
+}
+
+.site-header .rr-submenu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #193540;
+    border-top: 2px solid #47b4b0;
+    min-width: 170px;
+    list-style: none;
+    padding: 0.35rem 0;
+    margin: 0;
+    z-index: 9999;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+}
+
+.site-header .wp-block-navigation-item.rr-submenu-open .rr-submenu {
+    display: block;
+}
+
+.site-header .rr-submenu li {
+    display: block;
+}
+
+.site-header .rr-submenu li a {
+    display: block;
+    padding: 0.45rem 1.1rem;
+    color: #9fd4b3;
+    text-decoration: none;
+    font-family: var(--wp--preset--font-family--montserrat);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    transition: color 0.15s;
+}
+
+.site-header .rr-submenu li a:hover,
+.site-header .rr-submenu li a:focus {
+    color: #47b4b0;
+    outline: none;
+}

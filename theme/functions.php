@@ -22,6 +22,44 @@ add_filter('show_admin_bar', function ($show) {
     return $show && current_user_can('edit_posts');
 });
 
+// Enqueue nav user-state script on every front-end page.
+// Passes rrNavState so nav-user-state.js can personalise the header/footer
+// without any PHP in the FSE block templates.
+add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_script(
+        'therestart-nav-user-state',
+        get_stylesheet_directory_uri() . '/assets/js/nav-user-state.js',
+        [],
+        wp_get_theme()->get('Version'),
+        true
+    );
+
+    $registry_url = '';
+    if (is_user_logged_in()) {
+        $owned = get_posts([
+            'post_type'      => 'restart-registry',
+            'post_status'    => ['publish', 'private'],
+            'author'         => get_current_user_id(),
+            'posts_per_page' => 1,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+            'fields'         => 'ids',
+        ]);
+        if (!empty($owned)) {
+            $registry_url = (string) get_permalink($owned[0]);
+        }
+    }
+
+    wp_localize_script('therestart-nav-user-state', 'rrNavState', [
+        'isLoggedIn'      => is_user_logged_in(),
+        'registryUrl'     => $registry_url,
+        'loginUrl'        => home_url('/login/'),
+        'logoutUrl'       => wp_logout_url(home_url('/')),
+        'myAccountUrl'    => home_url('/my-account/'),
+        'startRegistryUrl'=> home_url('/start-a-registry/'),
+    ]);
+});
+
 // Favicon + Open Graph meta. Theme assets serve as fallback when no
 // site icon is set in the Customizer.
 add_action('wp_head', function () {
@@ -127,7 +165,7 @@ add_action('wp_ajax_restart_create_registry', function () {
         wp_send_json_error(['message' => $post_id->get_error_message()], 500);
     }
 
-    wp_send_json_success(['id' => $post_id]);
+    wp_send_json_success(['id' => $post_id, 'url' => get_permalink($post_id)]);
 });
 
 add_shortcode('restart_start_registry', function () {
@@ -371,7 +409,7 @@ add_shortcode('restart_login_form', function () {
         ? 'Incorrect username or password. Please try again.'
         : '';
 
-    $redirect_to = isset($_GET['redirect_to']) ? esc_url(urldecode($_GET['redirect_to'])) : esc_url(home_url('/my-account/'));
+    $redirect_to = isset($_GET['redirect_to']) ? esc_url(urldecode($_GET['redirect_to'])) : esc_url(home_url('/'));
 
     ob_start();
     ?>

@@ -24,12 +24,18 @@ add_action('wp_login_failed', function (): void {
     exit;
 });
 
-// After login, send registry_users to /my-account/ instead of /wp-admin/.
+// After login, send registry_users home unless they were redirected from a specific
+// local page (e.g. a protected registry URL) — in that case honour the destination.
 add_filter('login_redirect', function (string $redirect_to, string $requested, $user): string {
-    if ($user instanceof WP_User && in_array('registry_user', (array) $user->roles, true)) {
-        return home_url('/my-account/');
+    if (!($user instanceof WP_User) || !in_array('registry_user', (array) $user->roles, true)) {
+        return $redirect_to;
     }
-    return $redirect_to;
+    $home  = home_url('/');
+    $admin = admin_url();
+    if ($requested && $requested !== $admin && str_starts_with($requested, $home)) {
+        return $requested;
+    }
+    return $home;
 }, 10, 3);
 
 // Block registry_users from the WP admin dashboard (non-AJAX requests only).
@@ -185,7 +191,7 @@ add_action('wp_ajax_nopriv_restart_register', function (): void {
         wp_send_json_success(['redirect' => home_url('/login/')]);
     }
 
-    wp_send_json_success(['redirect' => home_url('/my-account/')]);
+    wp_send_json_success(['redirect' => home_url('/')]);
 });
 
 // AJAX: update the current user's profile.
