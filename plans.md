@@ -1,3 +1,37 @@
+# Plan: User notes field on registry items (GH #22)
+
+## What
+Add a `notes` field to registry items — separate from `description` (scraper-owned). `notes` is free text written by the registry owner (e.g. "size medium please", "any color is fine") and is visible to gift-givers.
+
+## Scope
+
+**Lambda** — migration v5 (`notes TEXT`), add `notes` to models and INSERT/UPDATE routes  
+**Plugin PHP** — AJAX handlers pass `notes`; add-item form + edit modal wire to `notes`; render notes in owner row + guest card  
+**Plugin JS** — send/read `notes` field; item detail modal shows notes  
+
+## Todo
+- [x] Lambda: migration v5 — `ALTER TABLE items ADD COLUMN notes TEXT`
+- [x] Lambda: add `notes` to `ItemBase`, `ItemUpdate`, `ItemPublic` models
+- [x] Lambda: update `row_to_item()` and `create_item()` INSERT in routes/items.py
+- [x] Lambda: add `notes` tests (29/29 pass)
+- [x] Plugin PHP: `ajax_add_item()` — read `notes` from `$_POST`
+- [x] Plugin PHP: `ajax_update_item()` — read `notes` from `$_POST`
+- [x] Plugin PHP: `add_item()` controller — pass `notes` in `$lambda_data`
+- [x] Plugin PHP: `update_item()` controller — pass `notes` in `$update`
+- [x] Plugin PHP: add-item form — change description input to notes (keep hidden description for scraper)
+- [x] Plugin PHP: edit modal — change description input to notes
+- [x] Plugin PHP: `render_item_row()` — show notes, add `data-notes` attr
+- [x] Plugin PHP: `render_item_card()` — show notes, add `data-notes` attr
+- [x] Plugin JS: fetch-url keeps populating hidden `#rr-item-description`
+- [x] Plugin JS: add-item submit sends `notes`
+- [x] Plugin JS: edit modal open reads `data-notes` → `#rr-edit-item-notes`
+- [x] Plugin JS: edit-item submit sends `notes`
+- [x] Plugin JS: item detail modal shows notes
+- [x] Plugin JS tests: update for notes field (17/17 pass)
+- [ ] Close GH #22
+
+---
+
 # Plan: Admin UI for custom affiliate retailers (GH #25)
 
 ## What

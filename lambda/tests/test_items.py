@@ -14,6 +14,23 @@ class TestCreateItem:
         assert "created_at" in data["data"]
         assert "updated_at" in data["data"]
 
+    def test_create_item_with_notes(self, client, auth):
+        item = {
+            "registry_id": 1,
+            "name": "Noted Item",
+            "url": "https://example.com/product/noted",
+            "notes": "size medium please",
+        }
+        response = client.post("/items", json=item, headers=auth)
+        assert response.status_code == 201
+        assert response.json()["data"]["notes"] == "size medium please"
+
+    def test_create_item_without_notes(self, client, auth):
+        item = {"registry_id": 1, "name": "No Notes", "url": "https://example.com/product/no-notes"}
+        response = client.post("/items", json=item, headers=auth)
+        assert response.status_code == 201
+        assert response.json()["data"]["notes"] is None
+
     def test_create_item_without_description(self, client, auth):
         item = {"registry_id": 1, "name": "No Description", "url": "https://example.com/product/no-desc"}
         response = client.post("/items", json=item, headers=auth)
@@ -166,6 +183,14 @@ class TestUpdateItem:
     def test_update_item_not_found(self, client, auth):
         response = client.put("/items/99999", json={"name": "Test"}, headers=auth)
         assert response.status_code == 404
+
+    def test_update_item_notes(self, client, auth, sample_item):
+        create_response = client.post("/items", json=sample_item, headers=auth)
+        item_id = create_response.json()["data"]["id"]
+
+        response = client.put(f"/items/{item_id}", json={"notes": "any color is fine"}, headers=auth)
+        assert response.status_code == 200
+        assert response.json()["data"]["notes"] == "any color is fine"
 
     def test_update_item_empty_body(self, client, auth, sample_item):
         create_response = client.post("/items", json=sample_item, headers=auth)

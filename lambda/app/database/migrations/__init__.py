@@ -10,7 +10,7 @@ import sqlite3
 # ---------------------------------------------------------------------------
 # Current schema version — update this when adding a new migration.
 # ---------------------------------------------------------------------------
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 # ---------------------------------------------------------------------------
 # Migrations — each entry is a list of SQL statements for that version.
@@ -37,6 +37,10 @@ MIGRATIONS: list[list[str]] = [
     # Version 4: Product image URL
     [
         "ALTER TABLE items ADD COLUMN image_url TEXT",
+    ],
+    # Version 5: User-authored notes (separate from scraper-owned description)
+    [
+        "ALTER TABLE items ADD COLUMN notes TEXT",
     ],
 ]
 

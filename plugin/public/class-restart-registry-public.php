@@ -371,8 +371,9 @@ class Restart_Registry_Public
                                 title="<?php esc_attr_e('Quantity', 'restart-registry'); ?>">
                             <input type="number" id="rr-item-price" name="price" step="0.01" min="0.01"
                                 placeholder="<?php esc_attr_e('Price', 'restart-registry'); ?>">
-                            <input type="text" id="rr-item-description" name="description"
+                            <input type="text" id="rr-item-notes" name="notes"
                                 placeholder="<?php esc_attr_e('Notes (optional)', 'restart-registry'); ?>">
+                            <input type="hidden" id="rr-item-description" name="description">
                             <input type="hidden" id="rr-item-image-url" name="image_url">
                             <button type="submit" class="rr-button"><?php _e('Add', 'restart-registry'); ?></button>
                             <button type="button" class="rr-btn-ghost" id="rr-add-item-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
@@ -537,8 +538,8 @@ class Restart_Registry_Public
                                 </div>
                             </div>
                             <div class="rr-form-group">
-                                <label for="rr-edit-item-description"><?php _e('Notes', 'restart-registry'); ?></label>
-                                <input type="text" id="rr-edit-item-description" name="description"
+                                <label for="rr-edit-item-notes"><?php _e('Notes', 'restart-registry'); ?></label>
+                                <input type="text" id="rr-edit-item-notes" name="notes"
                                     placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
                             </div>
                             <input type="hidden" id="rr-edit-item-image-url" name="image_url">
@@ -766,8 +767,8 @@ class Restart_Registry_Public
         if (!empty($item['retailer'])) {
             $name_inner .= '<span class="rr-item-retailer">' . esc_html($item['retailer']) . '</span>';
         }
-        if (!empty($item['description'])) {
-            $name_inner .= '<span class="rr-item-row__note">' . esc_html($item['description']) . '</span>';
+        if (!empty($item['notes'])) {
+            $name_inner .= '<span class="rr-item-row__note">' . esc_html($item['notes']) . '</span>';
         }
 
         // Fulfilled column: shows the existing status (✓ or n/m) and a checkbox
@@ -790,6 +791,7 @@ class Restart_Registry_Public
             . ' data-name="' . esc_attr($item['name']) . '"'
             . ' data-url="' . esc_attr($item['url'] ?? '') . '"'
             . ' data-description="' . esc_attr($item['description'] ?? '') . '"'
+            . ' data-notes="' . esc_attr($item['notes'] ?? '') . '"'
             . ' data-price="' . esc_attr($item['price'] ?? '') . '"'
             . ' data-quantity="' . esc_attr($item['quantity_needed'] ?? 1) . '"'
             . ' data-image-url="' . esc_attr($item['image_url'] ?? '') . '"'
@@ -1061,6 +1063,9 @@ class Restart_Registry_Public
         if (!empty($item['price'])) {
             $name_inner .= '<span class="rr-item-price">$' . number_format((float) $item['price'], 2) . '</span>';
         }
+        if (!empty($item['notes'])) {
+            $name_inner .= '<span class="rr-item-card__note">' . esc_html($item['notes']) . '</span>';
+        }
 
         $fulfilled_inner = $is_fulfilled
             ? '<span class="rr-fulfilled-check">&#10003; ' . esc_html__('Done', 'restart-registry') . '</span>'
@@ -1085,6 +1090,7 @@ class Restart_Registry_Public
             . ' data-name="' . esc_attr($item['name']) . '"'
             . ' data-url="' . esc_attr($item['url'] ?? '') . '"'
             . ' data-description="' . esc_attr($item['description'] ?? '') . '"'
+            . ' data-notes="' . esc_attr($item['notes'] ?? '') . '"'
             . ' data-price="' . esc_attr($item['price'] ?? '') . '"'
             . ' data-quantity="' . esc_attr($qty_needed) . '"'
             . ' data-image-url="' . esc_attr($item['image_url'] ?? '') . '"'
@@ -1161,6 +1167,7 @@ class Restart_Registry_Public
             'name'        => sanitize_text_field($_POST['name'] ?? ''),
             'url'         => esc_url_raw($_POST['url'] ?? ''),
             'description' => sanitize_textarea_field($_POST['description'] ?? ''),
+            'notes'       => sanitize_textarea_field($_POST['notes'] ?? ''),
             'price'       => isset($_POST['price']) ? (float) $_POST['price'] : 0.01,
             'quantity'    => isset($_POST['quantity']) ? (int) $_POST['quantity'] : 1,
             'image_url'   => !empty($_POST['image_url']) ? esc_url_raw($_POST['image_url']) : null,
@@ -1220,6 +1227,7 @@ class Restart_Registry_Public
         if (isset($_POST['name']))        $data['name']        = sanitize_text_field($_POST['name']);
         if (isset($_POST['url']))         $data['url']         = esc_url_raw($_POST['url']);
         if (isset($_POST['description'])) $data['description'] = sanitize_textarea_field($_POST['description']);
+        if (isset($_POST['notes']))       $data['notes']       = sanitize_textarea_field($_POST['notes']);
         if (isset($_POST['quantity']))    $data['quantity']    = (int) $_POST['quantity'];
         if (isset($_POST['price']))       $data['price']       = (float) $_POST['price'];
         if (isset($_POST['image_url']))   $data['image_url']   = esc_url_raw($_POST['image_url']);

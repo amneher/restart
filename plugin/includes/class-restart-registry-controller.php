@@ -370,6 +370,9 @@ class Restart_Registry_Controller {
         if (!empty($data['description'])) {
             $lambda_data['description'] = sanitize_textarea_field($data['description']);
         }
+        if (isset($data['notes']) && $data['notes'] !== '') {
+            $lambda_data['notes'] = sanitize_textarea_field($data['notes']);
+        }
         if ($affiliate_result['retailer']) {
             $lambda_data['retailer'] = $affiliate_result['retailer'];
         }
@@ -404,13 +407,14 @@ class Restart_Registry_Controller {
 
     /**
      * Update a Lambda item's editable fields.
-     * Accepted keys: name, url, description, price, quantity (→ quantity_needed).
+     * Accepted keys: name, url, description, notes, price, quantity (→ quantity_needed).
      */
     public function update_item(int $item_id, array $data) {
         $update = [];
         if (isset($data['name']))        $update['name']           = $this->truncate_name(sanitize_text_field($data['name']));
         if (!empty($data['url']))        $update['url']            = esc_url_raw($data['url']);
         if (isset($data['description'])) $update['description']    = sanitize_textarea_field($data['description']);
+        if (isset($data['notes']))       $update['notes']          = sanitize_textarea_field($data['notes']);
         if (!empty($data['price']))      $update['price']          = max(0.01, (float) $data['price']);
         if (isset($data['quantity']))    $update['quantity_needed'] = max(1, (int) $data['quantity']);
         if (isset($data['image_url']))   $update['image_url']      = !empty($data['image_url']) ? esc_url_raw($data['image_url']) : null;
