@@ -96,7 +96,8 @@
             }
 
             const created = await res.json().catch(() => ({}));
-            window.location.href = created?.data?.url || restartRegistry.myAccountUrl;
+            const target = created?.data?.url || restartRegistry.myAccountUrl;
+            (restartRegistry.navigate || ((url) => window.location.assign(url)))(target);
         } catch (err) {
             showError('Could not reach the server. Please try again.');
             submitBtn.disabled = false;
