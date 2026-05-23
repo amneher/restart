@@ -454,12 +454,15 @@ class Restart_Registry_Controller {
         }
 
         $result = $this->lambda->update_item($item_id, ['quantity_purchased' => $current + $quantity]);
+
+        if (trim($purchaser_note) !== '') {
+            $this->persist_purchase_message($item, $is_anonymous ? '' : $purchaser_name, $purchaser_note);
+        }
+
         if (!is_wp_error($result)) {
             $this->send_purchase_notification($item, $purchaser_name, $purchaser_note);
-            if (trim($purchaser_note) !== '') {
-                $this->persist_purchase_message($item, $is_anonymous ? '' : $purchaser_name, $purchaser_note);
-            }
         }
+
         return $result;
     }
 
