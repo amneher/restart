@@ -216,6 +216,27 @@ class MarkItemPurchasedTest extends TestCase {
         $this->assertSame('', $stored[0]['purchaser_name'], 'Anonymous purchase should store empty name');
     }
 
+    public function test_message_persisted_even_when_lambda_update_fails(): void {
+        $item = $this->fixture(['name' => 'Coffee Maker']);
+        $this->fake->setItem(1, $item);
+        $this->fake->setUpdateError(new WP_Error('lambda_auth', 'auth failed'));
+        Functions\expect('wp_mail')->never();
+
+        $stored = null;
+        Functions\when('update_post_meta')->alias(function($id, $key, $val) use (&$stored) {
+            if ($key === 'restart_purchase_messages') {
+                $stored = json_decode($val, true);
+            }
+            return true;
+        });
+
+        $result = $this->controller->mark_item_purchased(1, 1, 'Jordan', '', 'Thinking of you!');
+
+        $this->assertInstanceOf(WP_Error::class, $result, 'Lambda failure should still propagate');
+        $this->assertNotNull($stored, 'Message should be persisted despite Lambda failure');
+        $this->assertSame('Thinking of you!', $stored[0]['purchaser_note']);
+    }
+
     public function test_get_purchase_messages_returns_newest_first(): void {
         $data = json_encode([
             ['item_id' => 1, 'item_name' => 'Knife', 'item_image_url' => '', 'item_description' => '',

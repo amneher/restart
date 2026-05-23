@@ -2,9 +2,10 @@
 declare(strict_types=1);
 
 class LambdaClientFake extends Restart_Registry_Lambda_Client {
-    private array     $items = [];
-    private ?WP_Error $error = null;
-    private array     $calls = [];
+    private array     $items       = [];
+    private ?WP_Error $error       = null;
+    private ?WP_Error $updateError = null;
+    private array     $calls       = [];
 
     public function __construct() {
         // skip parent — no WP calls
@@ -16,6 +17,10 @@ class LambdaClientFake extends Restart_Registry_Lambda_Client {
 
     public function setError(WP_Error $error): void {
         $this->error = $error;
+    }
+
+    public function setUpdateError(WP_Error $error): void {
+        $this->updateError = $error;
     }
 
     public function getCalls(): array {
@@ -45,6 +50,7 @@ class LambdaClientFake extends Restart_Registry_Lambda_Client {
 
     public function update_item(int $item_id, array $data) {
         $this->calls[] = ['method' => 'update_item', 'args' => [$item_id, $data]];
+        if ($this->updateError) return $this->updateError;
         if ($this->error) return $this->error;
         $item = $this->items[$item_id] ?? ['id' => $item_id];
         $this->items[$item_id] = array_merge($item, $data);
