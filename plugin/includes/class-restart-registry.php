@@ -28,6 +28,7 @@ class Restart_Registry {
         $this->set_locale();
         $this->define_admin_hooks();
         $this->define_public_hooks();
+        $this->define_affiliate_hooks();
         $this->define_role_hooks();
     }
 
@@ -59,6 +60,36 @@ class Restart_Registry {
 
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
+    }
+
+    private function define_affiliate_hooks(): void {
+        add_filter('restart_registry_affiliate_configs', function (array $configs): array {
+            $custom = get_option('restart_registry_custom_retailers', []);
+            if (!is_array($custom)) {
+                return $configs;
+            }
+            foreach ($custom as $row) {
+                $name     = $row['name'] ?? '';
+                $domains  = $row['domains'] ?? '';
+                $template = $row['template'] ?? '';
+                if (empty($name) || empty($domains) || empty($template)) {
+                    continue;
+                }
+                $key = sanitize_key($name);
+                if (isset($configs[$key])) {
+                    continue;
+                }
+                $configs[$key] = [
+                    'enabled'      => true,
+                    'domains'      => array_values(array_filter(array_map('trim', explode(',', $domains)))),
+                    'affiliate_id' => $row['affiliate_id'] ?? '',
+                    'merchant_id'  => $row['merchant_id'] ?? '',
+                    'url_template' => $template,
+                    'display_name' => $name,
+                ];
+            }
+            return $configs;
+        });
     }
 
     private function define_role_hooks(): void {

@@ -1,3 +1,5 @@
+const flushPromises = () => new Promise(process.nextTick);
+
 describe('start-registry.js', () => {
     const setupDom = () => {
         document.body.innerHTML = `
@@ -22,6 +24,7 @@ describe('start-registry.js', () => {
             username: 'testuser',
             apiKey: 'test-key',
             myAccountUrl: '/my-account/',
+            navigate: jest.fn(),
         };
     };
 
@@ -32,8 +35,6 @@ describe('start-registry.js', () => {
 
     beforeEach(() => {
         setupDom();
-        delete window.location;
-        window.location = { href: '' };
         global.fetch = jest.fn();
     });
 
@@ -90,7 +91,7 @@ describe('start-registry.js', () => {
         const form = document.getElementById('restart-registry-form');
         form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
 
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await flushPromises();
 
         expect(global.fetch).toHaveBeenCalledTimes(1);
         const [url, opts] = global.fetch.mock.calls[0];
@@ -99,17 +100,22 @@ describe('start-registry.js', () => {
         // expect(opts.headers.Authorization).toMatch(/^Basic /);
     });
 
-    test('redirects to myAccountUrl on success', async () => {
-        global.fetch.mockResolvedValue({ ok: true });
+    test('redirects to URL returned by server on success', async () => {
+        const serverUrl = '/registry/my-registry/';
+        global.fetch.mockResolvedValue({
+            ok: true,
+            status: 201,
+            json: async () => ({ data: { url: serverUrl } }),
+        });
         loadScript();
 
         document.getElementById('registry-title').value = 'My Registry';
         const form = document.getElementById('restart-registry-form');
         form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
 
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await flushPromises();
 
-        expect(window.location.href).toBe('/my-account/');
+        expect(window.restartRegistry.navigate).toHaveBeenCalledWith(serverUrl);
     });
 
     test('shows error on non-ok response', async () => {
@@ -124,7 +130,7 @@ describe('start-registry.js', () => {
         const form = document.getElementById('restart-registry-form');
         form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
 
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await flushPromises();
 
         const errorBox = document.getElementById('restart-form-error');
         expect(errorBox.hidden).toBe(false);
@@ -139,7 +145,7 @@ describe('start-registry.js', () => {
         const form = document.getElementById('restart-registry-form');
         form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
 
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await flushPromises();
 
         const errorBox = document.getElementById('restart-form-error');
         expect(errorBox.hidden).toBe(false);

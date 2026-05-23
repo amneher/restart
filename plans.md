@@ -1,3 +1,46 @@
+# Plan: Admin UI for custom affiliate retailers (GH #25)
+
+## What
+Add a "Custom Retailers" section to the Affiliate Settings admin page so new affiliate retailers can be added without touching PHP.
+
+## What already exists
+- `class-affiliate-converter.php` — 10 hard-coded retailers; already calls `apply_filters('restart_registry_affiliate_configs', $defaults)` at the end of `get_affiliate_configs()`, giving us a clean merge point.
+- `class-restart-registry-admin.php` — `display_affiliates_page()` renders the affiliate settings form; `register_settings()` registers WP options; the page is at `restart-registry-affiliates`.
+- `restart-registry-admin.js` — jQuery AJAX handlers for Lambda test + re-convert; pattern to follow for dynamic row JS.
+- Main plugin class initialises hooks in `includes/class-restart-registry.php`.
+
+## Storage
+- WP option `restart_registry_custom_retailers` — serialized PHP array of retailer rows.
+- Each row: `name` (string), `domains` (comma-separated string), `template` (URL with `{url}`, `{affiliate_id}`, `{merchant_id}` placeholders), `affiliate_id` (string), `merchant_id` (string, optional).
+
+## Converter integration
+- In `class-restart-registry.php` `run()`, register a callback on `restart_registry_affiliate_configs` that reads `restart_registry_custom_retailers` from the DB and appends custom entries to the config array (skipping keys that already exist, so built-ins take precedence on key collisions).
+- Custom entries get a `url_template` key. In `generate_affiliate_url()`, detect `url_template` presence and call a new `generate_custom_affiliate()` method.
+- `generate_custom_affiliate()`: str_replace `{url}` → `urlencode($url)`, `{affiliate_id}` → `affiliate_id`, `{merchant_id}` → `merchant_id` in the template; return raw URL if template or affiliate_id is empty.
+
+## Admin UI
+- In `register_settings()`: register `restart_registry_custom_retailers` with a `sanitize_callback` that validates/sanitizes each row (strip tags, esc_url_raw on template, etc.) and re-indexes the array.
+- In `display_affiliates_page()`: add a "Custom Retailers" section below the existing settings form (before the Re-convert section). The section has a `<form action="options.php">` that submits `restart_registry_custom_retailers[i][name]`, `[domains]`, `[template]`, `[affiliate_id]`, `[merchant_id]` fields.
+- Rendered as a table with one row per saved retailer + a blank "add" row template hidden in the DOM. "Add Retailer" button clones and appends the template. Each row has a "Remove" button.
+- JS re-indexes the `[i]` placeholder on every add/remove so PHP receives a clean 0-indexed array.
+
+## Scope
+- Only `plugin/` files touched (no lambda, no theme).
+- Built-in retailers are untouched.
+
+## Todo
+- [x] Branch: `feat/custom-affiliate-retailers`
+- [x] `class-restart-registry.php` — add `restart_registry_affiliate_configs` filter callback to merge custom retailers
+- [x] `class-affiliate-converter.php` — add `generate_custom_affiliate()` method; route to it when `url_template` key present
+- [x] `class-restart-registry-admin.php` — register `restart_registry_custom_retailers` option with sanitize callback
+- [x] `class-restart-registry-admin.php` — render Custom Retailers table section in `display_affiliates_page()`
+- [x] `restart-registry-admin.js` — add/remove row logic + index renumbering
+- [x] Tests: converter (5 cases) + admin sanitize (8 cases), 115/115 pass
+- [ ] Manual test: add a custom retailer row, save, add an item URL matching its domain, confirm affiliate URL is built from template
+- [ ] Close GH #25
+
+---
+
 # Plan: Archive and delete registry (GH #23)
 
 ## What

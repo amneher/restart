@@ -111,6 +111,9 @@ class Restart_Registry_Affiliate_Converter {
     }
 
     private function generate_affiliate_url($retailer, $url, $config) {
+        if (isset($config['url_template'])) {
+            return $this->generate_custom_affiliate($url, $config);
+        }
         switch ($retailer) {
             case 'amazon':
                 return $this->generate_amazon_affiliate($url, $config);
@@ -127,6 +130,22 @@ class Restart_Registry_Affiliate_Converter {
             default:
                 return $url;
         }
+    }
+
+    private function generate_custom_affiliate($url, $config) {
+        $template     = $config['url_template'] ?? '';
+        $affiliate_id = $config['affiliate_id'] ?? '';
+        $merchant_id  = $config['merchant_id'] ?? '';
+
+        if (empty($template) || empty($affiliate_id)) {
+            return $url;
+        }
+
+        return str_replace(
+            ['{url}', '{affiliate_id}', '{merchant_id}'],
+            [urlencode($url), urlencode($affiliate_id), urlencode($merchant_id)],
+            $template
+        );
     }
 
     private function generate_amazon_affiliate($url, $config) {

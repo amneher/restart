@@ -112,4 +112,107 @@ class AffiliateConverterTest extends TestCase {
         $this->assertStringContainsString(urlencode($url), $result['affiliate_url']);
         $this->assertTrue($result['is_affiliate']);
     }
+
+    // ── Custom template URL ──────────────────────────────────────────────────
+
+    private function converterWithCustomRetailer(array $extra): Restart_Registry_Affiliate_Converter {
+        Functions\when('get_option')->returnArg(2);
+        Functions\when('apply_filters')
+            ->alias(function (string $hook, array $configs) use ($extra): array {
+                if ($hook === 'restart_registry_affiliate_configs') {
+                    return array_merge($configs, $extra);
+                }
+                return $configs;
+            });
+        return new Restart_Registry_Affiliate_Converter();
+    }
+
+    public function test_custom_template_substitutes_all_placeholders(): void {
+        $url       = 'https://www.potterybarn.com/products/some-item/';
+        $converter = $this->converterWithCustomRetailer([
+            'potterybarn' => [
+                'enabled'      => true,
+                'domains'      => ['potterybarn.com'],
+                'affiliate_id' => 'AFF123',
+                'merchant_id'  => 'MERCH456',
+                'url_template' => 'https://network.com/r?id={affiliate_id}&m={merchant_id}&u={url}',
+            ],
+        ]);
+
+        $result = $converter->convert_url($url);
+
+        $this->assertStringContainsString('id=AFF123', $result['affiliate_url']);
+        $this->assertStringContainsString('m=MERCH456', $result['affiliate_url']);
+        $this->assertStringContainsString(urlencode($url), $result['affiliate_url']);
+        $this->assertTrue($result['is_affiliate']);
+    }
+
+    public function test_custom_template_url_encodes_product_url(): void {
+        $url       = 'https://www.potterybarn.com/products/item?color=red&size=xl';
+        $converter = $this->converterWithCustomRetailer([
+            'potterybarn' => [
+                'enabled'      => true,
+                'domains'      => ['potterybarn.com'],
+                'affiliate_id' => 'AFF123',
+                'url_template' => 'https://network.com/r?id={affiliate_id}&u={url}',
+            ],
+        ]);
+
+        $result = $converter->convert_url($url);
+
+        $this->assertStringContainsString(urlencode($url), $result['affiliate_url']);
+        $this->assertTrue($result['is_affiliate']);
+    }
+
+    public function test_custom_template_returns_original_when_affiliate_id_empty(): void {
+        $url       = 'https://www.potterybarn.com/products/some-item/';
+        $converter = $this->converterWithCustomRetailer([
+            'potterybarn' => [
+                'enabled'      => true,
+                'domains'      => ['potterybarn.com'],
+                'affiliate_id' => '',
+                'url_template' => 'https://network.com/r?id={affiliate_id}&u={url}',
+            ],
+        ]);
+
+        $result = $converter->convert_url($url);
+
+        $this->assertSame($url, $result['affiliate_url']);
+        $this->assertFalse($result['is_affiliate']);
+    }
+
+    public function test_custom_template_returns_original_when_template_empty(): void {
+        $url       = 'https://www.potterybarn.com/products/some-item/';
+        $converter = $this->converterWithCustomRetailer([
+            'potterybarn' => [
+                'enabled'      => true,
+                'domains'      => ['potterybarn.com'],
+                'affiliate_id' => 'AFF123',
+                'url_template' => '',
+            ],
+        ]);
+
+        $result = $converter->convert_url($url);
+
+        $this->assertSame($url, $result['affiliate_url']);
+        $this->assertFalse($result['is_affiliate']);
+    }
+
+    public function test_custom_retailer_domain_is_recognised(): void {
+        $url       = 'https://www.westelm.com/products/sofa/';
+        $converter = $this->converterWithCustomRetailer([
+            'westelm' => [
+                'enabled'      => true,
+                'domains'      => ['westelm.com'],
+                'affiliate_id' => 'WE99',
+                'url_template' => 'https://cj.com/link?url={url}&aff={affiliate_id}',
+                'display_name' => 'West Elm',
+            ],
+        ]);
+
+        $result = $converter->convert_url($url);
+
+        $this->assertSame('Westelm', $result['retailer']);
+        $this->assertTrue($result['is_affiliate']);
+    }
 }

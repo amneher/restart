@@ -48,3 +48,4 @@ docs/site/
 .claude/
 docs/site/
 .gstack/
+scripts/issues_*.txt

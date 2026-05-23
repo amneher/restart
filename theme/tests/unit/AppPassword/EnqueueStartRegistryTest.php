@@ -29,6 +29,10 @@ final class EnqueueStartRegistryTest extends ThemeTestCase
         Functions\when('wp_create_nonce')->justReturn('nonce');
         Functions\when('wp_enqueue_style')->justReturn(null);
         Functions\when('wp_localize_script')->justReturn(true);
+        Functions\when('get_posts')->justReturn([]);
+        Functions\when('get_current_user_id')->justReturn(1);
+        Functions\when('home_url')->justReturn('http://example.com/');
+        Functions\when('wp_logout_url')->justReturn('http://example.com/logout/');
 
         Functions\expect('wp_enqueue_script')
             ->never()
@@ -47,6 +51,8 @@ final class EnqueueStartRegistryTest extends ThemeTestCase
         Functions\when('admin_url')->justReturn('#');
         Functions\when('wp_enqueue_style')->justReturn(null);
         Functions\when('wp_localize_script')->justReturn(true);
+        Functions\when('home_url')->justReturn('http://example.com/');
+        Functions\when('wp_logout_url')->justReturn('http://example.com/logout/');
 
         Functions\expect('wp_enqueue_script')
             ->never()
@@ -79,6 +85,9 @@ final class EnqueueStartRegistryTest extends ThemeTestCase
         Functions\when('get_stylesheet_uri')->justReturn('#');
         Functions\when('home_url')->justReturn('http://example.com/my-account/');
         Functions\when('admin_url')->justReturn('#');
+        Functions\when('get_posts')->justReturn([]);
+        Functions\when('get_current_user_id')->justReturn(1);
+        Functions\when('wp_logout_url')->justReturn('http://example.com/logout/');
         Functions\when('wp_enqueue_style')->justReturn(null);
         Functions\when('wp_create_nonce')->justReturn('nonce');
         Functions\when('update_user_meta')->justReturn(true);
