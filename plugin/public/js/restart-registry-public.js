@@ -319,6 +319,7 @@
                     name:        $form.find('[name="name"]').val(),
                     url:         $form.find('[name="url"]').val(),
                     description: $form.find('[name="description"]').val(),
+                    notes:       $form.find('[name="notes"]').val(),
                     price:       $form.find('[name="price"]').val(),
                     quantity:    $form.find('[name="quantity"]').val(),
                     image_url:   $form.find('[name="image_url"]').val()
@@ -430,7 +431,7 @@
             $('#rr-edit-item-url').val($row.data('url'));
             $('#rr-edit-item-price').val($row.data('price'));
             $('#rr-edit-item-quantity').val($row.data('quantity') || 1);
-            $('#rr-edit-item-description').val($row.data('description'));
+            $('#rr-edit-item-notes').val($row.data('notes') || '');
             $('#rr-edit-item-image-url').val($row.data('image-url'));
             $('#rr-edit-item-fulfilled').prop('checked', false);
             openModal('#rr-item-edit-modal');
@@ -454,7 +455,7 @@
                     url:            $('#rr-edit-item-url').val(),
                     price:          $('#rr-edit-item-price').val(),
                     quantity:       $('#rr-edit-item-quantity').val(),
-                    description:    $('#rr-edit-item-description').val(),
+                    notes:          $('#rr-edit-item-notes').val(),
                     image_url:      $('#rr-edit-item-image-url').val(),
                     mark_fulfilled: $('#rr-edit-item-fulfilled').is(':checked') ? '1' : '0'
                 },
@@ -480,7 +481,7 @@
             var imageUrl     = $row.data('image-url');
             var retailer     = $row.data('retailer');
             var price        = $row.data('price');
-            var description  = $row.data('description');
+            var notes        = $row.data('notes');
             var qtyNeeded    = $row.data('quantity') || 1;
             var qtyPurchased = $row.data('qty-purchased') || 0;
             var affiliateUrl = $row.data('affiliate-url');
@@ -502,8 +503,8 @@
             if (price)    meta += '<span class="rr-item-price rr-item-detail__price">$' + parseFloat(price).toFixed(2) + '</span>';
             $modal.find('.rr-item-detail__meta').html(meta);
 
-            if (description) {
-                $modal.find('.rr-item-detail__description').text(description).show();
+            if (notes) {
+                $modal.find('.rr-item-detail__description').text(notes).show();
             } else {
                 $modal.find('.rr-item-detail__description').hide();
             }

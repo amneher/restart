@@ -16,6 +16,7 @@ def row_to_item(row) -> Item:
         registry_id=row["registry_id"],
         name=row["name"],
         description=row["description"],
+        notes=row["notes"],
         url=row["url"],
         retailer=row["retailer"],
         affiliate_url=row["affiliate_url"],
@@ -81,13 +82,14 @@ def create_item(
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO items (registry_id, name, description, url, retailer, affiliate_url, affiliate_status, image_url, price, quantity_needed, quantity_purchased, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO items (registry_id, name, description, notes, url, retailer, affiliate_url, affiliate_status, image_url, price, quantity_needed, quantity_purchased, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 item.registry_id,
                 item.name,
                 item.description,
+                item.notes,
                 item.url,
                 item.retailer,
                 item.affiliate_url,

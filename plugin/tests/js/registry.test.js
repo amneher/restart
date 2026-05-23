@@ -38,6 +38,7 @@ function buildDOM({ noImage = false, inViewRegistry = false } = {}) {
                 <li class="rr-item-row"
                     data-item-id="42" data-name="Test Skateboard Rack" data-price="49.99"
                     data-description="A great rack for skateboards."
+                    data-notes="any color is fine"
                     data-image-url="${noImage ? '' : 'https://example.com/image.jpg'}"
                     data-retailer="Etsy" data-affiliate-url="https://etsy.com/listing/123?ref=aff"
                     data-quantity="2" data-qty-purchased="0">
@@ -138,8 +139,8 @@ describe('item detail modal content', () => {
         expect($('.rr-item-detail__meta').text()).toContain('$49.99');
     });
 
-    it('shows the description', () => {
-        expect($('.rr-item-detail__description').text()).toBe('A great rack for skateboards.');
+    it('shows the notes in the description element', () => {
+        expect($('.rr-item-detail__description').text()).toBe('any color is fine');
     });
 
     it('shows qty needed and purchased', () => {
@@ -195,7 +196,8 @@ describe('URL fetch handler', () => {
                 <input type="text" id="rr-item-name">
                 <input type="text" id="rr-item-price">
                 <input type="hidden" id="rr-item-image-url" value="">
-                <textarea id="rr-item-description"></textarea>
+                <input type="hidden" id="rr-item-description" value="">
+                <input type="text" id="rr-item-notes" value="">
             </div>
         `;
     }

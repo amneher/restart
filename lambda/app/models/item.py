@@ -15,6 +15,7 @@ class AffiliateStatus(str, Enum):
 class ItemBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
+    notes: Optional[str] = Field(None, max_length=1000)
     url: str = Field(..., min_length=10, max_length=2000)
     retailer: Optional[str] = Field(None, max_length=100)
     affiliate_url: Optional[str] = Field(None, max_length=2000)
@@ -38,6 +39,7 @@ class ItemRegistryCreate(ItemBase):
 class ItemUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
+    notes: Optional[str] = Field(None, max_length=1000)
     url: Optional[str] = Field(None, min_length=10, max_length=2000)
     retailer: Optional[str] = Field(None, max_length=100)
     affiliate_url: Optional[str] = Field(None, max_length=2000)
@@ -66,6 +68,7 @@ class ItemPublic(BaseModel):
     registry_id: int
     name: str
     description: Optional[str] = None
+    notes: Optional[str] = None
     url: str
     retailer: Optional[str] = None
     image_url: Optional[str] = None
