@@ -51,6 +51,7 @@ class ProductScraperTest extends TestCase {
         'https://www.amazon.com/dp/B00004RFMH',
         'https://www.amazon.com/dp/B00006JSUA',
         'https://www.amazon.com/KitchenAid-KSM150PSER-Artisan-Series-Mixer/dp/B00005UP2P/',
+        'https://a.co/d/00YdZXXx',
     ];
 
     public function test_static_urls_from_file(): void {
@@ -125,7 +126,7 @@ class ProductScraperTest extends TestCase {
      * operator can diagnose without re-running.
      */
     private function assert_scrape_result(string $url, array $result): void {
-        $is_amazon = (bool) preg_match('/amazon\.[a-z.]+/i', $url);
+        $is_amazon = (bool) preg_match('/amazon\.[a-z.]+|a\.co/i', $url);
 
         if ($is_amazon) {
             $this->assertNotEmpty(

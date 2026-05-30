@@ -55,23 +55,52 @@ class AffiliateConverterTest extends TestCase {
 
     // ── Amazon affiliate URL ─────────────────────────────────────────────────
 
+    public function test_amazon_recognises_a_co_domain(): void {
+        // No tag configured → early return before resolve_url is called (no HTTP).
+        $result = $this->converter()->convert_url('https://a.co/d/00YdZXXx');
+        $this->assertSame('Amazon', $result['retailer']);
+    }
+
     public function test_amazon_appends_tag_when_configured(): void {
-        // Override get_option to return a tag for amazon
         Functions\when('get_option')
             ->alias(function (string $key, $default = false) {
                 return $key === 'restart_registry_amazon_tag' ? 'mytag-20' : $default;
             });
         Functions\when('apply_filters')->returnArg(2);
 
-        $result = $this->converter()->convert_url('https://www.amazon.com/dp/B09XYZ');
+        $result = $this->converter()->convert_url('https://www.amazon.com/dp/B08N5WRWNW');
+        $this->assertSame('https://www.amazon.com/dp/B08N5WRWNW?tag=mytag-20', $result['affiliate_url']);
+        $this->assertTrue($result['is_affiliate']);
+    }
+
+    public function test_amazon_strips_tracking_cruft(): void {
+        Functions\when('get_option')
+            ->alias(function (string $key, $default = false) {
+                return $key === 'restart_registry_amazon_tag' ? 'mytag-20' : $default;
+            });
+        Functions\when('apply_filters')->returnArg(2);
+
+        $url    = 'https://www.amazon.com/KitchenAid-Artisan-Mixer/dp/B08N5WRWNW/ref=sr_1_1?keywords=mixer&qid=1234567890&sr=8-1&th=1';
+        $result = $this->converter()->convert_url($url);
+        $this->assertSame('https://www.amazon.com/dp/B08N5WRWNW?tag=mytag-20', $result['affiliate_url']);
+    }
+
+    public function test_amazon_fallback_when_no_asin_in_path(): void {
+        Functions\when('get_option')
+            ->alias(function (string $key, $default = false) {
+                return $key === 'restart_registry_amazon_tag' ? 'mytag-20' : $default;
+            });
+        Functions\when('apply_filters')->returnArg(2);
+
+        // Search URL — no /dp/ ASIN, fallback adds tag only.
+        $result = $this->converter()->convert_url('https://www.amazon.com/s?k=stand+mixer');
         $this->assertStringContainsString('tag=mytag-20', $result['affiliate_url']);
         $this->assertTrue($result['is_affiliate']);
     }
 
     public function test_amazon_returns_original_when_tag_not_configured(): void {
-        $url    = 'https://www.amazon.com/dp/B09XYZ';
+        $url    = 'https://www.amazon.com/dp/B08N5WRWNW';
         $result = $this->converter()->convert_url($url);
-        // get_option returns '' (the default from returnArg(2)), so no tag → original URL
         $this->assertSame($url, $result['affiliate_url']);
         $this->assertFalse($result['is_affiliate']);
     }

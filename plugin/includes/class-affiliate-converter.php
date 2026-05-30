@@ -22,7 +22,7 @@ class Restart_Registry_Affiliate_Converter {
             'amazon' => array(
                 'enabled' => true,
                 'tag' => get_option('restart_registry_amazon_tag', ''),
-                'domains' => array('amazon.com', 'amazon.co.uk', 'amazon.ca', 'amazon.de', 'amazon.fr', 'amzn.to', 'amzn.com'),
+                'domains' => array('amazon.com', 'amazon.co.uk', 'amazon.ca', 'amazon.de', 'amazon.fr', 'amzn.to', 'amzn.com', 'a.co'),
             ),
             'target' => array(
                 'enabled' => true,
@@ -153,25 +153,49 @@ class Restart_Registry_Affiliate_Converter {
             return $url;
         }
 
-        $parsed = parse_url($url);
+        // Resolve short links (a.co) to get the full Amazon URL with ASIN in path.
+        $resolved = preg_match('/^https?:\/\/a\.co\//i', $url) ? $this->resolve_url($url) : $url;
+
+        // Build a clean URL from just the ASIN — drops all tracking/ref cruft.
+        if (preg_match('/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i', $resolved, $m)) {
+            $asin   = strtoupper($m[1]);
+            $parsed = parse_url($resolved);
+            return $parsed['scheme'] . '://' . $parsed['host'] . '/dp/' . $asin . '?tag=' . rawurlencode($config['tag']);
+        }
+
+        // Fallback for non-standard Amazon URLs: preserve path, replace tag param only.
+        $parsed = parse_url($resolved);
         $query_params = array();
-        
         if (isset($parsed['query'])) {
             parse_str($parsed['query'], $query_params);
         }
+        $query_params = array('tag' => $config['tag']);
 
-        $query_params['tag'] = $config['tag'];
-        unset($query_params['ref']);
-
-        $new_query = http_build_query($query_params);
-        
         $affiliate_url = $parsed['scheme'] . '://' . $parsed['host'];
         if (isset($parsed['path'])) {
             $affiliate_url .= $parsed['path'];
         }
-        $affiliate_url .= '?' . $new_query;
+        $affiliate_url .= '?' . http_build_query($query_params);
 
         return $affiliate_url;
+    }
+
+    private function resolve_url(string $url): string {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_NOBODY         => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        curl_exec($ch);
+        $final = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        curl_close($ch);
+        return (is_string($final) && $final !== '') ? $final : $url;
     }
 
     private function generate_target_affiliate($url, $config) {

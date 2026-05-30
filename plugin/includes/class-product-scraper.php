@@ -28,6 +28,14 @@ class Restart_Registry_Product_Scraper {
      * @return array{name:string,price:mixed,image_url:string,description:string}
      */
     public function scrape(string $url): array {
+        // a.co is Amazon's short-link domain; resolve to the full URL so ASIN/title extraction works.
+        if (preg_match('/^https?:\/\/a\.co\//i', $url)) {
+            $resolved = $this->resolve_url($url);
+            if ($resolved !== $url) {
+                $url = $resolved;
+            }
+        }
+
         // Amazon blocks all server-side scrapers (CAPTCHA or 503 regardless of UA).
         // Extract what we can directly from the URL — no network request needed.
         if (preg_match('/amazon\.[a-z.]+/i', $url)) {
@@ -272,5 +280,26 @@ class Restart_Registry_Product_Scraper {
      */
     private function maybe_esc_url(string $url): string {
         return function_exists('esc_url_raw') ? esc_url_raw($url) : $url;
+    }
+
+    /**
+     * Follow redirects and return the final URL. Used to resolve short-link domains (a.co).
+     */
+    private function resolve_url(string $url): string {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_NOBODY         => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_USERAGENT      => self::UA_CHROME,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        curl_exec($ch);
+        $final = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        curl_close($ch);
+        return (is_string($final) && $final !== '') ? $final : $url;
     }
 }
