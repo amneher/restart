@@ -426,3 +426,73 @@ Variant chosen: **Logo 2 "the ReStart"** (lowercase t). Favicon updated too.
 - [x] Strip white `<rect>` background from each source SVG and write to destination
 - [x] Update `parts/header.html` mark img: `width="36" height="41"` → `width="40" height="40"`
 - [x] Verify visually (open site in browser)
+
+---
+
+# Plan: Custom registry edit template in wp-admin
+
+## What
+Replace the default WordPress post editor for `restart-registry` posts with a purpose-built admin edit page. Currently the "Edit" link in the All Registries table (`display_registries_page`, line 534) calls `get_edit_post_link()` which drops the admin into the generic WP block editor — useless for managing registry metadata.
+
+## Approach
+1. **Filter `get_edit_post_link`** for the `restart-registry` post type to redirect to a new hidden admin page: `admin.php?page=restart-registry-edit&post=ID`.
+2. **Register a hidden submenu page** `restart-registry-edit` (parent `restart-registry`, `show_in_menu: false`) that renders the custom template.
+3. **Custom edit template** mirrors the frontend `render_manage_registry()` layout exactly — same section order, same CSS class naming — but makes fields editable rather than display-only.
+
+## Layout (mirrors the frontend template section-for-section)
+
+### 1. Toolbar (`rr-toolbar` equivalent)
+Replaces the public/private toggle + Share + Settings buttons with:
+- Post status selector (`<select>`: Publish / Private / Draft) — maps to the public toggle
+- Owner display (`<a>` to user edit screen) — new admin-only element
+- **Save Changes** button (submits the form)
+- **View Registry** link (opens frontend permalink in new tab)
+
+### 2. Registry header (`rr-registry-header` equivalent)
+Editable inline:
+- Title: `<input type="text">` (maps to `<h1 class="rr-registry-title">`)
+- Recipient: Is-for-self checkbox; if unchecked — name, relationship, email inputs (maps to `<p class="rr-recipient">`)
+- Event meta: event type `<input type="text">` + event date `<input type="date">` (maps to `<p class="rr-event-meta">`)
+
+### 3. Hero image (`rr-registry-hero` equivalent)
+WP media picker (same pattern as the frontend settings modal hero picker):
+- Preview `<img>` if a thumbnail is set; empty placeholder otherwise
+- "Choose image" button (opens WP media library)
+- "Remove" button (clears the thumbnail)
+
+### 4. Story section (`rr-story` equivalent)
+- `<textarea>` for `post_content` with the same `rr-story__heading` label (maps to `<p class="rr-story__text">`)
+
+### 5. Divider + Items section (`rr-items-section` equivalent)
+Read-only item table matching the frontend column layout (`rr-items-table`):
+- Columns: thumbnail, item name (linked to URL), qty desired, fulfilled status
+- Items fetched from Lambda via the controller's `get_registry_items()`
+- "No items" placeholder if empty
+- Count badge in the heading
+
+### 6. Message board (`rr-message-board` equivalent)
+Read-only, matches the frontend card layout exactly:
+- Thumbnail, item name, purchaser note, from + date
+- Only rendered if messages exist
+
+## Save handling
+- Form posts to `admin-post.php` with action `restart_registry_admin_edit`
+- Handler in the admin class sanitizes and saves: `post_title`, `post_content`, `post_status`, all meta fields
+- Redirect back to the edit page with `?updated=1` on success
+
+## Files touched
+- `plugin/admin/class-restart-registry-admin.php` — add filter, register hidden page, add handler, render method
+- `plugin/admin/css/restart-registry-admin.css` — two-column edit layout styles
+
+## What's NOT in scope
+- Item editing from the admin (that's the frontend's job)
+- Invitee add/remove from the admin (owner-only flow)
+- Lambda item detail display (names only, no prices/images — avoiding extra Lambda round-trips per page load)
+
+## Todo
+- [x] `class-restart-registry-admin.php`: filter `get_edit_post_link` for `restart-registry` post type
+- [x] `class-restart-registry-admin.php`: register hidden `restart-registry-edit` submenu page
+- [x] `class-restart-registry-admin.php`: `display_registry_edit_page()` render method (two-column layout)
+- [x] `class-restart-registry-admin.php`: `handle_registry_edit()` save handler (action `restart_registry_admin_edit`)
+- [x] `restart-registry-admin.css`: edit page layout styles
+- [ ] Manual test: edit a registry, verify all fields save correctly

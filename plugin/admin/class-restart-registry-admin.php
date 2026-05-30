@@ -21,21 +21,38 @@ class Restart_Registry_Admin {
 
         add_action('admin_menu',                                        array($this, 'add_admin_menu'));
         add_action('admin_init',                                        array($this, 'register_settings'));
-        add_action('admin_post_restart_registry_create_pages',           array($this, 'handle_create_pages'));
+        add_action('admin_post_restart_registry_create_pages',          array($this, 'handle_create_pages'));
+        add_action('admin_post_restart_registry_admin_edit',            array($this, 'handle_registry_edit'));
         add_action('wp_ajax_restart_registry_test_lambda',              array($this, 'ajax_test_lambda'));
         add_action('wp_ajax_restart_registry_reconvert_affiliates',     array($this, 'ajax_reconvert_affiliates'));
+        add_filter('get_edit_post_link',                                array($this, 'filter_edit_post_link'), 10, 3);
     }
 
-    public function enqueue_styles() {
+    public function enqueue_styles($hook) {
         wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/restart-registry-admin.css', array(), $this->version, 'all');
+
+        if (isset($_GET['page']) && $_GET['page'] === 'restart-registry-edit') {
+            wp_enqueue_style(
+                $this->plugin_name . '-public',
+                plugin_dir_url(dirname(__FILE__)) . 'public/css/restart-registry-public.css',
+                array(),
+                $this->version,
+                'all'
+            );
+        }
     }
 
-    public function enqueue_scripts() {
+    public function enqueue_scripts($hook) {
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/restart-registry-admin.js', array('jquery'), $this->version, true);
         wp_localize_script($this->plugin_name, 'rrAdmin', array(
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('restart_registry_admin_nonce'),
         ));
+
+        if (isset($_GET['page']) && $_GET['page'] === 'restart-registry-edit') {
+            wp_enqueue_media();
+            wp_add_inline_script($this->plugin_name, $this->get_registry_edit_inline_js());
+        }
     }
 
     public function add_admin_menu() {
@@ -84,6 +101,18 @@ class Restart_Registry_Admin {
             'restart-registry-settings',
             array($this, 'display_settings_page')
         );
+
+        add_submenu_page(
+            'restart-registry',
+            __('Edit Registry', 'restart-registry'),
+            __('Edit Registry', 'restart-registry'),
+            'manage_options',
+            'restart-registry-edit',
+            array($this, 'display_registry_edit_page')
+        );
+        // Intentionally not calling remove_submenu_page here — doing so causes
+        // menu.php to rebuild $_registered_pages without our page, blocking access.
+        // The menu item is hidden via CSS in restart-registry-admin.css instead.
     }
 
     public function register_settings() {
@@ -833,5 +862,339 @@ class Restart_Registry_Admin {
             </table>
         </div>
         <?php
+    }
+
+    // =========================================================================
+    // Custom registry edit page
+    // =========================================================================
+
+    public function filter_edit_post_link(string $link, int $post_id, string $context): string {
+        if (get_post_type($post_id) === 'restart-registry') {
+            return admin_url('admin.php?page=restart-registry-edit&post=' . $post_id);
+        }
+        return $link;
+    }
+
+    public function display_registry_edit_page(): void {
+        $post_id = (int) ($_GET['post'] ?? 0);
+        if (!$post_id) {
+            wp_die(__('No registry specified.', 'restart-registry'));
+        }
+
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'restart-registry') {
+            wp_die(__('Registry not found.', 'restart-registry'));
+        }
+
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-restart-registry-controller.php';
+        $controller = new Restart_Registry_Controller();
+
+        $items    = $controller->get_registry_items($post_id);
+        $messages = $controller->get_purchase_messages($post_id);
+        $invitees = $controller->get_registry_invites($post_id);
+
+        $event_type     = get_post_meta($post_id, 'restart_event_type', true) ?: '';
+        $event_date     = get_post_meta($post_id, 'restart_event_date', true) ?: '';
+        $raw_for_self   = get_post_meta($post_id, 'restart_is_for_self', true);
+        $is_for_self    = ($raw_for_self === '' || $raw_for_self === false) ? true : (string) $raw_for_self !== '0';
+        $recipient_name = get_post_meta($post_id, 'restart_recipient_name', true) ?: '';
+        $recipient_rel  = get_post_meta($post_id, 'restart_recipient_relationship', true) ?: '';
+        $recipient_email = get_post_meta($post_id, 'restart_recipient_email', true) ?: '';
+        $thumbnail_id   = get_post_thumbnail_id($post_id) ?: 0;
+        $hero_url       = $thumbnail_id ? get_the_post_thumbnail_url($post_id, 'large') : '';
+        $author         = get_userdata($post->post_author);
+
+        $allowed_statuses = ['publish', 'private', 'draft', 'restart-archived'];
+        ?>
+        <div class="wrap rr-admin-edit-wrap">
+
+            <?php if (isset($_GET['updated'])): ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><?php _e('Registry updated.', 'restart-registry'); ?></p>
+                </div>
+            <?php endif; ?>
+
+            <form action="<?php echo esc_url(admin_url('admin-post.php')); ?>" method="post" id="rr-admin-edit-form">
+                <input type="hidden" name="action" value="restart_registry_admin_edit">
+                <input type="hidden" name="post_id" value="<?php echo esc_attr($post_id); ?>">
+                <?php wp_nonce_field('restart_registry_admin_edit_' . $post_id, 'rr_admin_edit_nonce'); ?>
+
+                <!-- Toolbar -->
+                <div class="rr-toolbar rr-admin-toolbar">
+                    <div class="rr-admin-toolbar__meta">
+                        <label for="rr-admin-post-status" class="screen-reader-text"><?php _e('Status', 'restart-registry'); ?></label>
+                        <select name="post_status" id="rr-admin-post-status" class="rr-admin-status-select">
+                            <option value="publish"          <?php selected($post->post_status, 'publish'); ?>><?php _e('Public', 'restart-registry'); ?></option>
+                            <option value="private"          <?php selected($post->post_status, 'private'); ?>><?php _e('Private', 'restart-registry'); ?></option>
+                            <option value="draft"            <?php selected($post->post_status, 'draft'); ?>><?php _e('Draft', 'restart-registry'); ?></option>
+                            <option value="restart-archived" <?php selected($post->post_status, 'restart-archived'); ?>><?php _e('Archived', 'restart-registry'); ?></option>
+                        </select>
+                        <?php if ($author): ?>
+                            <span class="rr-admin-owner">
+                                <?php _e('Owner:', 'restart-registry'); ?>
+                                <a href="<?php echo esc_url(get_edit_user_link($post->post_author)); ?>"><?php echo esc_html($author->display_name); ?></a>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="rr-admin-toolbar__actions">
+                        <a href="<?php echo esc_url(get_permalink($post_id)); ?>" target="_blank" class="button button-secondary"><?php _e('View Registry ↗', 'restart-registry'); ?></a>
+                        <?php submit_button(__('Save Changes', 'restart-registry'), 'primary', 'submit', false); ?>
+                    </div>
+                </div>
+
+                <!-- Registry header: title + event meta + recipient -->
+                <div class="rr-registry-header rr-admin-section">
+                    <div class="rr-admin-title-row">
+                        <input type="text" id="rr-admin-title" name="post_title"
+                            class="rr-registry-title rr-admin-title-input widefat"
+                            value="<?php echo esc_attr($post->post_title); ?>" required
+                            placeholder="<?php esc_attr_e('Registry title…', 'restart-registry'); ?>">
+                    </div>
+
+                    <p class="rr-event-meta rr-admin-event-meta">
+                        <span class="rr-event-meta__group">
+                            <label class="rr-event-meta__label" for="rr-admin-event-type"><?php _e('Event:', 'restart-registry'); ?></label>
+                            <input type="text" id="rr-admin-event-type" name="event_type"
+                                class="rr-admin-event-input"
+                                value="<?php echo esc_attr($event_type); ?>"
+                                placeholder="<?php esc_attr_e('e.g. Wedding, Baby Shower…', 'restart-registry'); ?>">
+                        </span>
+                        <span class="rr-event-meta__group">
+                            <label class="rr-event-meta__label" for="rr-admin-event-date"><?php _e('Date:', 'restart-registry'); ?></label>
+                            <input type="date" id="rr-admin-event-date" name="event_date"
+                                value="<?php echo esc_attr($event_date); ?>">
+                        </span>
+                    </p>
+
+                    <div class="rr-admin-recipient-section">
+                        <label class="rr-admin-checkbox-label">
+                            <input type="checkbox" name="is_for_self" value="1" id="rr-admin-is-for-self" <?php checked($is_for_self); ?>>
+                            <?php _e('Registry is for the owner (no recipient)', 'restart-registry'); ?>
+                        </label>
+                        <div id="rr-admin-recipient-fields" class="rr-admin-recipient-fields" <?php echo $is_for_self ? 'hidden' : ''; ?>>
+                            <p class="rr-recipient rr-admin-recipient-row">
+                                <label class="rr-admin-label" for="rr-admin-recipient-name"><?php _e('For', 'restart-registry'); ?></label>
+                                <input type="text" id="rr-admin-recipient-name" name="recipient_name"
+                                    value="<?php echo esc_attr($recipient_name); ?>"
+                                    placeholder="<?php esc_attr_e("Recipient's name", 'restart-registry'); ?>">
+                                <input type="text" name="recipient_relationship"
+                                    value="<?php echo esc_attr($recipient_rel); ?>"
+                                    placeholder="<?php esc_attr_e('Relationship (e.g. Daughter)', 'restart-registry'); ?>">
+                                <input type="email" name="recipient_email"
+                                    value="<?php echo esc_attr($recipient_email); ?>"
+                                    placeholder="<?php esc_attr_e('Email (optional)', 'restart-registry'); ?>">
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hero image -->
+                <?php if ($hero_url): ?>
+                    <div class="rr-registry-hero rr-admin-hero">
+                        <img src="<?php echo esc_url($hero_url); ?>"
+                            alt="<?php echo esc_attr($post->post_title); ?>"
+                            id="rr-admin-hero-img" loading="lazy">
+                    </div>
+                <?php else: ?>
+                    <div class="rr-admin-hero rr-admin-hero--empty" id="rr-admin-hero-img" hidden></div>
+                <?php endif; ?>
+                <input type="hidden" name="thumbnail_id" id="rr-admin-thumbnail-id" value="<?php echo esc_attr($thumbnail_id ?: ''); ?>">
+                <div class="rr-admin-hero-actions">
+                    <button type="button" class="rr-btn-ghost" id="rr-admin-hero-pick"><?php _e('Choose hero image', 'restart-registry'); ?></button>
+                    <button type="button" class="rr-btn-ghost rr-btn-icon--danger" id="rr-admin-hero-clear" <?php echo $thumbnail_id ? '' : 'hidden'; ?>><?php _e('Remove', 'restart-registry'); ?></button>
+                </div>
+
+                <!-- Story -->
+                <section class="rr-story rr-admin-section">
+                    <h2 class="rr-story__heading"><?php _e('Story', 'restart-registry'); ?></h2>
+                    <textarea name="post_content" id="rr-admin-story" class="rr-story__text rr-admin-story-textarea widefat" rows="6"
+                        placeholder="<?php esc_attr_e('Tell visitors why this registry matters…', 'restart-registry'); ?>"><?php echo esc_textarea($post->post_content); ?></textarea>
+                </section>
+
+                <hr class="rr-divider">
+
+                <!-- Items section -->
+                <div class="rr-items-section rr-admin-section">
+                    <div class="rr-items-header">
+                        <span class="rr-items-heading"><?php _e('Items', 'restart-registry'); ?> <span class="rr-item-count">(<?php echo count($items); ?>)</span></span>
+                    </div>
+                    <?php if (!empty($items)): ?>
+                        <div class="rr-items-table">
+                            <div class="rr-items-table__head" aria-hidden="true">
+                                <span class="rr-col-thumb"></span>
+                                <span class="rr-col-item"><?php _e('Item', 'restart-registry'); ?></span>
+                                <span class="rr-col-qty"><?php _e('Qty Desired', 'restart-registry'); ?></span>
+                                <span class="rr-col-fulfilled"><?php _e('Fulfilled', 'restart-registry'); ?></span>
+                            </div>
+                            <ul class="rr-item-list">
+                                <?php foreach ($items as $item):
+                                    $qty_needed    = (int) ($item['quantity'] ?? 1);
+                                    $qty_purchased = (int) ($item['quantity_purchased'] ?? 0);
+                                    $is_fulfilled  = $qty_purchased >= $qty_needed;
+                                ?>
+                                    <li class="rr-item-row <?php echo $is_fulfilled ? 'is-fulfilled' : ''; ?>">
+                                        <span class="rr-col-thumb">
+                                            <?php if (!empty($item['image_url'])): ?>
+                                                <img src="<?php echo esc_url($item['image_url']); ?>" alt="" loading="lazy">
+                                            <?php endif; ?>
+                                        </span>
+                                        <span class="rr-col-item">
+                                            <a href="<?php echo esc_url($item['url'] ?? ''); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($item['name']); ?></a>
+                                            <?php if (!empty($item['notes'])): ?>
+                                                <span class="rr-item__notes"><?php echo esc_html($item['notes']); ?></span>
+                                            <?php endif; ?>
+                                        </span>
+                                        <span class="rr-col-qty"><?php echo $qty_needed; ?></span>
+                                        <span class="rr-col-fulfilled"><?php echo $qty_purchased; ?>/<?php echo $qty_needed; ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php else: ?>
+                        <p class="rr-no-items"><?php _e('No items yet.', 'restart-registry'); ?></p>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Message board -->
+                <?php if (!empty($messages)): ?>
+                    <div class="rr-message-board rr-admin-section">
+                        <h2 class="rr-message-board__title"><?php _e('Messages', 'restart-registry'); ?></h2>
+                        <ul class="rr-message-board__list">
+                            <?php foreach ($messages as $msg): ?>
+                                <li class="rr-message-card">
+                                    <?php if (!empty($msg['item_image_url'])): ?>
+                                        <div class="rr-message-card__thumb">
+                                            <img src="<?php echo esc_url($msg['item_image_url']); ?>"
+                                                alt="<?php echo esc_attr($msg['item_name']); ?>"
+                                                loading="lazy">
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="rr-message-card__body">
+                                        <p class="rr-message-card__item-name"><?php echo esc_html($msg['item_name']); ?></p>
+                                        <blockquote class="rr-message-card__note"><?php echo esc_html($msg['purchaser_note']); ?></blockquote>
+                                        <p class="rr-message-card__meta">
+                                            <span class="rr-message-card__from"><?php echo esc_html($msg['purchaser_name'] ?: __('Someone', 'restart-registry')); ?></span>
+                                            <span class="rr-message-card__date"><?php echo esc_html(date_i18n(get_option('date_format'), $msg['timestamp'])); ?></span>
+                                        </p>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Invitees -->
+                <div class="rr-admin-section rr-admin-invitees">
+                    <h2 class="rr-admin-section__heading"><?php _e('Invitees', 'restart-registry'); ?> <span class="rr-item-count">(<?php echo count($invitees); ?>)</span></h2>
+                    <?php if (!empty($invitees)): ?>
+                        <ul class="rr-invitees__list">
+                            <?php foreach ($invitees as $inv): ?>
+                                <li class="rr-invitees__item">
+                                    <span class="rr-invitees__email"><?php echo esc_html($inv['email']); ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php else: ?>
+                        <p class="rr-invitees__empty"><?php _e('No invitees.', 'restart-registry'); ?></p>
+                    <?php endif; ?>
+                </div>
+
+            </form>
+        </div>
+        <?php
+    }
+
+    public function handle_registry_edit(): void {
+        $post_id = (int) ($_POST['post_id'] ?? 0);
+
+        if (!$post_id || !check_admin_referer('restart_registry_admin_edit_' . $post_id, 'rr_admin_edit_nonce')) {
+            wp_die(__('Security check failed.', 'restart-registry'));
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Not allowed.', 'restart-registry'));
+        }
+
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'restart-registry') {
+            wp_die(__('Registry not found.', 'restart-registry'));
+        }
+
+        $allowed_statuses = ['publish', 'private', 'draft', 'restart-archived'];
+        $new_status = in_array($_POST['post_status'] ?? '', $allowed_statuses, true)
+            ? sanitize_key($_POST['post_status'])
+            : $post->post_status;
+
+        wp_update_post([
+            'ID'           => $post_id,
+            'post_title'   => sanitize_text_field($_POST['post_title'] ?? ''),
+            'post_content' => sanitize_textarea_field($_POST['post_content'] ?? ''),
+            'post_status'  => $new_status,
+        ]);
+
+        $is_for_self = !empty($_POST['is_for_self']);
+        update_post_meta($post_id, 'restart_is_for_self',            $is_for_self ? '1' : '0');
+        update_post_meta($post_id, 'restart_event_type',             sanitize_text_field($_POST['event_type'] ?? ''));
+        update_post_meta($post_id, 'restart_event_date',             sanitize_text_field($_POST['event_date'] ?? ''));
+        update_post_meta($post_id, 'restart_recipient_name',         sanitize_text_field($_POST['recipient_name'] ?? ''));
+        update_post_meta($post_id, 'restart_recipient_relationship',  sanitize_text_field($_POST['recipient_relationship'] ?? ''));
+        update_post_meta($post_id, 'restart_recipient_email',        sanitize_email($_POST['recipient_email'] ?? ''));
+
+        $thumbnail_id = (int) ($_POST['thumbnail_id'] ?? 0);
+        if ($thumbnail_id > 0) {
+            set_post_thumbnail($post_id, $thumbnail_id);
+        } else {
+            delete_post_thumbnail($post_id);
+        }
+
+        wp_redirect(admin_url('admin.php?page=restart-registry-edit&post=' . $post_id . '&updated=1'));
+        exit;
+    }
+
+    private function get_registry_edit_inline_js(): string {
+        return <<<'JS'
+(function($) {
+    var frame;
+    $('#rr-admin-hero-pick').on('click', function() {
+        if (frame) { frame.open(); return; }
+        frame = wp.media({ title: 'Choose Hero Image', button: { text: 'Use this image' }, multiple: false });
+        frame.on('select', function() {
+            var attachment = frame.state().get('selection').first().toJSON();
+            var src = attachment.sizes && attachment.sizes.large ? attachment.sizes.large.url : attachment.url;
+            var img = document.getElementById('rr-admin-hero-img');
+            if (img.tagName === 'IMG') {
+                img.src = src;
+            } else {
+                var newImg = document.createElement('img');
+                newImg.id = 'rr-admin-hero-img';
+                newImg.src = src;
+                newImg.loading = 'lazy';
+                img.parentNode.replaceChild(newImg, img);
+            }
+            document.getElementById('rr-admin-thumbnail-id').value = attachment.id;
+            document.getElementById('rr-admin-hero-clear').removeAttribute('hidden');
+        });
+        frame.open();
+    });
+
+    $('#rr-admin-hero-clear').on('click', function() {
+        document.getElementById('rr-admin-thumbnail-id').value = '';
+        var img = document.getElementById('rr-admin-hero-img');
+        if (img.tagName === 'IMG') {
+            var div = document.createElement('div');
+            div.id = 'rr-admin-hero-img';
+            div.setAttribute('hidden', '');
+            img.parentNode.replaceChild(div, img);
+        }
+        $(this).attr('hidden', '');
+    });
+
+    $('#rr-admin-is-for-self').on('change', function() {
+        var fields = document.getElementById('rr-admin-recipient-fields');
+        if (this.checked) { fields.setAttribute('hidden', ''); }
+        else              { fields.removeAttribute('hidden'); }
+    });
+}(jQuery));
+JS;
     }
 }
