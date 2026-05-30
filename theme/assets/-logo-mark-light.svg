@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -14 256 292" width="256" height="292" role="img" aria-label="the ReStart">
+  <circle cx="128" cy="144" r="125" fill="none" stroke="#fff" stroke-width="6"/>
+  <path d="M 116 -13 L 146 20 L 116 53 L 116 40 L 134 20 L 116 0 Z"
+        fill="#fff" stroke="#193540" stroke-width="2"/>
+  <g transform="translate(96 68) scale(1.2)">
+    <g transform="translate(-0.721418 139.486626) scale(0.1 -0.1)">
+      <path d="M 483 1386 c-91 -23 -151 -82 -199 -196 -15 -36 -31 -69 -34 -73 -4 -5 -11 53 -15 127 l-7 136 -110 0 -111 0 7 -52 c3 -29 6 -340 6 -690 l0 -638 114 0 114 0 5 438 c3 400 5 443 24 503 35 118 91 192 173 227 24 10 65 15 128 14 l92 -1 0 99 c0 54 -4 101 -9 104 -21 13 -130 15 -178 2z" fill="#fff"/>
+    </g>
+  </g>
+</svg>

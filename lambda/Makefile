@@ -2,7 +2,7 @@
 # Helper: extract a value from .env (handles spaces around '=' and quoted vals)
 # ─────────────────────────────────────────────────────────────────────────────
 _env   = $(shell grep -m1 '^$(1)\s*=' .env 2>/dev/null | sed 's/^[^=]*=\s*//' | tr -d '"')
-_lwenv = $(shell grep -m1 '^$(1)\s*=' ../local_wordpress/.env 2>/dev/null | sed 's/^[^=]*=\s*//' | tr -d '"')
+_lwenv = $(shell grep -m1 '^$(1)\s*=' ../theme/.env 2>/dev/null | sed 's/^[^=]*=\s*//' | tr -d '"')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Lambda function names — override via env or CLI
@@ -282,12 +282,12 @@ test-local:
 # Usage: make wp-snapshot
 # ─────────────────────────────────────────────────────────────────────────────
 wp-snapshot:
-	$(if $(LW_CONTAINER),,$(error Could not read CONTAINER_NAME from ../local_wordpress/.env))
-	@echo "Capturing WordPress snapshot from $(LW_CONTAINER)-database…"
+	$(if $(LW_CONTAINER),,$(error Could not read CONTAINER_NAME from ../theme/.env))
+	@echo "Capturing WordPress snapshot from $(LW_CONTAINER)…"
 	mkdir -p tests/fixtures
 	@echo "Waiting for MySQL to be ready…"; \
-	    until docker exec $(LW_CONTAINER)-database mysqladmin ping -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) --silent 2>/dev/null; do sleep 2; done
-	docker exec $(LW_CONTAINER)-database \
+	    until docker exec $(LW_CONTAINER) mysqladmin ping -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) --silent 2>/dev/null; do sleep 2; done
+	docker exec $(LW_CONTAINER) \
 	    mysqldump -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) $(LW_DB_NAME) \
 	    > tests/fixtures/wp-clean.sql
 	@echo "Saved: tests/fixtures/wp-clean.sql ($$(du -sh tests/fixtures/wp-clean.sql | cut -f1))"
