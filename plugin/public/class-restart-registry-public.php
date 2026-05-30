@@ -1076,7 +1076,7 @@ class Restart_Registry_Public
             $actions .= '<a href="' . esc_url($item_url) . '" target="_blank" rel="noopener sponsored" class="rr-purchase-btn rr-button rr-button-small">'
                 . esc_html__('Purchase', 'restart-registry') . '</a>';
         }
-        if (!$is_fulfilled && !$is_owner) {
+        if (!$is_fulfilled && $can_purchase) {
             $actions .= '<button type="button" class="rr-button rr-button-small rr-button-secondary rr-mark-purchased">'
                 . esc_html__('Mark Purchased', 'restart-registry') . '</button>';
         }

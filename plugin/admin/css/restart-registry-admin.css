@@ -76,3 +76,206 @@
 .notice.notice-info p {
     margin: 5px 0;
 }
+
+/* Hide the "Edit Registry" submenu item — it's a context page, not a nav destination */
+#adminmenu a[href="admin.php?page=restart-registry-edit"] {
+    display: none !important;
+}
+
+/* ── Registry edit page ─────────────────────────────────────────────────── */
+.rr-admin-edit-wrap {
+    max-width: 860px;
+}
+
+.rr-admin-toolbar {
+    margin: 16px 0 20px;
+    padding: 10px 16px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    justify-content: space-between;
+}
+
+.rr-admin-toolbar__meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.rr-admin-toolbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rr-admin-status-select {
+    font-size: 13px;
+}
+
+.rr-admin-owner {
+    font-size: 13px;
+    color: #50575e;
+}
+
+.rr-admin-owner a {
+    color: #2271b1;
+    text-decoration: none;
+}
+
+.rr-admin-section {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+}
+
+.rr-admin-title-row {
+    margin-bottom: 12px;
+}
+
+.rr-admin-title-input {
+    font-size: 22px !important;
+    font-weight: 600;
+    height: auto !important;
+    padding: 6px 10px !important;
+    color: #1d2327;
+    border-color: #c3c4c7 !important;
+    box-shadow: none !important;
+}
+
+.rr-admin-title-input:focus {
+    border-color: #2271b1 !important;
+    box-shadow: 0 0 0 1px #2271b1 !important;
+}
+
+.rr-admin-event-meta {
+    margin: 0 0 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+}
+
+.rr-admin-event-meta .rr-event-meta__group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rr-admin-event-input {
+    font-size: 13px;
+    padding: 4px 8px;
+    border: 1px solid #c3c4c7;
+    border-radius: 3px;
+    color: #1d2327;
+    width: 200px;
+}
+
+.rr-admin-event-meta input[type="date"] {
+    font-size: 13px;
+    padding: 4px 8px;
+    border: 1px solid #c3c4c7;
+    border-radius: 3px;
+    color: #1d2327;
+}
+
+.rr-admin-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.rr-admin-recipient-fields {
+    margin-top: 8px;
+}
+
+.rr-admin-recipient-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0;
+}
+
+.rr-admin-recipient-row .rr-admin-label {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.rr-admin-recipient-row input[type="text"],
+.rr-admin-recipient-row input[type="email"] {
+    font-size: 13px;
+    padding: 4px 8px;
+    border: 1px solid #c3c4c7;
+    border-radius: 3px;
+    flex: 1;
+    min-width: 140px;
+}
+
+/* Hero image */
+.rr-admin-hero {
+    margin-bottom: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    max-height: 280px;
+}
+
+.rr-admin-hero img {
+    width: 100%;
+    max-height: 280px;
+    object-fit: cover;
+    display: block;
+    border-radius: 4px;
+}
+
+.rr-admin-hero-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+/* Story textarea */
+.rr-admin-story-textarea {
+    font-size: 14px !important;
+    line-height: 1.7 !important;
+    color: #1d2327 !important;
+    border-color: #c3c4c7 !important;
+    border-radius: 3px !important;
+    resize: vertical;
+}
+
+/* Invitees section */
+.rr-admin-invitees .rr-admin-section__heading {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.rr-admin-invitees .rr-invitees__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.rr-admin-invitees .rr-invitees__item {
+    background: #f0f7f4;
+    border: 1px solid #c8e8d4;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 12px;
+    color: #193540;
+}
+
+.rr-admin-invitees .rr-invitees__empty {
+    color: #8a9ea0;
+    font-size: 13px;
+}
