@@ -399,3 +399,30 @@ Follow the migration pattern in `lambda/app/database/migrations/__init__.py`.
 - [ ] Plugin: owner email notification on price anomaly / dead URL
 - [ ] Tests
 - [ ] Close GH #20
+
+---
+
+# Plan: New branding integration
+
+## What
+Replace theme logo assets with new professional brand files from `theme/assets/Logo Files/`.
+Variant chosen: **Logo 2 "the ReStart"** (lowercase t). Favicon updated too.
+
+## Key technical notes
+- All new SVGs contain a `<rect ... style="fill:#fff;"/>` background that must be stripped before use. The header has a dark background and the footer uses CSS `mask` — both break with an opaque white rect.
+- New Lettermark SVGs are square (512×512 viewBox); current mobile mark is 36×40 — update header img dimensions to 40×40.
+- Five files to swap, all by filename so no template path changes needed (except the img dimensions on the mark).
+
+## File mapping
+| New source | Destination |
+|---|---|
+| `SVG/White/The ReStart Branding_the ReStart-Logo 2-White.svg` | `assets/logo-light.svg` |
+| `SVG/White/The ReStart Branding_Lettermark-White.svg` | `assets/logo-mark-light.svg` |
+| `SVG/Blue Green/The ReStart Branding_The reStart-Logo 2-Blue Green.svg` | `assets/logo.svg` |
+| `SVG/Blue Green/The ReStart Branding_Lettermark-Blue Green--.svg` | `assets/logo-mark.svg` |
+| `SVG/Blue Green/The ReStart Branding_Lettermark-Blue Green--.svg` | `assets/favicon.svg` |
+
+## Todo
+- [x] Strip white `<rect>` background from each source SVG and write to destination
+- [x] Update `parts/header.html` mark img: `width="36" height="41"` → `width="40" height="40"`
+- [x] Verify visually (open site in browser)
