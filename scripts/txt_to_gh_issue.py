@@ -23,14 +23,14 @@ def create_issue(title: str, body: str):
     )
     print(res)
 
-def main(input: Union[str, list[str]]):
-    if isinstance(input, list):
-        title = input[0]
-        body = input[1]
+def main(source: Union[str, list[str]]):
+    if isinstance(source, list):
+        title = source[0]
+        body = source[1]
         create_issue(title, body)
 
     else:
-        filename = input
+        filename = source
         file = BASE_DIR / filename
         with open(file, "r") as f:
             content = f.readlines()
