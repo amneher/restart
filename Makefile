@@ -12,6 +12,7 @@
         bump-lambda-patch bump-lambda-minor bump-lambda-major \
         bump-theme-patch bump-theme-minor bump-theme-major \
         bump-all-patch bump-all-minor bump-all-major \
+        release-plugin release-lambda release-theme release-all \
         wp-snapshot
 
 # ── Dev environment ───────────────────────────────────────────────────────────
@@ -192,6 +193,30 @@ bump-all-minor:
 bump-all-major:
 	./scripts/bump.sh all major
 
+# ── Releasing ─────────────────────────────────────────────────────────────────
+# Bump version, commit, tag, then push — triggering the release workflow in CI.
+# Usage: make release-plugin [PART=patch|minor|major]  (default: patch)
+
+release-plugin:
+	./scripts/bump.sh plugin $(or $(PART),patch)
+	git push origin HEAD
+	git push origin --tags
+
+release-lambda:
+	./scripts/bump.sh lambda $(or $(PART),patch)
+	git push origin HEAD
+	git push origin --tags
+
+release-theme:
+	./scripts/bump.sh theme $(or $(PART),patch)
+	git push origin HEAD
+	git push origin --tags
+
+release-all:
+	./scripts/bump.sh all $(or $(PART),patch)
+	git push origin HEAD
+	git push origin --tags
+
 # ── Help ──────────────────────────────────────────────────────────────────────
 
 help:
@@ -251,6 +276,12 @@ help:
 	@echo "  bump-lambda-{patch,minor,major}  Bump lambda version"
 	@echo "  bump-theme-{patch,minor,major}   Bump theme version"
 	@echo "  bump-all-{patch,minor,major}     Bump all three versions"
+	@echo ""
+	@echo "Releasing (bump + push tag → triggers CI release workflow):"
+	@echo "  release-plugin [PART=patch]  Bump, commit, tag, and push plugin"
+	@echo "  release-lambda [PART=patch]  Bump, commit, tag, and push lambda"
+	@echo "  release-theme  [PART=patch]  Bump, commit, tag, and push theme"
+	@echo "  release-all    [PART=patch]  Bump, commit, tag, and push all three"
 	@echo ""
 	@echo "For lambda-specific targets, run:  make -C lambda help"
 	@echo ""
