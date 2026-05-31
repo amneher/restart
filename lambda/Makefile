@@ -19,11 +19,11 @@ WP_PROD_USER       ?= $(call _env,WP_PROD_USERNAME)
 WP_PROD_APP_PWD    ?= $(call _env,WP_PROD_APP_PWD)
 
 WP_STAGING_URL     ?= $(call _env,WP_STAGING_BASE_URL)
-WP_STAGING_USER    ?= $(call _env,WP_DEV_USERNAME)
+WP_STAGING_USER    ?= $(call _env,WP_STAGING_USER)
 WP_STAGING_APP_PWD ?= $(call _env,WP_STAGING_APP_PWD)
 
 WP_LOCAL_URL       ?= $(call _env,WP_LOCAL_URL)
-WP_LOCAL_USER      ?= $(call _env,WP_DEV_USERNAME)
+WP_LOCAL_USER      ?= $(call _env,WP_LOCAL_USER)
 WP_LOCAL_APP_PWD   ?= $(call _env,WP_LOCAL_APP_PWD)
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -272,6 +272,7 @@ test-local:
 	WP_LOCAL_URL="$(WP_LOCAL_URL)" \
 	WP_LOCAL_USER="$(WP_LOCAL_USER)" \
 	WP_LOCAL_APP_PWD="$(WP_LOCAL_APP_PWD)" \
+	WP_BASE_URL="$(WP_LOCAL_URL)" \
 	.venv/bin/pytest tests/test_registry_wp_integration.py tests/test_registry_e2e.py -v
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -283,12 +284,12 @@ test-local:
 # Usage: make wp-snapshot
 # ─────────────────────────────────────────────────────────────────────────────
 wp-snapshot:
-	$(if $(LW_CONTAINER),,$(error Could not read CONTAINER_NAME from ../theme/.env))
-	@echo "Capturing WordPress snapshot from $(LW_CONTAINER)…"
+	$(if $(LW_CONTAINER),,$(error Could not read CONTAINER_NAME from ../.env))
+	@echo "Capturing WordPress snapshot from $(LW_CONTAINER)-database-1…"
 	mkdir -p tests/fixtures
 	@echo "Waiting for MySQL to be ready…"; \
-	    until docker exec $(LW_CONTAINER) mysqladmin ping -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) --silent 2>/dev/null; do sleep 2; done
-	docker exec $(LW_CONTAINER) \
+	    until docker exec $(LW_CONTAINER)-database-1 mysqladmin ping -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) --silent 2>/dev/null; do sleep 2; done
+	docker exec $(LW_CONTAINER)-database-1 \
 	    mysqldump -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) $(LW_DB_NAME) \
 	    > tests/fixtures/wp-clean.sql
 	@echo "Saved: tests/fixtures/wp-clean.sql ($$(du -sh tests/fixtures/wp-clean.sql | cut -f1))"
