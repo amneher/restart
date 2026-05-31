@@ -23,6 +23,6 @@ jobs:
           echo "ZIP_NAME=restart-lambda-${VERSION}.zip" >> "$GITHUB_ENV"
 
       - name: Upload to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: ${{ env.ZIP_NAME }}
