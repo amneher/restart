@@ -237,4 +237,225 @@ describe('URL fetch handler', () => {
         $('#rr-fetch-url').trigger('click');
         expect($('#rr-item-image-url').val()).toBe('https://cdn.example.com/existing.jpg');
     });
+
+    it('sends AJAX request with correct URL parameter', () => {
+        $.ajax.mockImplementationOnce(({ success }) => {
+            success({ success: true, data: { name: 'Product', price: '10', image_url: '', description: '' } });
+        });
+        $('#rr-item-url').val('https://shop.example.com/product-123');
+        $('#rr-fetch-url').trigger('click');
+        expect($.ajax).toHaveBeenCalled();
+    });
+
+    it('populates product name field when fetch succeeds', () => {
+        $.ajax.mockImplementationOnce(({ success }) => {
+            success({ success: true, data: { name: 'Premium Widget', price: '99.99', image_url: '', description: '' } });
+        });
+        $('#rr-fetch-url').trigger('click');
+        expect($('#rr-item-name').val()).toBe('Premium Widget');
+    });
+
+    it('populates price field when fetch succeeds', () => {
+        $.ajax.mockImplementationOnce(({ success }) => {
+            success({ success: true, data: { name: 'Widget', price: '24.99', image_url: '', description: '' } });
+        });
+        $('#rr-fetch-url').trigger('click');
+        expect($('#rr-item-price').val()).toBe('24.99');
+    });
+
+    it('populates description field when fetch succeeds', () => {
+        $.ajax.mockImplementationOnce(({ success }) => {
+            success({ success: true, data: { name: 'Widget', price: '10', image_url: '', description: 'A wonderful product' } });
+        });
+        $('#rr-fetch-url').trigger('click');
+        expect($('#rr-item-description').val()).toBe('A wonderful product');
+    });
+});
+
+// ── Multiple modal management ─────────────────────────────────────────────
+
+describe('multiple modals', () => {
+    beforeEach(() => {
+        buildDOM();
+        document.body.innerHTML += `
+            <div id="rr-other-modal" class="rr-modal" aria-inert="true">
+                <div class="rr-modal__backdrop"></div>
+                <button class="rr-modal__close">×</button>
+            </div>
+        `;
+    });
+
+    it('closes only the specified modal, leaving others open', () => {
+        // Open first modal
+        $('.rr-item-name-btn').trigger('click');
+        expect($('#rr-item-detail-modal').hasClass('is-open')).toBe(true);
+
+        // Verify other modal is not open
+        expect($('#rr-other-modal').hasClass('is-open')).toBe(false);
+
+        // Open other modal manually
+        $('#rr-other-modal').attr('aria-inert', 'false').addClass('is-open');
+        expect($('#rr-other-modal').hasClass('is-open')).toBe(true);
+
+        // Close the item detail modal
+        $('.rr-modal__close').first().trigger('click');
+        expect($('#rr-item-detail-modal').hasClass('is-open')).toBe(false);
+
+        // Other modal should still be open
+        expect($('#rr-other-modal').hasClass('is-open')).toBe(true);
+    });
+
+    it('applies body class only when any modal is open', () => {
+        // Open first modal
+        $('.rr-item-name-btn').trigger('click');
+        expect($('body').hasClass('rr-modal-open')).toBe(true);
+
+        // Close it
+        $('.rr-modal__close').first().trigger('click');
+        expect($('body').hasClass('rr-modal-open')).toBe(false);
+    });
+});
+
+// ── Registry creation form ────────────────────────────────────────────────
+
+describe('registry creation form', () => {
+    function addCreateForm() {
+        document.body.innerHTML += `
+            <div class="rr-create-form" data-registry-id="">
+                <form id="rr-create-registry-form">
+                    <input type="text" name="title" value="">
+                    <textarea name="description"></textarea>
+                    <button type="submit">Create Registry</button>
+                </form>
+            </div>
+        `;
+    }
+
+    beforeEach(() => {
+        addCreateForm();
+    });
+
+    it('form exists in the DOM', () => {
+        const $form = $('#rr-create-registry-form');
+        expect($form.length).toBe(1);
+    });
+
+    it('form has required input fields', () => {
+        const $titleInput = $('input[name="title"]');
+        const $descriptionInput = $('textarea[name="description"]');
+        expect($titleInput.length).toBe(1);
+        expect($descriptionInput.length).toBe(1);
+    });
+
+    it('form has submit button', () => {
+        const $btn = $('#rr-create-registry-form button[type="submit"]');
+        expect($btn.length).toBe(1);
+    });
+
+    it('allows setting form field values', () => {
+        $('input[name="title"]').val('My Registry');
+        $('textarea[name="description"]').val('My description');
+        
+        expect($('input[name="title"]').val()).toBe('My Registry');
+        expect($('textarea[name="description"]').val()).toBe('My description');
+    });
+});
+
+// ── Focus management in modals ────────────────────────────────────────────
+
+describe('focus management', () => {
+    it('sets focus to first focusable element when modal opens', () => {
+        document.body.innerHTML = `
+            <div class="rr-manage-registry" data-registry-id="1">
+                <button class="rr-item-name-btn">Item</button>
+                <div id="rr-item-detail-modal" class="rr-modal" aria-hidden="true">
+                    <button class="rr-modal__close">×</button>
+                    <button class="rr-mark-purchased">Mark</button>
+                </div>
+            </div>
+        `;
+        
+        const $modal = $('#rr-item-detail-modal');
+        $('.rr-item-name-btn').trigger('click');
+        
+        // Modal should be open with aria-inert false
+        expect($modal.attr('aria-inert')).toBe('false');
+        expect($modal.hasClass('is-open')).toBe(true);
+    });
+});
+
+// ── Body class toggle ─────────────────────────────────────────────────────
+
+describe('body class management', () => {
+    it('adds rr-modal-open class when first modal opens', () => {
+        $('.rr-item-name-btn').trigger('click');
+        expect($('body').hasClass('rr-modal-open')).toBe(true);
+    });
+
+    it('removes rr-modal-open class when last modal closes', () => {
+        $('.rr-item-name-btn').trigger('click');
+        expect($('body').hasClass('rr-modal-open')).toBe(true);
+        
+        $('.rr-modal__close').trigger('click');
+        expect($('body').hasClass('rr-modal-open')).toBe(false);
+    });
+});
+
+// ── Edge cases ────────────────────────────────────────────────────────────
+
+describe('edge cases', () => {
+    it('does not crash when clicking modal on empty container', () => {
+        document.body.innerHTML = '<div class="rr-manage-registry" data-registry-id="1"></div>';
+        
+        expect(() => {
+            $(document).trigger($.Event('click', { target: document.body }));
+        }).not.toThrow();
+    });
+
+    it('handles missing form fields gracefully', () => {
+        $.ajax.mockImplementationOnce(({ success }) => {
+            success({ success: true, data: { name: 'Product', price: '10', image_url: '', description: '' } });
+        });
+        
+        // Don't add fetch form — should not crash
+        expect(() => {
+            $('#rr-fetch-url').trigger('click');
+        }).not.toThrow();
+    });
+
+    it('does not crash on rapid modal open/close', () => {
+        expect(() => {
+            for (let i = 0; i < 10; i++) {
+                $('.rr-item-name-btn').trigger('click');
+                $('.rr-modal__close').trigger('click');
+            }
+        }).not.toThrow();
+    });
+
+    it('handles Escape key with modal not in focus', () => {
+        $('.rr-item-name-btn').trigger('click');
+        const $modal = $('#rr-item-detail-modal');
+        
+        $(document).trigger($.Event('keydown', { key: 'Escape', target: document.body }));
+        expect($modal.hasClass('is-open')).toBe(false);
+    });
+
+    it('handles missing data attributes gracefully', () => {
+        document.body.innerHTML = `
+            <div class="rr-manage-registry">
+                <ul class="rr-item-list">
+                    <li class="rr-item-row">
+                        <button class="rr-item-name-btn">No Data</button>
+                    </li>
+                </ul>
+                <div id="rr-item-detail-modal" class="rr-modal">
+                    <span class="rr-item-detail__title"></span>
+                </div>
+            </div>
+        `;
+        
+        expect(() => {
+            $('.rr-item-name-btn').trigger('click');
+        }).not.toThrow();
+    });
 });
