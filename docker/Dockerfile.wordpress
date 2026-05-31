@@ -1,4 +1,4 @@
-ARG WP_VERSION=6.9.1
+ARG WP_VERSION=7.0.0
 FROM wordpress:cli AS cli
 FROM wordpress:${WP_VERSION}-fpm-alpine
 COPY --from=cli /usr/local/bin/wp /usr/local/bin/wp

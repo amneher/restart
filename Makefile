@@ -58,6 +58,9 @@ plugin-test-scraper:
 lambda-test:
 	$(MAKE) -C lambda/ test
 
+lambda-test-local:
+	$(MAKE) -C lambda/ test-local
+
 lambda-test-staging:
 	$(MAKE) -C lambda/ test-staging
 
@@ -209,6 +212,7 @@ help:
 	@echo "  plugin-test-js       Run plugin JS tests"
 	@echo "  plugin-test-scraper  Run plugin scraper integration tests (makes real HTTP requests)"
 	@echo "  lambda-test          Run lambda unit tests (in-memory SQLite)"
+	@echo "  lambda-test-local    Run lambda WP integration/e2e tests against local stack"
 	@echo "  lambda-test-staging  Run lambda WP integration/e2e tests against staging"
 	@echo "  lambda-test-prod     Run lambda WP integration/e2e tests against production"
 	@echo "  theme-test           Run theme PHP + JS tests"
