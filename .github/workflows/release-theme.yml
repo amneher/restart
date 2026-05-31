@@ -1,0 +1,28 @@
+name: Release Theme
+
+on:
+  push:
+    tags:
+      - 'theme/v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build theme zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build zip
+        run: |
+          VERSION="${GITHUB_REF_NAME#theme/}"
+          make theme-pack
+          mv theme/dist/theRestart.zip "theRestart-${VERSION}.zip"
+          echo "ZIP_NAME=theRestart-${VERSION}.zip" >> "$GITHUB_ENV"
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_NAME }}
