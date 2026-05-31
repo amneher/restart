@@ -2,7 +2,7 @@
 # Helper: extract a value from .env (handles spaces around '=' and quoted vals)
 # ─────────────────────────────────────────────────────────────────────────────
 _env   = $(shell grep -m1 '^$(1)\s*=' .env 2>/dev/null | sed 's/^[^=]*=\s*//' | tr -d '"')
-_lwenv = $(shell grep -m1 '^$(1)\s*=' ../theme/.env 2>/dev/null | sed 's/^[^=]*=\s*//' | tr -d '"')
+_lwenv = $(shell grep -m1 '^$(1)\s*=' ../.env 2>/dev/null | sed 's/^[^=]*=\s*//' | tr -d '"')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Lambda function names — override via env or CLI
@@ -19,11 +19,11 @@ WP_PROD_USER       ?= $(call _env,WP_PROD_USERNAME)
 WP_PROD_APP_PWD    ?= $(call _env,WP_PROD_APP_PWD)
 
 WP_STAGING_URL     ?= $(call _env,WP_STAGING_BASE_URL)
-WP_STAGING_USER    ?= $(call _env,WP_DEV_USERNAME)
+WP_STAGING_USER    ?= $(call _env,WP_STAGING_USER)
 WP_STAGING_APP_PWD ?= $(call _env,WP_STAGING_APP_PWD)
 
 WP_LOCAL_URL       ?= $(call _env,WP_LOCAL_URL)
-WP_LOCAL_USER      ?= $(call _env,WP_DEV_USERNAME)
+WP_LOCAL_USER      ?= $(call _env,WP_LOCAL_USER)
 WP_LOCAL_APP_PWD   ?= $(call _env,WP_LOCAL_APP_PWD)
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -65,8 +65,8 @@ VPC_SECURITY_GROUP_ID        ?= $(call _env,VPC_SECURITY_GROUP_ID)
 # local_wordpress connection — read from ../local_wordpress/.env
 # ─────────────────────────────────────────────────────────────────────────────
 LW_CONTAINER   ?= $(call _lwenv,CONTAINER_NAME)
-LW_DB_NAME     ?= $(call _lwenv,DATABASE_NAME)
-LW_DB_ROOT_PWD ?= $(call _lwenv,DATABASE_ROOT_PASSWORD)
+LW_DB_NAME     ?= $(call _lwenv,DB_NAME)
+LW_DB_ROOT_PWD ?= $(call _lwenv,DB_ROOT_PASSWORD)
 
 .PHONY: build build-test build-layer publish-layer configure-layer \
         test test-staging test-prod test-local \
@@ -254,23 +254,25 @@ test-prod:
 # Usage: make test-local
 # ─────────────────────────────────────────────────────────────────────────────
 test-local:
-	$(if $(LW_CONTAINER),,$(error Could not read CONTAINER_NAME from ../local_wordpress/.env))
+	$(if $(LW_CONTAINER),,$(error Could not read CONTAINER_NAME from restart/.env))
 	$(if $(wildcard tests/fixtures/wp-clean.sql),,$(error tests/fixtures/wp-clean.sql not found — run 'make wp-snapshot' first))
 	@echo "Checking local_wordpress stack…"
-	@if ! docker ps --filter name=$(LW_CONTAINER)-nginx --filter status=running -q | grep -q .; then \
+	@if ! docker ps --filter name=$(LW_CONTAINER)-nginx-1 --filter status=running -q | grep -q .; then \
 	    echo "Starting local_wordpress…"; \
-	    docker compose -f ../local_wordpress/docker-compose.yml --project-directory ../local_wordpress up -d; \
+		cd .. && make up; \
+# 	    docker compose -f ../docker-compose.yml --project-directory ../ up -d; \
 	    echo "Waiting for MySQL…"; \
-	    until docker exec $(LW_CONTAINER)-database mysqladmin ping -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) --silent 2>/dev/null; do sleep 2; done; \
+	    until docker exec $(LW_CONTAINER)-database-1 mysqladmin ping -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) --silent 2>/dev/null; do sleep 2; done; \
 	fi
 	@echo "Restoring WordPress snapshot…"
-	docker exec -i $(LW_CONTAINER)-database \
+	docker exec -i $(LW_CONTAINER)-database-1 \
 	    mysql -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) $(LW_DB_NAME) \
 	    < tests/fixtures/wp-clean.sql
 	@echo "Running integration + e2e tests…"
 	WP_LOCAL_URL="$(WP_LOCAL_URL)" \
 	WP_LOCAL_USER="$(WP_LOCAL_USER)" \
 	WP_LOCAL_APP_PWD="$(WP_LOCAL_APP_PWD)" \
+	WP_BASE_URL="$(WP_LOCAL_URL)" \
 	.venv/bin/pytest tests/test_registry_wp_integration.py tests/test_registry_e2e.py -v
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -282,12 +284,12 @@ test-local:
 # Usage: make wp-snapshot
 # ─────────────────────────────────────────────────────────────────────────────
 wp-snapshot:
-	$(if $(LW_CONTAINER),,$(error Could not read CONTAINER_NAME from ../theme/.env))
-	@echo "Capturing WordPress snapshot from $(LW_CONTAINER)…"
+	$(if $(LW_CONTAINER),,$(error Could not read CONTAINER_NAME from ../.env))
+	@echo "Capturing WordPress snapshot from $(LW_CONTAINER)-database-1…"
 	mkdir -p tests/fixtures
 	@echo "Waiting for MySQL to be ready…"; \
-	    until docker exec $(LW_CONTAINER) mysqladmin ping -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) --silent 2>/dev/null; do sleep 2; done
-	docker exec $(LW_CONTAINER) \
+	    until docker exec $(LW_CONTAINER)-database-1 mysqladmin ping -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) --silent 2>/dev/null; do sleep 2; done
+	docker exec $(LW_CONTAINER)-database-1 \
 	    mysqldump -h 127.0.0.1 -uroot -p$(LW_DB_ROOT_PWD) $(LW_DB_NAME) \
 	    > tests/fixtures/wp-clean.sql
 	@echo "Saved: tests/fixtures/wp-clean.sql ($$(du -sh tests/fixtures/wp-clean.sql | cut -f1))"
