@@ -38,7 +38,8 @@ bump_lambda() {
     current=$(grep '^version = ' "$file" | sed 's/version = "\(.*\)"/\1/')
     next=$(bump_semver "$current" "$PART")
     sed -i "s/^version = .*/version = \"${next}\"/" "$file"
-    git add "$file"
+    sed -i "s/^__version__ = .*/__version__ = \"${next}\"/" "lambda/app/_version.py"
+    git add "$file" lambda/app/_version.py
     git commit -m "chore(lambda): bump version to ${next}"
     git tag "lambda/v${next}"
     echo "lambda: ${current} → ${next}  (tag: lambda/v${next})"

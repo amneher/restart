@@ -1,6 +1,5 @@
 import logging
 from contextlib import asynccontextmanager
-from importlib.metadata import version
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -8,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from mangum import Mangum
 
+from app._version import __version__
 from app.database import close_db, init_db
 from app.routes import health_router, items_router, registry_router
 
@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Restart Registry API",
     description="A FastAPI application designed for AWS Lambda with SQLite",
-    version=version("restart_lambda"),
+    version=__version__,
     lifespan=lifespan,
 )
 
