@@ -1,5 +1,3 @@
-> [!NOTE]
-> **This repository has been archived.** Development continues in the [restart monorepo](https://github.com/amneher/restart).
 
 # Restart Registry — Lambda API
 
@@ -80,13 +78,13 @@ local_wordpress/              Docker Compose WordPress stack (sibling repo/direc
 
 ## Configuration
 
-| Variable | Where set | Purpose |
-|---|---|---|
-| `DATABASE_PATH` | env var | SQLite file path. Defaults to `data.db`. Set to `:memory:` in tests. |
+| Variable             | Where set            | Purpose                                                                                   |
+| -------------------- | -------------------- | ----------------------------------------------------------------------------------------- |
+| `DATABASE_PATH`      | env var              | SQLite file path. Defaults to `data.db`. Set to `:memory:` in tests.                      |
 | `RESTART_LAMBDA_URL` | env var or WP option | Base URL of this Lambda service, used by the WP plugin to call Lambda. No trailing slash. |
-| `WP_LOCAL_URL` | env var (tests only) | URL of the local WordPress instance. Default: `http://localhost:8082`. |
-| `WP_LOCAL_USER` | env var (tests only) | WordPress username for API authentication. |
-| `WP_LOCAL_APP_PWD` | env var (tests only) | WordPress Application Password for the above user. |
+| `WP_LOCAL_URL`       | env var (tests only) | URL of the local WordPress instance. Default: `http://localhost:8082`.                    |
+| `WP_LOCAL_USER`      | env var (tests only) | WordPress username for API authentication.                                                |
+| `WP_LOCAL_APP_PWD`   | env var (tests only) | WordPress Application Password for the above user.                                        |
 
 The **Lambda URL** can also be set from the WP admin: **Gift Registry → Settings → Lambda API URL**.
 
@@ -213,12 +211,12 @@ class RegistryMeta(BaseModel):
 
 Serialized to/from WP post meta via `to_wp_meta()` / `from_wp_meta()`:
 
-| Python field | WP meta key |
-|---|---|
-| `invitees` | `restart_invitees` (JSON string) |
-| `item_ids` | `restart_item_ids` (JSON string) |
-| `event_type` | `restart_event_type` |
-| `event_date` | `restart_event_date` |
+| Python field | WP meta key                      |
+| ------------ | -------------------------------- |
+| `invitees`   | `restart_invitees` (JSON string) |
+| `item_ids`   | `restart_item_ids` (JSON string) |
+| `event_type` | `restart_event_type`             |
+| `event_date` | `restart_event_date`             |
 
 ---
 
@@ -232,13 +230,13 @@ pytest tests/ -v
 
 Runs all 8 test files. Uses an in-memory SQLite database via `DATABASE_PATH=:memory:` set in `conftest.py`.
 
-| File | Coverage |
-|---|---|
+| File               | Coverage                                             |
+| ------------------ | ---------------------------------------------------- |
 | `test_database.py` | Schema creation, INSERT/SELECT, `updated_at` trigger |
-| `test_health.py` | `GET /health` response shape |
-| `test_items.py` | Full CRUD via FastAPI TestClient |
-| `test_lambda.py` | Mangum event → Lambda handler → response |
-| `test_models.py` | Pydantic validation (required fields, constraints) |
+| `test_health.py`   | `GET /health` response shape                         |
+| `test_items.py`    | Full CRUD via FastAPI TestClient                     |
+| `test_lambda.py`   | Mangum event → Lambda handler → response             |
+| `test_models.py`   | Pydantic validation (required fields, constraints)   |
 
 ### WordPress integration tests
 
@@ -266,18 +264,18 @@ WP_LOCAL_APP_PWD="xxxx xxxx xxxx xxxx xxxx xxxx" \
 pytest tests/test_registry_e2e.py -v
 ```
 
-| Test | What it does |
-|---|---|
-| `test_01_create_wp_users` | Creates 12 WP subscriber accounts (`rr_e2e_01`–`rr_e2e_12`). Pre-cleans leftover users from failed runs. |
-| `test_02_create_registries` | Creates one WP CPT post per user with `event_type=e2e-test` in meta. |
-| `test_03_add_items_to_registries` | Creates 3 items per registry in Lambda; links IDs into WP `restart_item_ids` meta. |
-| `test_04_invite_internal_users` | Invites 2 neighbouring WP usernames per registry via `restart_invitees` meta. |
-| `test_05_invite_external_users` | Appends 2 external emails per registry (4 invitees total). |
-| `test_06_increment_item_quantities` | Increments `quantity_purchased` +1 on all 36 items via `PUT /items/{id}`. |
-| `test_07_decrement_item_quantities` | Decrements every-other registry's first item; asserts 422 for `quantity_purchased=-1`. |
-| `test_08_toggle_registry_privacy` | Sets even-indexed registries to `private` WP post status, odd to `publish`. |
-| `test_09_cross_system_consistency` | Verifies WP `restart_item_ids` == Lambda item IDs; checks `post_author` matches user. |
-| `test_10_full_registry_lifecycle` | Complete workflow: user → registry → 5 items → invite → purchase 3 → verify → private → delete all. |
+| Test                                | What it does                                                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `test_01_create_wp_users`           | Creates 12 WP subscriber accounts (`rr_e2e_01`–`rr_e2e_12`). Pre-cleans leftover users from failed runs. |
+| `test_02_create_registries`         | Creates one WP CPT post per user with `event_type=e2e-test` in meta.                                     |
+| `test_03_add_items_to_registries`   | Creates 3 items per registry in Lambda; links IDs into WP `restart_item_ids` meta.                       |
+| `test_04_invite_internal_users`     | Invites 2 neighbouring WP usernames per registry via `restart_invitees` meta.                            |
+| `test_05_invite_external_users`     | Appends 2 external emails per registry (4 invitees total).                                               |
+| `test_06_increment_item_quantities` | Increments `quantity_purchased` +1 on all 36 items via `PUT /items/{id}`.                                |
+| `test_07_decrement_item_quantities` | Decrements every-other registry's first item; asserts 422 for `quantity_purchased=-1`.                   |
+| `test_08_toggle_registry_privacy`   | Sets even-indexed registries to `private` WP post status, odd to `publish`.                              |
+| `test_09_cross_system_consistency`  | Verifies WP `restart_item_ids` == Lambda item IDs; checks `post_author` matches user.                    |
+| `test_10_full_registry_lifecycle`   | Complete workflow: user → registry → 5 items → invite → purchase 3 → verify → private → delete all.      |
 
 All WP resources (users + registry posts) are deleted on teardown even when tests fail.
 
@@ -316,6 +314,7 @@ docker exec local_wordpress-wordpress sh -c \
 ```
 
 The mu-plugin at `local_wordpress/src/mu-plugins/restart-registry-cpt.php` auto-loads and:
+
 - Registers the `restart-registry` CPT with `show_in_rest: true` and rewrite slug `registry`
 - Registers all `restart_*` post meta fields in the REST API
 - Enables Application Password auth over plain HTTP (safe for local only)
@@ -330,17 +329,17 @@ After starting the Lambda service locally, set the endpoint in WP:
 
 ### WordPress shortcodes
 
-| Shortcode | Behaviour |
-|---|---|
-| `[restart_registry]` | Main entry point. On a CPT single page: owner sees manage view, guests see read view. On any other page: shows the logged-in user's registry (or create form). With `?registry=<post_id>`: shows that registry's read view. |
-| `[restart_registry_view registry="123"]` | Read-only view of registry post ID 123. |
-| `[restart_registry_create]` | Create form only. |
+| Shortcode                                | Behaviour                                                                                                                                                                                                                   |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[restart_registry]`                     | Main entry point. On a CPT single page: owner sees manage view, guests see read view. On any other page: shows the logged-in user's registry (or create form). With `?registry=<post_id>`: shows that registry's read view. |
+| `[restart_registry_view registry="123"]` | Read-only view of registry post ID 123.                                                                                                                                                                                     |
+| `[restart_registry_create]`              | Create form only.                                                                                                                                                                                                           |
 
 ### Block theme templates
 
-| Template | Route |
-|---|---|
-| `single-restart-registry.html` | `/registry/<slug>/` — embeds `[restart_registry]` shortcode |
+| Template                        | Route                                                        |
+| ------------------------------- | ------------------------------------------------------------ |
+| `single-restart-registry.html`  | `/registry/<slug>/` — embeds `[restart_registry]` shortcode  |
 | `archive-restart-registry.html` | `/registry/` — grid of public registry cards with pagination |
 
 ---
@@ -384,13 +383,14 @@ handler = Mangum(app, lifespan="off")
 
 **Required Lambda environment variables:**
 
-| Variable | Example |
-|---|---|
+| Variable        | Example                                  |
+| --------------- | ---------------------------------------- |
 | `DATABASE_PATH` | `/mnt/efs/registry.db` or `/tmp/data.db` |
 
 For persistent storage across Lambda invocations, mount an EFS volume at `/mnt/efs` and point `DATABASE_PATH` there. The `/tmp` directory resets between cold starts.
 
 **Deployment checklist:**
+
 1. Package dependencies: `uv export --no-dev | pip install -r /dev/stdin -t package/ && cp -r app package/`
 2. Zip and upload to Lambda, or use SAM/CDK
 3. Set `DATABASE_PATH` environment variable
@@ -403,31 +403,33 @@ Everything is wired up. Here's a summary of what's running and how to use it:
 
 Services
 
-Service	URL
-WordPress	http://localhost:8082
-WordPress Admin	http://localhost:8082/wp-admin
-Lambda API (direct)	http://localhost:5000
-Lambda API docs	http://localhost:5000/docs
+Service URL
+WordPress <http://localhost:8082>
+WordPress Admin <http://localhost:8082/wp-admin>
+Lambda API (direct) <http://localhost:5000>
+Lambda API docs <http://localhost:5000/docs>
 How it's connected
 
 The restart_lambda-nginx container is on the local_wordpress_internal Docker network, so the WP container reaches Lambda at http://restart_lambda-nginx. The restart_lambda_url WP option is set to that value.
 
-From your browser, Lambda is at http://localhost:5000 (nginx → uvicorn).
+From your browser, Lambda is at <http://localhost:5000> (nginx → uvicorn).
 
 To test the registry in a browser
 
-Go to http://localhost:8082/wp-admin → log in
+Go to <http://localhost:8082/wp-admin> → log in
 Visit Gift Registry → Settings to confirm the Lambda URL shows http://restart_lambda-nginx
-Navigate to http://localhost:8082/registry/ to see the archive page
+Navigate to <http://localhost:8082/registry/> to see the archive page
 Create a registry, add items, test the full flow
 Useful commands
 
-
 # Follow lambda logs (uvicorn with --reload, so code changes hot-reload)
+
 docker logs -f restart_lambda-app
 
 # Stop everything
+
 docker compose down
 
 # Restart after code changes
+
 docker compose restart app

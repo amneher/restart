@@ -10,19 +10,25 @@
         $btn.prop('disabled', true);
         $result.text('Testing\u2026').css('color', '');
 
-        $.post(rrAdmin.ajaxurl, {
-            action: 'restart_registry_test_lambda',
-            nonce:  rrAdmin.nonce,
-        }, function(response) {
-            if (response.success) {
-                $result.text('\u2713 ' + response.data.message).css('color', 'green');
-            } else {
-                $result.text('\u2717 ' + response.data.message).css('color', 'red');
-            }
-            $btn.prop('disabled', false);
-        }).fail(function() {
-            $result.text('\u2717 Request failed').css('color', 'red');
-            $btn.prop('disabled', false);
+        $.ajax({
+            url:  rrAdmin.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'restart_registry_test_lambda',
+                nonce:  rrAdmin.nonce,
+            },
+            success: function(response) {
+                if (response.success) {
+                    $result.text('\u2713 ' + response.data.message).css('color', 'green');
+                } else {
+                    $result.text('\u2717 ' + response.data.message).css('color', 'red');
+                }
+                $btn.prop('disabled', false);
+            },
+            error: function() {
+                $result.text('\u2717 Request failed').css('color', 'red');
+                $btn.prop('disabled', false);
+            },
         });
     });
 
@@ -33,19 +39,25 @@
         $btn.prop('disabled', true);
         $result.text('Processing\u2026').css('color', '');
 
-        $.post(rrAdmin.ajaxurl, {
-            action: 'restart_registry_reconvert_affiliates',
-            nonce:  rrAdmin.nonce,
-        }, function(response) {
-            if (response.success) {
-                $result.text('\u2713 ' + response.data.message).css('color', 'green');
-            } else {
-                $result.text('\u2717 ' + response.data.message).css('color', 'red');
-            }
-            $btn.prop('disabled', false);
-        }).fail(function() {
-            $result.text('\u2717 Request failed').css('color', 'red');
-            $btn.prop('disabled', false);
+        $.ajax({
+            url:  rrAdmin.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'restart_registry_reconvert_affiliates',
+                nonce:  rrAdmin.nonce,
+            },
+            success: function(response) {
+                if (response.success) {
+                    $result.text('\u2713 ' + response.data.message).css('color', 'green');
+                } else {
+                    $result.text('\u2717 ' + response.data.message).css('color', 'red');
+                }
+                $btn.prop('disabled', false);
+            },
+            error: function() {
+                $result.text('\u2717 Request failed').css('color', 'red');
+                $btn.prop('disabled', false);
+            },
         });
     });
 

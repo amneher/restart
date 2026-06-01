@@ -8,6 +8,7 @@ from app.models.item import (
     ItemResponse,
     ItemUpdate,
 )
+from app.models.registry import Registry, RegistryCreate, RegistryMeta, RegistryUpdate
 
 __all__ = [
     "AffiliateStatus",
@@ -18,4 +19,8 @@ __all__ = [
     "ItemRegistryCreate",
     "ItemResponse",
     "ItemUpdate",
+    "Registry",
+    "RegistryCreate",
+    "RegistryMeta",
+    "RegistryUpdate",
 ]
