@@ -30,6 +30,7 @@ class Restart_Registry {
         $this->define_public_hooks();
         $this->define_affiliate_hooks();
         $this->define_role_hooks();
+        $this->define_api_hooks();
     }
 
     private function load_dependencies() {
@@ -131,6 +132,21 @@ class Restart_Registry {
                 return false;
             }
             return $show;
+        });
+    }
+
+    private function define_api_hooks(): void {
+        add_action('rest_api_init', function () {
+            register_rest_route('restart-registry/v1', '/version', [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => function () {
+                    return rest_ensure_response([
+                        'plugin' => RESTART_REGISTRY_VERSION,
+                        'theme'  => wp_get_theme()->get('Version'),
+                    ]);
+                },
+                'permission_callback' => '__return_true',
+            ]);
         });
     }
 

@@ -25,6 +25,7 @@ bump_plugin() {
     current=$(grep -m1 '^ \* Version:' "$file" | sed 's/.*Version: //' | tr -d '[:space:]')
     next=$(bump_semver "$current" "$PART")
     sed -i "s/^ \* Version: .*/ * Version: ${next}/" "$file"
+    sed -i "s/define( 'RESTART_REGISTRY_VERSION', '.*' );/define( 'RESTART_REGISTRY_VERSION', '${next}' );/" "$file"
     git add "$file"
     git commit -m "chore(plugin): bump version to ${next}"
     git tag "plugin/v${next}"
