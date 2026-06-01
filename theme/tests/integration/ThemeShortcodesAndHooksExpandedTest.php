@@ -20,9 +20,9 @@ class ThemeShortcodeExpandedTest extends TestCase {
     protected function setUp(): void {
         parent::setUp();
         Monkey\setUp();
-        Functions\when('get_current_user_id')->returnValue(0);
-        Functions\when('is_user_logged_in')->returnValue(false);
-        Functions\when('wp_get_current_user')->returnValue(null);
+        Functions\when('get_current_user_id')->justReturn(0);
+        Functions\when('is_user_logged_in')->justReturn(false);
+        Functions\when('wp_get_current_user')->justReturn(null);
         Functions\when('get_option')->returnArg(2);
         Functions\when('apply_filters')->returnArg(2);
     }
@@ -251,7 +251,7 @@ class ThemeHooksAndFiltersExpandedTest extends TestCase {
         parent::setUp();
         Monkey\setUp();
         Functions\when('apply_filters')->returnArg(2);
-        Functions\when('do_action')->returnNull();
+        Functions\when('do_action')->justReturn(null);
         Functions\when('get_option')->returnArg(2);
     }
 

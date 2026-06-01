@@ -20,10 +20,10 @@ class LambdaClientExpandedTest extends TestCase {
     protected function setUp(): void {
         parent::setUp();
         Monkey\setUp();
-        Functions\when('wp_remote_post')->returnArg(0);
-        Functions\when('wp_remote_get')->returnArg(0);
-        Functions\when('wp_remote_retrieve_response_code')->returnArg(0);
-        Functions\when('wp_remote_retrieve_body')->returnArg(0);
+        Functions\when('wp_remote_post')->justReturn(null);
+        Functions\when('wp_remote_get')->justReturn(null);
+        Functions\when('wp_remote_retrieve_response_code')->justReturn(null);
+        Functions\when('wp_remote_retrieve_body')->justReturn(null);
     }
 
     protected function tearDown(): void {

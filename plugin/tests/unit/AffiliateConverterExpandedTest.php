@@ -65,7 +65,7 @@ class AffiliateConverterExpandedTest extends TestCase {
         $result = $this->converter()->convert_url($url);
         $this->assertSame('Amazon', $result['retailer']);
         // Query params should be preserved
-        $this->assertStringContainsString('keywords=test', $result['url']);
+        $this->assertStringContainsString('keywords=test', $result['affiliate_url']);
     }
 
     public function test_url_with_fragments(): void {
@@ -84,7 +84,7 @@ class AffiliateConverterExpandedTest extends TestCase {
 
     public function test_empty_string_url(): void {
         $result = $this->converter()->convert_url('');
-        $this->assertSame('', $result['url']);
+        $this->assertSame('', $result['affiliate_url']);
     }
 
     public function test_url_missing_protocol(): void {
@@ -118,9 +118,9 @@ class AffiliateConverterExpandedTest extends TestCase {
         $original = 'https://www.amazon.com/dp/B09XYZ';
         
         $result1 = $this->converter()->convert_url($original);
-        $result2 = $this->converter()->convert_url($result1['url']);
-        
-        $this->assertSame($result1['url'], $result2['url']);
+        $result2 = $this->converter()->convert_url($result1['affiliate_url']);
+
+        $this->assertSame($result1['affiliate_url'], $result2['affiliate_url']);
     }
 
     public function test_converting_twice_produces_same_result(): void {
@@ -129,7 +129,7 @@ class AffiliateConverterExpandedTest extends TestCase {
         $result1 = $this->converter()->convert_url($url);
         $result2 = $this->converter()->convert_url($url);
         
-        $this->assertSame($result1['url'], $result2['url']);
+        $this->assertSame($result1['affiliate_url'], $result2['affiliate_url']);
         $this->assertSame($result1['retailer'], $result2['retailer']);
     }
 
@@ -144,7 +144,7 @@ class AffiliateConverterExpandedTest extends TestCase {
     public function test_best_buy_url_conversion(): void {
         $url = 'https://www.bestbuy.com/site/123456';
         $result = $this->converter()->convert_url($url);
-        $this->assertSame('Best buy', $result['retailer']);
+        $this->assertSame('Bestbuy', $result['retailer']);
     }
 
     public function test_custom_retailer_without_conversion(): void {
@@ -172,10 +172,16 @@ class AffiliateConverterExpandedTest extends TestCase {
     // ── Real-world Scenarios ─────────────────────────────────────────────────
 
     public function test_amazon_associate_link(): void {
-        $url = 'https://www.amazon.com/dp/B09XYZABC?tag=myaffiliates-20';
+        // Override get_option to provide a configured Amazon tag for this test
+        Functions\when('get_option')->alias(function($key, $default = '') {
+            if ($key === 'restart_registry_amazon_tag') return 'mytag-20';
+            return $default;
+        });
+        $url = 'https://www.amazon.com/dp/B09XYZABC12';
         $result = $this->converter()->convert_url($url);
         $this->assertSame('Amazon', $result['retailer']);
         $this->assertTrue($result['is_affiliate']);
+        $this->assertStringContainsString('mytag-20', $result['affiliate_url']);
     }
 
     public function test_etsy_affiliate_link(): void {

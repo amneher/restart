@@ -188,9 +188,9 @@ class ControllerAccessControlExpandedTest extends TestCase {
     protected function setUp(): void {
         parent::setUp();
         Monkey\setUp();
-        Functions\when('get_current_user_id')->returnValue(1);
-        Functions\when('current_user_can')->returnValue(true);
-        Functions\when('wp_verify_nonce')->returnValue(true);
+        Functions\when('get_current_user_id')->justReturn(1);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\when('wp_verify_nonce')->justReturn(true);
     }
 
     protected function tearDown(): void {

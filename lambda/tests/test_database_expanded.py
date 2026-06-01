@@ -2,35 +2,29 @@
 Expanded tests for database and model validation.
 
 Covers:
-- Connection pooling
-- Transaction handling and rollback
-- Schema migrations
+- Model validation (prices, URLs, field lengths)
+- Serialization/deserialization
+- Raw SQL transactions and rollback
 - Concurrent operations
 - Large dataset handling
-- Model validation (prices, dates, URLs, XSS)
-- Serialization/deserialization
-- Relationship constraints
+- DateTime field presence
 """
 
 import os
-from datetime import datetime, timedelta
-from decimal import Decimal
+from datetime import datetime
 
 os.environ.setdefault("DATABASE_PATH", ":memory:")
 
 import pytest
-from app.database import init_db, close_db, get_db
-from app.models import Item, Registry
-from app.auth.models import WPUser
+from pydantic import ValidationError
 
+from app.database import init_db, close_db, get_connection
+from app.models import Item, ItemCreate, Registry
+from app.models.registry import RegistryMeta
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Fixtures
-# ─────────────────────────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
 def _db():
-    """Create and teardown DB."""
     init_db()
     yield
     close_db()
@@ -38,138 +32,92 @@ def _db():
 
 @pytest.fixture
 def db():
-    """Get database session."""
-    from sqlalchemy.orm import Session
-    return get_db().__next__()
+    return get_connection()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Model Creation Tests
+# Registry Model Tests (Pydantic validation — Registry lives in WordPress, not SQLite)
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestRegistryModelCreation:
-    """Test Registry model instantiation and validation."""
 
-    def test_create_registry_minimal_fields(self, db):
-        """Create registry with only required fields."""
-        registry = Registry(
-            wp_post_id=1,
-            title="My Registry",
-            description="",
-            created_by=1,
-        )
-        # Should not raise
+    def test_create_registry_minimal_fields(self):
+        registry = Registry(id=1, title="My Registry", username="testuser")
         assert registry.title == "My Registry"
+        assert registry.username == "testuser"
 
-    def test_create_registry_with_all_fields(self, db):
-        """Create registry with all optional fields."""
+    def test_create_registry_with_all_fields(self):
         registry = Registry(
-            wp_post_id=1,
+            id=1,
             title="My Registry",
-            description="This is my registry",
-            status="published",
-            visibility="public",
-            created_by=1,
-            modified_by=1,
+            username="testuser",
+            is_private=True,
+            story="This is my story",
+            meta=RegistryMeta(event_type="birthday"),
         )
-        assert registry.status == "published"
-        assert registry.visibility == "public"
+        assert registry.is_private is True
+        assert registry.meta.event_type == "birthday"
 
-    def test_registry_datetime_fields_auto_set(self, db):
-        """Registry datetime fields should be auto-set."""
-        registry = Registry(
-            wp_post_id=1,
-            title="My Registry",
-            description="",
-            created_by=1,
-        )
-        # created_at should be set by default
+    def test_registry_datetime_fields_present(self):
+        registry = Registry(id=1, title="My Registry", username="testuser")
         assert hasattr(registry, "created_at")
+        assert hasattr(registry, "updated_at")
 
-    def test_registry_with_very_long_title(self, db):
-        """Registry with very long title."""
-        long_title = "X" * 500
-        registry = Registry(
-            wp_post_id=1,
-            title=long_title,
-            description="",
-            created_by=1,
-        )
-        assert len(registry.title) == 500
+    def test_registry_with_max_title_length(self):
+        long_title = "X" * 200
+        registry = Registry(id=1, title=long_title, username="testuser")
+        assert len(registry.title) == 200
 
-    def test_registry_title_uniqueness_per_user(self, db):
-        """Same user cannot create two registries with same title."""
-        registry1 = Registry(
-            wp_post_id=1,
-            title="My Registry",
-            description="",
-            created_by=1,
-        )
-        registry2 = Registry(
-            wp_post_id=2,
-            title="My Registry",
-            description="",
-            created_by=1,
-        )
-        # Different users can have same title
-        registry3 = Registry(
-            wp_post_id=3,
-            title="My Registry",
-            description="",
-            created_by=2,
-        )
-        # Behavior depends on DB constraints
+    def test_registry_title_uniqueness_per_user(self):
+        # Pydantic model allows same title; uniqueness is enforced by WordPress
+        registry1 = Registry(id=1, title="My Registry", username="testuser")
+        registry2 = Registry(id=2, title="My Registry", username="testuser")
+        assert registry1.title == registry2.title
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Item Model Tests (Pydantic validation)
+# ─────────────────────────────────────────────────────────────────────────────
 
 class TestItemModelCreation:
-    """Test Item model instantiation and validation."""
 
-    def test_create_item_minimal_fields(self, db):
-        """Create item with required fields only."""
-        item = Item(
-            registry_id=1,
-            name="Skateboard",
-            url="https://example.com/product",
-            price=Decimal("99.99"),
-        )
+    def test_create_item_minimal_fields(self):
+        item = ItemCreate(registry_id=1, name="Skateboard", url="https://example.com/product")
         assert item.name == "Skateboard"
 
-    def test_create_item_with_all_fields(self, db):
-        """Create item with all optional fields."""
-        item = Item(
+    def test_create_item_with_all_fields(self):
+        item = ItemCreate(
             registry_id=1,
             name="Skateboard",
             url="https://example.com/product",
-            price=Decimal("99.99"),
+            price=99.99,
             description="A great skateboard",
             image_url="https://example.com/image.jpg",
-            quantity=1,
+            quantity_needed=1,
             quantity_purchased=0,
             notes="Prefer blue color",
         )
         assert item.description == "A great skateboard"
-        assert item.quantity == 1
+        assert item.quantity_needed == 1
+        assert item.notes == "Prefer blue color"
 
-    def test_item_price_precision(self, db):
-        """Item price maintains decimal precision."""
-        item = Item(
+    def test_item_price_precision(self):
+        item = ItemCreate(
             registry_id=1,
             name="Item",
             url="https://example.com",
-            price=Decimal("19.99"),
+            price=19.99,
         )
-        assert item.price == Decimal("19.99")
+        assert abs(item.price - 19.99) < 0.001
 
-    def test_item_negative_price_validation(self, db):
-        """Item with negative price."""
-        item = Item(
-            registry_id=1,
-            name="Item",
-            url="https://example.com",
-            price=Decimal("-10.00"),
-        )
-        # Creation may succeed but DB insert/validation should fail
-        assert item.price < 0
+    def test_item_negative_price_validation(self):
+        with pytest.raises(ValidationError):
+            ItemCreate(
+                registry_id=1,
+                name="Item",
+                url="https://example.com",
+                price=-10.00,
+            )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -177,159 +125,111 @@ class TestItemModelCreation:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestItemFieldValidation:
-    """Test Item field validators."""
 
-    def test_item_price_negative_raises_on_insert(self, db):
-        """Negative price should be rejected."""
-        item = Item(
+    def test_item_price_negative_raises(self):
+        with pytest.raises(ValidationError):
+            ItemCreate(registry_id=1, name="Item", url="https://example.com", price=-10.00)
+
+    def test_item_zero_price_raises(self):
+        # price is gt=0, so exactly 0 is invalid
+        with pytest.raises(ValidationError):
+            ItemCreate(registry_id=1, name="Item", url="https://example.com", price=0.0)
+
+    def test_item_url_accepts_valid_string(self):
+        item = ItemCreate(
             registry_id=1,
             name="Item",
-            url="https://example.com",
-            price=Decimal("-10.00"),
+            url="https://example.com/product",
         )
-        db.add(item)
-        # Should raise constraint error
-        with pytest.raises(Exception):
-            db.commit()
+        assert "example.com" in item.url
 
-    def test_item_zero_price_allowed(self, db):
-        """Zero price should be allowed."""
-        item = Item(
-            registry_id=1,
-            name="Free Item",
-            url="https://example.com",
-            price=Decimal("0.00"),
+    def test_item_empty_name_raises(self):
+        with pytest.raises(ValidationError):
+            ItemCreate(registry_id=1, name="", url="https://example.com")
+
+    def test_item_insert_and_query(self, db):
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url, price) VALUES (?, ?, ?, ?)",
+            (1, "ValidItem", "https://example.com", 9.99),
         )
-        db.add(item)
         db.commit()
-        assert item.price == Decimal("0.00")
+        cursor.execute("SELECT * FROM items WHERE name = ?", ("ValidItem",))
+        row = cursor.fetchone()
+        assert row is not None
+        assert row["price"] == 9.99
 
-    def test_item_url_invalid_format_accepts_string(self, db):
-        """Invalid URL format still accepted as string."""
-        item = Item(
-            registry_id=1,
-            name="Item",
-            url="not a valid url",
-            price=Decimal("9.99"),
+    def test_item_null_optional_fields(self, db):
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (1, "NullFields", "https://example.com"),
         )
-        # May accept anything as string, validation is app-level
-        db.add(item)
         db.commit()
-        assert item.url == "not a valid url"
-
-    def test_item_empty_required_fields(self, db):
-        """Empty string in required field."""
-        item = Item(
-            registry_id=1,
-            name="",
-            url="https://example.com",
-            price=Decimal("9.99"),
-        )
-        # May accept or reject
-        db.add(item)
-        try:
-            db.commit()
-        except Exception:
-            db.rollback()
-
-
-class TestRegistryStatusValidation:
-    """Test Registry status enum validation."""
-
-    def test_registry_valid_status_draft(self, db):
-        """Registry with valid status 'draft'."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            status="draft",
-            created_by=1,
-        )
-        db.add(registry)
-        db.commit()
-        assert registry.status == "draft"
-
-    def test_registry_valid_status_published(self, db):
-        """Registry with valid status 'published'."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            status="published",
-            created_by=1,
-        )
-        db.add(registry)
-        db.commit()
-        assert registry.status == "published"
-
-    def test_registry_invalid_status(self, db):
-        """Registry with invalid status."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            status="invalid_status",
-            created_by=1,
-        )
-        db.add(registry)
-        # May accept or reject depending on enum validation
-        try:
-            db.commit()
-        except Exception:
-            db.rollback()
+        cursor.execute("SELECT description, image_url FROM items WHERE name = ?", ("NullFields",))
+        row = cursor.fetchone()
+        assert row["description"] is None
+        assert row["image_url"] is None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Relationship Tests
+# Registry Status / Privacy Validation
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestRegistryStatusValidation:
+
+    def test_registry_private_false_by_default(self):
+        registry = Registry(id=1, title="Test", username="testuser")
+        assert registry.is_private is False
+
+    def test_registry_can_be_private(self):
+        registry = Registry(id=1, title="Test", username="testuser", is_private=True)
+        assert registry.is_private is True
+
+    def test_registry_username_too_long_raises(self):
+        with pytest.raises(ValidationError):
+            Registry(id=1, title="Test", username="x" * 101)
+
+    def test_registry_title_too_long_raises(self):
+        with pytest.raises(ValidationError):
+            Registry(id=1, title="T" * 201, username="testuser")
+
+    def test_registry_empty_title_raises(self):
+        with pytest.raises(ValidationError):
+            Registry(id=1, title="", username="testuser")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Relationship Tests (raw SQL — Registry is not in SQLite)
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestModelRelationships:
-    """Test relationships between models."""
 
-    def test_item_registry_cascade_delete(self, db):
-        """Deleting registry should delete items."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            created_by=1,
+    def test_item_insert_with_registry_id(self, db):
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (42, "RelItem", "https://example.com"),
         )
-        db.add(registry)
-        db.flush()  # Get registry ID
-        
-        item = Item(
-            registry_id=registry.id,
-            name="Item",
-            url="https://example.com",
-            price=Decimal("9.99"),
-        )
-        db.add(item)
         db.commit()
-        
-        # Delete registry
-        db.delete(registry)
-        db.commit()
-        
-        # Item should also be deleted (depending on cascade config)
-        # Or orphaned if not cascading
+        cursor.execute("SELECT registry_id FROM items WHERE name = ?", ("RelItem",))
+        row = cursor.fetchone()
+        assert row["registry_id"] == 42
 
-    def test_orphaned_items_after_registry_delete(self, db):
-        """Items should handle registry deletion."""
-        # Depends on cascade configuration
+    def test_orphaned_items_after_registry_delete(self):
+        # SQLite items table has no FK to a Registry table; registries live in WP
         pass
 
-    def test_item_foreign_key_constraint(self, db):
-        """Item with invalid registry_id."""
-        item = Item(
-            registry_id=99999,  # Non-existent
-            name="Item",
-            url="https://example.com",
-            price=Decimal("9.99"),
+    def test_item_foreign_key_is_unconstrained_by_default(self, db):
+        # SQLite doesn't enforce FK constraints unless PRAGMA foreign_keys = ON
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (99999, "UnconstrainedItem", "https://example.com"),
         )
-        db.add(item)
-        # Should raise constraint error
-        with pytest.raises(Exception):
-            db.commit()
+        db.commit()
+        cursor.execute("SELECT * FROM items WHERE name = ?", ("UnconstrainedItem",))
+        assert cursor.fetchone() is not None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -337,67 +237,44 @@ class TestModelRelationships:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestModelSerialization:
-    """Test model to dict/JSON serialization."""
 
-    def test_registry_to_dict_basic(self, db):
-        """Registry to_dict() serialization."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="Desc",
-            created_by=1,
-        )
-        if hasattr(registry, "to_dict"):
-            data = registry.to_dict()
-            assert data["title"] == "Test"
-            assert data["description"] == "Desc"
+    def test_registry_model_dump(self):
+        registry = Registry(id=1, title="Test", username="testuser", story="My story")
+        data = registry.model_dump()
+        assert data["title"] == "Test"
+        assert data["story"] == "My story"
 
-    def test_item_to_dict_with_decimal_price(self, db):
-        """Item serialization handles Decimal price."""
-        item = Item(
+    def test_item_model_dump_with_price(self):
+        item = ItemCreate(
             registry_id=1,
             name="Item",
             url="https://example.com",
-            price=Decimal("19.99"),
+            price=19.99,
         )
-        if hasattr(item, "to_dict"):
-            data = item.to_dict()
-            # Price should be serialized (as string or float)
-            assert "price" in data
+        data = item.model_dump()
+        assert "price" in data
+        assert abs(data["price"] - 19.99) < 0.001
 
-    def test_datetime_serialization_format(self, db):
-        """DateTime fields serialize to ISO format."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            created_by=1,
+    def test_datetime_created_at_in_db(self, db):
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (1, "SerializeTest", "https://example.com"),
         )
-        db.add(registry)
         db.commit()
-        
-        if hasattr(registry, "to_dict"):
-            data = registry.to_dict()
-            # created_at should be ISO format string
-            if "created_at" in data:
-                assert isinstance(data["created_at"], (str, datetime))
+        cursor.execute("SELECT created_at FROM items WHERE name = ?", ("SerializeTest",))
+        row = cursor.fetchone()
+        assert row["created_at"] is not None
 
-    def test_null_optional_fields_serialization(self, db):
-        """Optional null fields serialize correctly."""
-        item = Item(
+    def test_null_optional_fields_serialize_as_none(self):
+        item = ItemCreate(
             registry_id=1,
             name="Item",
             url="https://example.com",
-            price=Decimal("9.99"),
-            # Leave description, image_url as null
         )
-        db.add(item)
-        db.commit()
-        
-        if hasattr(item, "to_dict"):
-            data = item.to_dict()
-            # Null fields should be None or omitted
-            assert data.get("description") is None or "description" not in data
+        data = item.model_dump()
+        assert data.get("description") is None
+        assert data.get("image_url") is None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -405,49 +282,53 @@ class TestModelSerialization:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestDatabaseTransactions:
-    """Test transaction rollback and isolation."""
-
-    def test_transaction_rollback_on_constraint_error(self, db):
-        """Transaction rolls back on constraint violation."""
-        registry1 = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            created_by=1,
-        )
-        db.add(registry1)
-        db.commit()
-        
-        # Try to create duplicate
-        registry2 = Registry(
-            wp_post_id=1,  # Duplicate
-            title="Test",
-            description="",
-            created_by=1,
-        )
-        db.add(registry2)
-        
-        with pytest.raises(Exception):
-            db.commit()
-        
-        db.rollback()
 
     def test_transaction_rollback_on_exception(self, db):
-        """Manual rollback works."""
+        cursor = db.cursor()
         try:
-            registry = Registry(
-                wp_post_id=1,
-                title="Test",
-                description="",
-                created_by=1,
+            cursor.execute(
+                "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+                (1, "RollbackTest", "https://example.com"),
             )
-            db.add(registry)
-            db.flush()
-            
-            # Simulate error
             raise ValueError("Intentional error")
         except ValueError:
             db.rollback()
+        cursor.execute("SELECT * FROM items WHERE name = ?", ("RollbackTest",))
+        assert cursor.fetchone() is None
+
+    def test_transaction_commit(self, db):
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (1, "CommitTest", "https://example.com"),
+        )
+        db.commit()
+        cursor.execute("SELECT * FROM items WHERE name = ?", ("CommitTest",))
+        assert cursor.fetchone() is not None
+
+    def test_transaction_rollback_on_constraint_error(self, db):
+        cursor = db.cursor()
+        # NOT NULL constraint: inserting without required `name` should fail
+        try:
+            cursor.execute(
+                "INSERT INTO items (registry_id, url) VALUES (?, ?)",
+                (1, "https://example.com"),
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+        cursor.execute("SELECT * FROM items WHERE url = ?", ("https://example.com",))
+        assert cursor.fetchone() is None
+
+    def test_transaction_rollback_manual(self, db):
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (1, "ManualRollback", "https://example.com"),
+        )
+        db.rollback()
+        cursor.execute("SELECT * FROM items WHERE name = ?", ("ManualRollback",))
+        assert cursor.fetchone() is None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -455,43 +336,30 @@ class TestDatabaseTransactions:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestConcurrentOperations:
-    """Test concurrent database operations."""
 
     def test_read_during_write(self, db):
-        """Read operation during write transaction."""
-        # Create initial registry
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            created_by=1,
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (1, "ConcurrentTest", "https://example.com"),
         )
-        db.add(registry)
         db.commit()
-        
-        # Read while transaction is open
-        read_registry = db.query(Registry).first()
-        assert read_registry is not None
+        cursor.execute("SELECT * FROM items WHERE name = ?", ("ConcurrentTest",))
+        assert cursor.fetchone() is not None
 
-    def test_concurrent_write_last_write_wins(self, db):
-        """Concurrent writes - last write wins."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Original",
-            description="",
-            created_by=1,
+    def test_concurrent_update_last_write_wins(self, db):
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (1, "UpdateTest", "https://example.com"),
         )
-        db.add(registry)
         db.commit()
-        
-        # Simulate concurrent updates
-        registry.title = "Updated 1"
+        cursor.execute("UPDATE items SET name = ? WHERE name = ?", ("Updated 1", "UpdateTest"))
         db.commit()
-        
-        registry.title = "Updated 2"
+        cursor.execute("UPDATE items SET name = ? WHERE name = ?", ("Updated 2", "Updated 1"))
         db.commit()
-        
-        assert registry.title == "Updated 2"
+        cursor.execute("SELECT name FROM items WHERE name = ?", ("Updated 2",))
+        assert cursor.fetchone() is not None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -499,94 +367,46 @@ class TestConcurrentOperations:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestLargeDatasets:
-    """Test handling of large amounts of data."""
 
     def test_bulk_insert_items(self, db):
-        """Insert many items at once."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            created_by=1,
-        )
-        db.add(registry)
-        db.flush()
-        
-        items = []
+        cursor = db.cursor()
         for i in range(100):
-            item = Item(
-                registry_id=registry.id,
-                name=f"Item {i}",
-                url=f"https://example.com/item{i}",
-                price=Decimal("9.99"),
+            cursor.execute(
+                "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+                (1, f"BulkItem {i}", f"https://example.com/item{i}"),
             )
-            items.append(item)
-        
-        db.add_all(items)
         db.commit()
-        
-        # Verify all inserted
-        count = db.query(Item).filter_by(registry_id=registry.id).count()
+        cursor.execute("SELECT COUNT(*) FROM items WHERE registry_id = ?", (1,))
+        count = cursor.fetchone()[0]
         assert count == 100
 
-    def test_query_performance_with_large_dataset(self, db):
-        """Query performance on large dataset."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            created_by=1,
-        )
-        db.add(registry)
-        db.flush()
-        
-        # Insert 1000 items
-        for i in range(1000):
-            item = Item(
-                registry_id=registry.id,
-                name=f"Item {i}",
-                url=f"https://example.com/{i}",
-                price=Decimal("9.99"),
+    def test_query_performance_with_limit(self, db):
+        cursor = db.cursor()
+        for i in range(50):
+            cursor.execute(
+                "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+                (1, f"PerfItem {i}", f"https://example.com/{i}"),
             )
-            db.add(item)
-        
         db.commit()
-        
-        # Query should complete quickly
-        items = db.query(Item).filter_by(registry_id=registry.id).limit(10).all()
-        assert len(items) == 10
+        cursor.execute("SELECT * FROM items WHERE registry_id = ? LIMIT 10", (1,))
+        rows = cursor.fetchall()
+        assert len(rows) == 10
 
     def test_pagination_on_large_dataset(self, db):
-        """Pagination works on large dataset."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            created_by=1,
-        )
-        db.add(registry)
-        db.flush()
-        
-        # Insert 100 items
+        cursor = db.cursor()
         for i in range(100):
-            item = Item(
-                registry_id=registry.id,
-                name=f"Item {i:03d}",
-                url=f"https://example.com/{i}",
-                price=Decimal("9.99"),
+            cursor.execute(
+                "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+                (1, f"PageItem {i:03d}", f"https://example.com/{i}"),
             )
-            db.add(item)
-        
         db.commit()
-        
-        # Page 1 (items 0-9)
-        page1 = db.query(Item).filter_by(registry_id=registry.id).offset(0).limit(10).all()
-        # Page 2 (items 10-19)
-        page2 = db.query(Item).filter_by(registry_id=registry.id).offset(10).limit(10).all()
-        
+        cursor.execute("SELECT * FROM items WHERE registry_id = ? LIMIT 10 OFFSET 0", (1,))
+        page1 = cursor.fetchall()
+        cursor.execute("SELECT * FROM items WHERE registry_id = ? LIMIT 10 OFFSET 10", (1,))
+        page2 = cursor.fetchall()
         assert len(page1) == 10
         assert len(page2) == 10
-        assert page1[0].id != page2[0].id
+        assert page1[0]["id"] != page2[0]["id"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -594,35 +414,27 @@ class TestLargeDatasets:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestDateTimeValidation:
-    """Test datetime field ordering and validation."""
 
-    def test_created_before_modified(self, db):
-        """created_at should be before modified_at."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            created_by=1,
+    def test_created_at_auto_set_on_insert(self, db):
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (1, "DateTest", "https://example.com"),
         )
-        db.add(registry)
         db.commit()
-        
-        created = registry.created_at
-        modified = registry.modified_at
-        
-        # created should be <= modified
-        assert created <= modified
+        cursor.execute("SELECT created_at FROM items WHERE name = ?", ("DateTest",))
+        row = cursor.fetchone()
+        assert row["created_at"] is not None
 
     def test_datetime_in_correct_timezone(self, db):
-        """DateTime fields use consistent timezone."""
-        registry = Registry(
-            wp_post_id=1,
-            title="Test",
-            description="",
-            created_by=1,
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO items (registry_id, name, url) VALUES (?, ?, ?)",
+            (1, "TZTest", "https://example.com"),
         )
-        db.add(registry)
         db.commit()
-        
-        # Should be timezone-aware or consistent
-        assert hasattr(registry.created_at, "tzinfo") or isinstance(registry.created_at, datetime)
+        cursor.execute("SELECT created_at FROM items WHERE name = ?", ("TZTest",))
+        row = cursor.fetchone()
+        assert row["created_at"] is not None
+        # SQLite stores as TEXT; should be parseable
+        assert isinstance(row["created_at"], str)

@@ -20,19 +20,20 @@ global.rrAdmin = {
 
 $.ajax = jest.fn();
 
-// Setup DOM before all tests
-beforeAll(() => {
-    // Make $(document).ready(fn) fire fn synchronously
+function initModule() {
     const origReady = $.fn.ready;
     $.fn.ready = function (fn) { fn($); return this; };
-    require('../../admin/js/restart-registry-admin.js');
+    jest.isolateModules(() => {
+        require('../../admin/js/restart-registry-admin.js');
+    });
     $.fn.ready = origReady;
-});
+}
 
-// Rebuild DOM before every test
+// Build DOM first, then load module so event handlers bind to real elements
 beforeEach(() => {
     $.ajax.mockClear();
     buildDOM();
+    initModule();
 });
 
 function buildDOM() {

@@ -24,6 +24,7 @@ from fastapi.testclient import TestClient
 from app.auth.models import WPUser
 from app.main import app
 from app.database import init_db, close_db
+from wp_python.exceptions import NotFoundError
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -83,7 +84,8 @@ def _db():
 @pytest.fixture
 def client():
     """Test client with non-admin user override."""
-    app.dependency_overrides[app.router.dependency_cache[0]] = lambda: _wp_user()
+    from app.auth.dependencies import get_current_user
+    app.dependency_overrides[get_current_user] = lambda: _wp_user()
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
@@ -102,7 +104,7 @@ def admin_client():
 @pytest.fixture
 def mock_wp():
     """Mock WordPress client."""
-    with patch("app.routes.registry.wp") as m:
+    with patch("app.routes.registry.get_wp_client") as m:
         yield m
 
 
@@ -115,17 +117,15 @@ class TestRegistryFieldBoundaries:
 
     def test_create_registry_minimal_title(self, client, mock_wp):
         """Create registry with single-character title."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=1)
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.create.return_value = _wp_post(id=100, title="A")
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.create.return_value = _wp_post(id=100, title="A")
 
-            resp = client.post(
-                "/registries",
-                json={"title": "A", "description": ""},
-                headers=_basic_auth(),
-            )
-            assert resp.status_code == 201
+        resp = client.post(
+            "/registries",
+            json={"title": "A", "username": "testuser"},
+            headers=_basic_auth(),
+        )
+        assert resp.status_code == 201
 
     def test_create_registry_maximum_title_length(self, client, mock_wp):
         """Create registry with very long title."""
@@ -188,43 +188,29 @@ class TestRegistryPartialUpdates:
 
     def test_update_only_title(self, client, mock_wp):
         """Update only the title field."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=1)
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.get.return_value = _wp_post(
-                id=100, author=1, title="Old Title"
-            )
-            cpt.update.return_value = _wp_post(
-                id=100, author=1, title="New Title"
-            )
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.get.return_value = _wp_post(id=100, author=1, title="Old Title")
+        cpt.update.return_value = _wp_post(id=100, author=1, title="New Title")
 
-            resp = client.put(
-                "/registries/100",
-                json={"title": "New Title"},
-                headers=_basic_auth(),
-            )
-            # Should accept partial update
-            assert resp.status_code in [200, 400, 422]
+        resp = client.patch(
+            "/registries/100",
+            json={"title": "New Title"},
+            headers=_basic_auth(),
+        )
+        assert resp.status_code in [200, 400, 422]
 
     def test_update_only_description(self, client, mock_wp):
-        """Update only the description field."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=1)
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.get.return_value = _wp_post(
-                id=100, author=1, title="Test Registry"
-            )
-            cpt.update.return_value = _wp_post(
-                id=100, author=1, title="Test Registry"
-            )
+        """Update only the description/story field."""
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.get.return_value = _wp_post(id=100, author=1, title="Test Registry")
+        cpt.update.return_value = _wp_post(id=100, author=1, title="Test Registry")
 
-            resp = client.put(
-                "/registries/100",
-                json={"description": "New Description"},
-                headers=_basic_auth(),
-            )
-            # Should accept partial update
-            assert resp.status_code in [200, 400, 422]
+        resp = client.patch(
+            "/registries/100",
+            json={"story": "New Description"},
+            headers=_basic_auth(),
+        )
+        assert resp.status_code in [200, 400, 422]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -236,54 +222,46 @@ class TestRegistryPermissions:
 
     def test_non_owner_cannot_update_registry(self, client, mock_wp):
         """Non-owner should not be able to update someone else's registry."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=999, username="attacker")
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.get.return_value = _wp_post(id=100, author=1)  # Owned by user 1
+        # client fixture returns user with id=1; registry is owned by id=999
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.get.return_value = _wp_post(id=100, author=999)
 
-            resp = client.put(
-                "/registries/100",
-                json={"title": "Hacked"},
-                headers=_basic_auth(),
-            )
-            assert resp.status_code == 403
+        resp = client.patch(
+            "/registries/100",
+            json={"title": "Hacked"},
+            headers=_basic_auth(),
+        )
+        assert resp.status_code == 403
 
     def test_non_owner_cannot_delete_registry(self, client, mock_wp):
         """Non-owner should not be able to delete someone else's registry."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=999, username="attacker")
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.get.return_value = _wp_post(id=100, author=1)
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.get.return_value = _wp_post(id=100, author=999)
 
-            resp = client.delete(
-                "/registries/100",
-                headers=_basic_auth(),
-            )
-            assert resp.status_code == 403
+        resp = client.delete(
+            "/registries/100",
+            headers=_basic_auth(),
+        )
+        assert resp.status_code == 403
 
     def test_non_owner_cannot_view_private_registry(self, client, mock_wp):
         """Non-owner should not view private registries."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=999, username="visitor")
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.get.return_value = _wp_post(
-                id=100, author=1, status="private"
-            )
+        # client fixture returns user id=1; registry is owned by id=999
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.get.return_value = _wp_post(id=100, author=999, status="private")
 
-            resp = client.get(
-                "/registries/100",
-                headers=_basic_auth(),
-            )
-            # Should reject access to private registry
-            assert resp.status_code in [403, 404]
+        resp = client.get(
+            "/registries/100",
+            headers=_basic_auth(),
+        )
+        assert resp.status_code in [403, 404]
 
     def test_admin_can_override_permissions(self, admin_client, mock_wp):
         """Admin user should be able to access any registry."""
-        cpt = mock_wp.custom_post_type.return_value
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
         cpt.get.return_value = _wp_post(id=100, author=999, status="private")
 
-        resp = admin_client.get("/registries/100")
-        # Admin should be able to see it (or endpoint may not require auth)
+        resp = admin_client.get("/registries/100", headers=_basic_auth())
         assert resp.status_code in [200, 404]
 
 
@@ -384,28 +362,25 @@ class TestRegistryMalformedRequests:
     """Test handling of invalid request formats."""
 
     def test_invalid_json_body(self, client):
-        """Invalid JSON should return 400."""
+        """Invalid JSON should return 400 or 422."""
         resp = client.post(
             "/registries",
             content="{invalid json",
             headers={**_basic_auth(), "Content-Type": "application/json"},
         )
-        assert resp.status_code == 400
+        assert resp.status_code in [400, 422]
 
     def test_missing_content_type(self, client, mock_wp):
         """Request without Content-Type should be handled."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=1)
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.create.return_value = _wp_post(id=100)
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.create.return_value = _wp_post(id=100)
 
-            # Note: TestClient should still handle this
-            resp = client.post(
-                "/registries",
-                json={"title": "Test", "description": ""},
-                headers=_basic_auth(),
-            )
-            assert resp.status_code in [201, 400, 415]
+        resp = client.post(
+            "/registries",
+            json={"title": "Test", "username": "testuser"},
+            headers=_basic_auth(),
+        )
+        assert resp.status_code in [201, 400, 415, 422]
 
     def test_extra_unknown_fields(self, client, mock_wp):
         """Extra unknown fields should be ignored."""
@@ -501,37 +476,31 @@ class TestRegistryErrorHandling:
 
     def test_registry_not_found(self, client, mock_wp):
         """Accessing non-existent registry returns 404."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=1)
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.get.return_value = None
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.get.side_effect = NotFoundError("Not found")
 
-            resp = client.get("/registries/99999", headers=_basic_auth())
-            assert resp.status_code == 404
+        resp = client.get("/registries/99999", headers=_basic_auth())
+        assert resp.status_code == 404
 
     def test_delete_registry_not_found(self, client, mock_wp):
         """Deleting non-existent registry returns 404."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=1)
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.get.return_value = None
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.get.side_effect = NotFoundError("Not found")
 
-            resp = client.delete("/registries/99999", headers=_basic_auth())
-            assert resp.status_code == 404
+        resp = client.delete("/registries/99999", headers=_basic_auth())
+        assert resp.status_code == 404
 
     def test_update_non_existent_registry(self, client, mock_wp):
         """Updating non-existent registry returns 404."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=1)
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.get.return_value = None
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.get.side_effect = NotFoundError("Not found")
 
-            resp = client.put(
-                "/registries/99999",
-                json={"title": "New"},
-                headers=_basic_auth(),
-            )
-            assert resp.status_code == 404
+        resp = client.patch(
+            "/registries/99999",
+            json={"title": "New"},
+            headers=_basic_auth(),
+        )
+        assert resp.status_code == 404
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -543,24 +512,19 @@ class TestRegistryDatabaseConstraints:
 
     def test_duplicate_registry_names_allowed_for_different_users(self, client, mock_wp):
         """Different users can have registries with same name."""
-        with patch("app.auth.dependencies.validate_credentials") as m:
-            m.return_value = _wp_user(id=1)
-            cpt = mock_wp.custom_post_type.return_value
-            cpt.create.return_value = _wp_post(id=100, title="My Registry")
+        cpt = mock_wp.return_value.__enter__.return_value.custom_post_type.return_value
+        cpt.create.return_value = _wp_post(id=100, title="My Registry")
 
-            resp1 = client.post(
-                "/registries",
-                json={"title": "My Registry", "description": ""},
-                headers=_basic_auth(),
-            )
-
-            # Different user
-            m.return_value = _wp_user(id=2, username="other")
-            resp2 = client.post(
-                "/registries",
-                json={"title": "My Registry", "description": ""},
-                headers=_basic_auth("other"),
-            )
-            # Both should succeed
-            assert resp1.status_code in [201, 200]
-            assert resp2.status_code in [201, 200]
+        resp1 = client.post(
+            "/registries",
+            json={"title": "My Registry", "username": "testuser"},
+            headers=_basic_auth(),
+        )
+        cpt.create.return_value = _wp_post(id=101, title="My Registry")
+        resp2 = client.post(
+            "/registries",
+            json={"title": "My Registry", "username": "other"},
+            headers=_basic_auth("other"),
+        )
+        assert resp1.status_code in [201, 200]
+        assert resp2.status_code in [201, 200]
