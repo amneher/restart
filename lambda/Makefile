@@ -72,7 +72,7 @@ LW_DB_ROOT_PWD ?= $(call _lwenv,DB_ROOT_PASSWORD)
         test test-staging test-prod test-local \
         deploy-staging deploy-prod \
         create-staging configure-env configure-efs \
-        setup-oidc tag wp-snapshot status clean help
+        setup-oidc tag wp-snapshot status live-versions clean help
 
 # ─────────────────────────────────────────────────────────────────────────────
 # setup-oidc — one-time: create GitHub Actions OIDC provider + IAM role
@@ -403,6 +403,27 @@ deploy-prod: build
 	@echo "Deployed $(BRANCH) → $(FUNCTION_PROD)"
 
 # ─────────────────────────────────────────────────────────────────────────────
+# live-versions — fetch the deployed app version from each Lambda's OpenAPI endpoint
+#
+# Usage: make live-versions
+# ─────────────────────────────────────────────────────────────────────────────
+live-versions:
+	@echo "  Live (deployed):"
+	@for PAIR in "$(FUNCTION_PROD):prod" "$(FUNCTION_STAGING):staging"; do \
+	    FN=$${PAIR%%:*}; ENV=$${PAIR##*:}; \
+	    URL=$$(aws lambda get-function-url-config --function-name $$FN \
+	        --query 'FunctionUrl' --output text --no-cli-pager 2>/dev/null); \
+	    if [ -z "$$URL" ] || [ "$$URL" = "None" ]; then \
+	        printf "    %-14s %s\n" "lambda ($$ENV):" "(function URL not configured)"; \
+	    else \
+	        VER=$$(curl -sf "$${URL}openapi.json" \
+	            | python3 -c "import sys,json; print(json.load(sys.stdin)['info']['version'])" \
+	            2>/dev/null || echo "(unavailable)"); \
+	        printf "    %-14s %s\n" "lambda ($$ENV):" "$$VER"; \
+	    fi; \
+	done
+
+# ─────────────────────────────────────────────────────────────────────────────
 # status — show runtime configuration for both Lambda functions
 #
 # Usage: make status
@@ -460,6 +481,7 @@ help:
 	@echo "  deploy-prod          Deploy BRANCH to production Lambda (confirms)"
 	@echo "  tag TAG=v1.2.3       Tag commit and save named build artifact"
 	@echo "  wp-snapshot          Dump local WordPress DB → tests/fixtures/wp-clean.sql"
+	@echo "  live-versions        Fetch deployed app version from each Lambda function URL"
 	@echo "  status               Show runtime config for both Lambda functions"
 	@echo "  clean                Remove build/"
 	@echo ""

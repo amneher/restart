@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from importlib.metadata import version
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -23,7 +24,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Restart Registry API",
     description="A FastAPI application designed for AWS Lambda with SQLite",
-    version="1.1.0",
+    version=version("restart_lambda"),
     lifespan=lifespan,
 )
 

@@ -8,6 +8,7 @@
         plugin-build lambda-build lambda-build-layer theme-pack \
         docs docs-build docs-php-ref docs-deploy docs-screenshots \
         deploy-staging deploy-prod publish-layer configure-layer configure-efs configure-env \
+        versions \
         bump-plugin-patch bump-plugin-minor bump-plugin-major \
         bump-lambda-patch bump-lambda-minor bump-lambda-major \
         bump-theme-patch bump-theme-minor bump-theme-major \
@@ -40,6 +41,23 @@ seed-reset: reset
 
 wp-snapshot:
 	$(MAKE) -C lambda/ wp-snapshot
+
+# ── Status ────────────────────────────────────────────────────────────────────
+
+versions:
+	@echo ""
+	@echo "  Local (HEAD):"
+	@printf "    %-10s %s\n" "plugin:" "$$(grep -m1 '^ \* Version:' plugin/restart-registry.php | sed 's/.*Version: //' | tr -d '[:space:]')"
+	@printf "    %-10s %s\n" "theme:" "$$(grep -m1 '^Version:' theme/style.css | sed 's/Version: //' | tr -d '[:space:]')"
+	@printf "    %-10s %s\n" "lambda:" "$$(grep '^version = ' lambda/pyproject.toml | sed 's/version = \"\(.*\)\"/\1/')"
+	@echo ""
+	@echo "  Latest released (git tags):"
+	@printf "    %-10s %s\n" "plugin:" "$$(git tag --list 'plugin/v*' | sort -V | tail -1 | sed 's|plugin/||')"
+	@printf "    %-10s %s\n" "theme:" "$$(git tag --list 'theme/v*' | sort -V | tail -1 | sed 's|theme/||')"
+	@printf "    %-10s %s\n" "lambda:" "$$(git tag --list 'lambda/v*' | sort -V | tail -1 | sed 's|lambda/||')"
+	@echo ""
+	@$(MAKE) -C lambda/ live-versions --no-print-directory
+	@echo ""
 
 # ── Testing ───────────────────────────────────────────────────────────────────
 
@@ -220,6 +238,9 @@ release-all:
 # ── Help ──────────────────────────────────────────────────────────────────────
 
 help:
+	@echo ""
+	@echo "Status:"
+	@echo "  versions             Show local, tagged, and live deployed versions"
 	@echo ""
 	@echo "Dev environment:"
 	@echo "  up                   Start the local Docker stack"
