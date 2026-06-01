@@ -60,8 +60,8 @@ versions:
 	@printf "    %-10s %s\n" "lambda:" "$$(git tag --list 'lambda/v*' | sort -V | tail -1 | sed 's|lambda/||')"
 	@echo ""
 	@$(MAKE) -C lambda/ live-versions --no-print-directory
-	@for PAIR in "$(WP_PROD_URL):prod" "$(WP_STAGING_URL):staging"; do \
-	    URL=$${PAIR%%:*}; ENV=$${PAIR##*:}; \
+	@for PAIR in "$(WP_PROD_URL)|prod" "$(WP_STAGING_URL)|staging"; do \
+	    URL=$${PAIR%%|*}; ENV=$${PAIR##*|}; \
 	    if [ -z "$$URL" ]; then continue; fi; \
 	    RESP=$$(curl -sf "$${URL}/wp-json/restart-registry/v1/version" 2>/dev/null); \
 	    if [ -z "$$RESP" ]; then \
