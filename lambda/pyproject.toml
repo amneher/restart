@@ -1,6 +1,6 @@
 [project]
 name = "restart_lambda"
-version = "1.2.0"
+version = "1.2.1"
 description = "AWS Lambda providing the-restart.co Registry app."
 requires-python = ">=3.14"
 dependencies = [
