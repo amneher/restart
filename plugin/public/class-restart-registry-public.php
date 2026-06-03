@@ -80,7 +80,7 @@ class Restart_Registry_Public
         wp_enqueue_script(
             $this->plugin_name,
             plugin_dir_url(__FILE__) . 'js/restart-registry-public.js',
-            ['jquery'],
+            [],
             $this->version,
             true
         );
