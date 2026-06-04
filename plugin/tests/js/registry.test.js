@@ -145,8 +145,8 @@ describe('item detail modal content', () => {
         expect(btn.style.display).not.toBe('none');
     });
 
-    it('hides mark-fulfilled button in manage context', () => {
-        expect(document.querySelector('.rr-item-detail__mark-btn').style.display).toBe('none');
+    it('shows mark-purchased button in manage context when item is not fulfilled', () => {
+        expect(document.querySelector('.rr-item-detail__mark-btn').style.display).not.toBe('none');
     });
 });
 
