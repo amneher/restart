@@ -737,8 +737,40 @@ class Restart_Registry_Public
                         <div class="rr-item-detail__qty-row"></div>
                         <div class="rr-item-detail__actions">
                             <a href="#" target="_blank" rel="noopener sponsored" class="rr-button rr-purchase-btn rr-item-detail__purchase-btn" style="display:none"><?php _e('Purchase', 'restart-registry'); ?></a>
-                            <button type="button" class="rr-button rr-button-small rr-button-secondary rr-mark-purchased rr-item-detail__mark-btn" style="display:none"><?php _e('Mark Fulfilled', 'restart-registry'); ?></button>
+                            <button type="button" class="rr-button rr-button-small rr-button-secondary rr-mark-purchased rr-item-detail__mark-btn" style="display:none"><?php _e('Mark Purchased', 'restart-registry'); ?></button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mark as purchased modal -->
+            <div class="rr-modal" id="rr-purchase-modal" aria-hidden="true">
+                <div class="rr-modal__backdrop"></div>
+                <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-purchase-modal-title" aria-modal="true">
+                    <div class="rr-modal__header">
+                        <h3 id="rr-purchase-modal-title"><?php _e('Mark as Purchased', 'restart-registry'); ?></h3>
+                        <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                    </div>
+                    <div class="rr-modal__body">
+                        <p class="rr-purchase-modal__item-name"></p>
+                        <p class="rr-purchase-modal__nudge"><?php _e('Record who purchased this item.', 'restart-registry'); ?></p>
+                        <form id="rr-purchase-form" class="rr-form">
+                            <input type="hidden" id="rr-purchase-item-id" name="item_id">
+                            <div class="rr-form-group">
+                                <label for="rr-purchaser-name"><?php _e('Purchased by', 'restart-registry'); ?> <span class="rr-optional"><?php _e('(optional)', 'restart-registry'); ?></span></label>
+                                <input type="text" id="rr-purchaser-name" name="purchaser_name"
+                                    placeholder="<?php esc_attr_e('e.g., Aunt Carol', 'restart-registry'); ?>">
+                            </div>
+                            <div class="rr-form-group">
+                                <label for="rr-purchaser-note"><?php _e('Note', 'restart-registry'); ?> <span class="rr-optional"><?php _e('(optional)', 'restart-registry'); ?></span></label>
+                                <textarea id="rr-purchaser-note" name="purchaser_note" rows="3"
+                                    placeholder="<?php esc_attr_e('Any notes about this purchase…', 'restart-registry'); ?>"></textarea>
+                            </div>
+                            <div class="rr-form-actions">
+                                <button type="submit" class="rr-button"><?php _e('Confirm Purchase', 'restart-registry'); ?></button>
+                                <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
