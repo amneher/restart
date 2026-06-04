@@ -1,95 +1,95 @@
-(function($) {
-    'use strict';
+'use strict';
 
-    $(document).ready(function() {
+(function() {
+
+    function post(url, data) {
+        return fetch(url, { method: 'POST', body: new URLSearchParams(data) })
+            .then(function(r) { return r.json(); });
+    }
 
     // Test Lambda connection
-    $('#rr-test-lambda').on('click', function() {
-        var $btn    = $(this);
-        var $result = $('#rr-lambda-test-result');
-        $btn.prop('disabled', true);
-        $result.text('Testing\u2026').css('color', '');
+    var testBtn = document.getElementById('rr-test-lambda');
+    if (testBtn) {
+        testBtn.addEventListener('click', function() {
+            var btn    = this;
+            var result = document.getElementById('rr-lambda-test-result');
+            btn.disabled = true;
+            result.textContent = 'Testing…';
+            result.style.color = '';
 
-        $.ajax({
-            url:  rrAdmin.ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'restart_registry_test_lambda',
-                nonce:  rrAdmin.nonce,
-            },
-            success: function(response) {
-                if (response.success) {
-                    $result.text('\u2713 ' + response.data.message).css('color', 'green');
-                } else {
-                    $result.text('\u2717 ' + response.data.message).css('color', 'red');
-                }
-                $btn.prop('disabled', false);
-            },
-            error: function() {
-                $result.text('\u2717 Request failed').css('color', 'red');
-                $btn.prop('disabled', false);
-            },
+            post(rrAdmin.ajaxurl, { action: 'restart_registry_test_lambda', nonce: rrAdmin.nonce })
+                .then(function(response) {
+                    result.textContent = (response.success ? '✓ ' : '✗ ') + response.data.message;
+                    result.style.color = response.success ? 'green' : 'red';
+                    btn.disabled = false;
+                }).catch(function() {
+                    result.textContent = '✗ Request failed';
+                    result.style.color = 'red';
+                    btn.disabled = false;
+                });
         });
-    });
+    }
 
     // Re-convert affiliate links
-    $('#rr-reconvert-affiliates').on('click', function() {
-        var $btn    = $(this);
-        var $result = $('#rr-reconvert-result');
-        $btn.prop('disabled', true);
-        $result.text('Processing\u2026').css('color', '');
+    var reconvertBtn = document.getElementById('rr-reconvert-affiliates');
+    if (reconvertBtn) {
+        reconvertBtn.addEventListener('click', function() {
+            var btn    = this;
+            var result = document.getElementById('rr-reconvert-result');
+            btn.disabled = true;
+            result.textContent = 'Processing…';
+            result.style.color = '';
 
-        $.ajax({
-            url:  rrAdmin.ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'restart_registry_reconvert_affiliates',
-                nonce:  rrAdmin.nonce,
-            },
-            success: function(response) {
-                if (response.success) {
-                    $result.text('\u2713 ' + response.data.message).css('color', 'green');
-                } else {
-                    $result.text('\u2717 ' + response.data.message).css('color', 'red');
-                }
-                $btn.prop('disabled', false);
-            },
-            error: function() {
-                $result.text('\u2717 Request failed').css('color', 'red');
-                $btn.prop('disabled', false);
-            },
+            post(rrAdmin.ajaxurl, { action: 'restart_registry_reconvert_affiliates', nonce: rrAdmin.nonce })
+                .then(function(response) {
+                    result.textContent = (response.success ? '✓ ' : '✗ ') + response.data.message;
+                    result.style.color = response.success ? 'green' : 'red';
+                    btn.disabled = false;
+                }).catch(function() {
+                    result.textContent = '✗ Request failed';
+                    result.style.color = 'red';
+                    btn.disabled = false;
+                });
         });
-    });
+    }
 
     // Custom retailers — add/remove rows
     function renumberCustomRetailers() {
-        $('#rr-custom-retailers-body .rr-custom-retailer-row').each(function(i) {
-            $(this).find('input').each(function() {
-                var name = $(this).attr('name');
-                if (name) {
-                    $(this).attr('name', name.replace(/\[\d+\]/, '[' + i + ']'));
+        document.querySelectorAll('#rr-custom-retailers-body .rr-custom-retailer-row').forEach(function(row, i) {
+            row.querySelectorAll('input').forEach(function(input) {
+                if (input.name) {
+                    input.name = input.name.replace(/\[\d+\]/, '[' + i + ']');
                 }
             });
         });
     }
 
-    $('#rr-add-retailer').on('click', function() {
-        var idx  = $('#rr-custom-retailers-body .rr-custom-retailer-row').length;
-        var row  = '<tr class="rr-custom-retailer-row">' +
-            '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][name]" class="widefat"></td>' +
-            '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][domains]" class="widefat" placeholder="example.com, shop.com"></td>' +
-            '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][template]" class="widefat" placeholder="https://network.com/r?url={url}&id={affiliate_id}"></td>' +
-            '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][affiliate_id]" class="widefat"></td>' +
-            '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][merchant_id]" class="widefat"></td>' +
-            '<td><button type="button" class="button rr-remove-retailer">Remove</button></td>' +
-            '</tr>';
-        $('#rr-custom-retailers-body').append(row);
-    });
+    var addRetailerBtn = document.getElementById('rr-add-retailer');
+    if (addRetailerBtn) {
+        addRetailerBtn.addEventListener('click', function() {
+            var tbody = document.getElementById('rr-custom-retailers-body');
+            var idx   = tbody.querySelectorAll('.rr-custom-retailer-row').length;
+            tbody.insertAdjacentHTML('beforeend',
+                '<tr class="rr-custom-retailer-row">' +
+                '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][name]" class="widefat"></td>' +
+                '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][domains]" class="widefat" placeholder="example.com, shop.com"></td>' +
+                '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][template]" class="widefat" placeholder="https://network.com/r?url={url}&id={affiliate_id}"></td>' +
+                '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][affiliate_id]" class="widefat"></td>' +
+                '<td><input type="text" name="restart_registry_custom_retailers[' + idx + '][merchant_id]" class="widefat"></td>' +
+                '<td><button type="button" class="button rr-remove-retailer">Remove</button></td>' +
+                '</tr>'
+            );
+        });
+    }
 
-    $('#rr-custom-retailers-body').on('click', '.rr-remove-retailer', function() {
-        $(this).closest('tr').remove();
-        renumberCustomRetailers();
-    });
+    var tbody = document.getElementById('rr-custom-retailers-body');
+    if (tbody) {
+        tbody.addEventListener('click', function(e) {
+            var btn = e.target.closest('.rr-remove-retailer');
+            if (!btn) return;
+            btn.closest('tr').remove();
+            renumberCustomRetailers();
+        });
+    }
 
-    }); // document.ready
-})(jQuery);
+}());

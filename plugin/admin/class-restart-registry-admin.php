@@ -43,7 +43,7 @@ class Restart_Registry_Admin {
     }
 
     public function enqueue_scripts($hook) {
-        wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/restart-registry-admin.js', array('jquery'), $this->version, true);
+        wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/restart-registry-admin.js', array(), $this->version, true);
         wp_localize_script($this->plugin_name, 'rrAdmin', array(
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('restart_registry_admin_nonce'),

@@ -1,40 +1,14 @@
 'use strict';
 
-const $ = require('jquery');
+const flushPromises = () => new Promise(process.nextTick);
 
-/**
- * Tests for plugin/admin/js/restart-registry-admin.js
- * 
- * Covers:
- * - Lambda test connection button
- * - Affiliate link conversion button
- * - Custom retailer management (add/remove/renumber)
- */
-
-global.jQuery = $;
-global.$ = $;
 global.rrAdmin = {
     ajaxurl: '/wp-admin/admin-ajax.php',
     nonce: 'test-nonce',
 };
 
-$.ajax = jest.fn();
-
-function initModule() {
-    const origReady = $.fn.ready;
-    $.fn.ready = function (fn) { fn($); return this; };
-    jest.isolateModules(() => {
-        require('../../admin/js/restart-registry-admin.js');
-    });
-    $.fn.ready = origReady;
-}
-
-// Build DOM first, then load module so event handlers bind to real elements
-beforeEach(() => {
-    $.ajax.mockClear();
-    buildDOM();
-    initModule();
-});
+delete window.location;
+window.location = { href: '' };
 
 function buildDOM() {
     document.body.innerHTML = `
@@ -43,12 +17,12 @@ function buildDOM() {
                 <button id="rr-test-lambda" class="button button-primary">Test Connection</button>
                 <div id="rr-lambda-test-result"></div>
             </div>
-            
+
             <div class="rr-affiliate-section">
                 <button id="rr-reconvert-affiliates" class="button button-primary">Re-convert Affiliates</button>
                 <div id="rr-reconvert-result"></div>
             </div>
-            
+
             <div class="rr-custom-retailers-section">
                 <button id="rr-add-retailer" class="button">Add Retailer</button>
                 <table>
@@ -68,42 +42,58 @@ function buildDOM() {
     `;
 }
 
+function loadModule() {
+    jest.isolateModules(() => {
+        require('../../admin/js/restart-registry-admin.js');
+    });
+}
+
+beforeEach(() => {
+    global.fetch = jest.fn();
+    buildDOM();
+    loadModule();
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
+    delete global.fetch;
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Admin Settings Page Structure
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Admin Settings Page', () => {
     it('has lambda test section with button', () => {
-        expect($('#rr-test-lambda').length).toBe(1);
-        expect($('#rr-lambda-test-result').length).toBe(1);
+        expect(document.getElementById('rr-test-lambda')).not.toBeNull();
+        expect(document.getElementById('rr-lambda-test-result')).not.toBeNull();
     });
 
     it('has affiliate conversion section with button', () => {
-        expect($('#rr-reconvert-affiliates').length).toBe(1);
-        expect($('#rr-reconvert-result').length).toBe(1);
+        expect(document.getElementById('rr-reconvert-affiliates')).not.toBeNull();
+        expect(document.getElementById('rr-reconvert-result')).not.toBeNull();
     });
 
     it('has custom retailers section', () => {
-        expect($('#rr-add-retailer').length).toBe(1);
-        expect($('#rr-custom-retailers-body').length).toBe(1);
+        expect(document.getElementById('rr-add-retailer')).not.toBeNull();
+        expect(document.getElementById('rr-custom-retailers-body')).not.toBeNull();
     });
 
     it('initializes with one retailer row', () => {
-        expect($('#rr-custom-retailers-body .rr-custom-retailer-row').length).toBe(1);
+        expect(document.querySelectorAll('#rr-custom-retailers-body .rr-custom-retailer-row').length).toBe(1);
     });
 
     it('retailer row has all required input fields', () => {
-        const $row = $('#rr-custom-retailers-body .rr-custom-retailer-row').eq(0);
-        expect($row.find('input[name*="[name]"]').length).toBe(1);
-        expect($row.find('input[name*="[domains]"]').length).toBe(1);
-        expect($row.find('input[name*="[template]"]').length).toBe(1);
-        expect($row.find('input[name*="[affiliate_id]"]').length).toBe(1);
-        expect($row.find('input[name*="[merchant_id]"]').length).toBe(1);
+        const row = document.querySelector('#rr-custom-retailers-body .rr-custom-retailer-row');
+        expect(row.querySelector('input[name*="[name]"]')).not.toBeNull();
+        expect(row.querySelector('input[name*="[domains]"]')).not.toBeNull();
+        expect(row.querySelector('input[name*="[template]"]')).not.toBeNull();
+        expect(row.querySelector('input[name*="[affiliate_id]"]')).not.toBeNull();
+        expect(row.querySelector('input[name*="[merchant_id]"]')).not.toBeNull();
     });
 
     it('retailer row has remove button', () => {
-        const $btn = $('#rr-custom-retailers-body .rr-remove-retailer');
-        expect($btn.length).toBe(1);
+        expect(document.querySelector('#rr-custom-retailers-body .rr-remove-retailer')).not.toBeNull();
     });
 
     it('has global rrAdmin configuration', () => {
@@ -119,60 +109,55 @@ describe('Admin Settings Page', () => {
 
 describe('Lambda test connection', () => {
     it('disables the button and shows loading text when clicked', () => {
-        const $btn = $('#rr-test-lambda');
-        
-        $.ajax.mockImplementationOnce(function(opts) {
-            // Mid-request state
-            expect($btn.prop('disabled')).toBe(true);
-            expect($('#rr-lambda-test-result').text()).toContain('Testing');
-        });
-
-        $btn.trigger('click');
+        global.fetch = jest.fn(() => new Promise(() => {})); // never resolves
+        document.getElementById('rr-test-lambda').click();
+        expect(document.getElementById('rr-test-lambda').disabled).toBe(true);
+        expect(document.getElementById('rr-lambda-test-result').textContent).toContain('Testing');
     });
 
-    it('shows success message on successful connection', (done) => {
-        $.ajax.mockImplementationOnce(function(opts) {
-            opts.success({ success: true, data: { message: 'Connected successfully' } });
+    it('shows success message on successful connection', async () => {
+        global.fetch.mockResolvedValueOnce({
+            json: async () => ({ success: true, data: { message: 'Connected successfully' } }),
         });
-
-        $('#rr-test-lambda').trigger('click');
-
-        // Check that success handler was called
-        expect($.ajax).toHaveBeenCalled();
-        done();
+        document.getElementById('rr-test-lambda').click();
+        await flushPromises();
+        const result = document.getElementById('rr-lambda-test-result');
+        expect(result.textContent).toContain('✓');
+        expect(result.textContent).toContain('Connected successfully');
+        expect(result.style.color).toBe('green');
     });
 
-    it('shows error message on failed connection', (done) => {
-        $.ajax.mockImplementationOnce(function(opts) {
-            opts.success({ success: false, data: { message: 'Connection failed' } });
+    it('shows error message on failed connection', async () => {
+        global.fetch.mockResolvedValueOnce({
+            json: async () => ({ success: false, data: { message: 'Connection failed' } }),
         });
-
-        $('#rr-test-lambda').trigger('click');
-
-        expect($.ajax).toHaveBeenCalled();
-        done();
+        document.getElementById('rr-test-lambda').click();
+        await flushPromises();
+        const result = document.getElementById('rr-lambda-test-result');
+        expect(result.textContent).toContain('✗');
+        expect(result.textContent).toContain('Connection failed');
+        expect(result.style.color).toBe('red');
     });
 
-    it('shows error message on AJAX failure', (done) => {
-        $.ajax.mockImplementationOnce(function(opts) {
-            opts.error();
-        });
-
-        $('#rr-test-lambda').trigger('click');
-
-        expect($.ajax).toHaveBeenCalled();
-        done();
+    it('shows error message on fetch failure', async () => {
+        global.fetch.mockRejectedValueOnce(new Error('network'));
+        document.getElementById('rr-test-lambda').click();
+        await flushPromises();
+        const result = document.getElementById('rr-lambda-test-result');
+        expect(result.textContent).toContain('✗');
+        expect(result.style.color).toBe('red');
     });
 
-    it('sends correct AJAX parameters', () => {
-        $.ajax.mockImplementationOnce(function(opts) {
-            expect(opts.url).toBe(rrAdmin.ajaxurl);
-            expect(opts.type).toBe('POST');
-            expect(opts.data.action).toBe('restart_registry_test_lambda');
-            expect(opts.data.nonce).toBe('test-nonce');
-        });
-
-        $('#rr-test-lambda').trigger('click');
+    it('sends correct parameters to fetch', () => {
+        global.fetch = jest.fn(() => new Promise(() => {}));
+        document.getElementById('rr-test-lambda').click();
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const [url, opts] = global.fetch.mock.calls[0];
+        expect(url).toBe(rrAdmin.ajaxurl);
+        expect(opts.method).toBe('POST');
+        const body = Object.fromEntries(opts.body);
+        expect(body.action).toBe('restart_registry_test_lambda');
+        expect(body.nonce).toBe('test-nonce');
     });
 });
 
@@ -182,160 +167,163 @@ describe('Lambda test connection', () => {
 
 describe('Affiliate link reconversion', () => {
     it('disables the button and shows loading text when clicked', () => {
-        const $btn = $('#rr-reconvert-affiliates');
-        
-        $.ajax.mockImplementationOnce(function(opts) {
-            expect($btn.prop('disabled')).toBe(true);
-            expect($('#rr-reconvert-result').text()).toContain('Processing');
-        });
-
-        $btn.trigger('click');
+        global.fetch = jest.fn(() => new Promise(() => {}));
+        document.getElementById('rr-reconvert-affiliates').click();
+        expect(document.getElementById('rr-reconvert-affiliates').disabled).toBe(true);
+        expect(document.getElementById('rr-reconvert-result').textContent).toContain('Processing');
     });
 
-    it('shows success message on successful conversion', (done) => {
-        $.ajax.mockImplementationOnce(function(opts) {
-            opts.success({ success: true, data: { message: 'Converted 5 links' } });
+    it('shows success message on successful conversion', async () => {
+        global.fetch.mockResolvedValueOnce({
+            json: async () => ({ success: true, data: { message: 'Converted 5 links' } }),
         });
-
-        $('#rr-reconvert-affiliates').trigger('click');
-
-        expect($.ajax).toHaveBeenCalled();
-        done();
+        document.getElementById('rr-reconvert-affiliates').click();
+        await flushPromises();
+        const result = document.getElementById('rr-reconvert-result');
+        expect(result.textContent).toContain('✓');
+        expect(result.textContent).toContain('Converted 5 links');
+        expect(result.style.color).toBe('green');
     });
 
-    it('shows error message on failed conversion', (done) => {
-        $.ajax.mockImplementationOnce(function(opts) {
-            opts.success({ success: false, data: { message: 'Conversion failed' } });
+    it('shows error message on failed conversion', async () => {
+        global.fetch.mockResolvedValueOnce({
+            json: async () => ({ success: false, data: { message: 'Conversion failed' } }),
         });
-
-        $('#rr-reconvert-affiliates').trigger('click');
-
-        expect($.ajax).toHaveBeenCalled();
-        done();
+        document.getElementById('rr-reconvert-affiliates').click();
+        await flushPromises();
+        const result = document.getElementById('rr-reconvert-result');
+        expect(result.textContent).toContain('✗');
+        expect(result.style.color).toBe('red');
     });
 
-    it('shows error message on AJAX failure', (done) => {
-        $.ajax.mockImplementationOnce(function(opts) {
-            opts.error();
-        });
-
-        $('#rr-reconvert-affiliates').trigger('click');
-
-        expect($.ajax).toHaveBeenCalled();
-        done();
+    it('shows error message on fetch failure', async () => {
+        global.fetch.mockRejectedValueOnce(new Error('network'));
+        document.getElementById('rr-reconvert-affiliates').click();
+        await flushPromises();
+        const result = document.getElementById('rr-reconvert-result');
+        expect(result.textContent).toContain('✗');
+        expect(result.style.color).toBe('red');
     });
 
-    it('sends correct AJAX parameters', () => {
-        $.ajax.mockImplementationOnce(function(opts) {
-            expect(opts.url).toBe(rrAdmin.ajaxurl);
-            expect(opts.type).toBe('POST');
-            expect(opts.data.action).toBe('restart_registry_reconvert_affiliates');
-            expect(opts.data.nonce).toBe('test-nonce');
-        });
-
-        $('#rr-reconvert-affiliates').trigger('click');
+    it('sends correct parameters to fetch', () => {
+        global.fetch = jest.fn(() => new Promise(() => {}));
+        document.getElementById('rr-reconvert-affiliates').click();
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const [url, opts] = global.fetch.mock.calls[0];
+        expect(url).toBe(rrAdmin.ajaxurl);
+        expect(opts.method).toBe('POST');
+        const body = Object.fromEntries(opts.body);
+        expect(body.action).toBe('restart_registry_reconvert_affiliates');
+        expect(body.nonce).toBe('test-nonce');
     });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Test Custom Retailers Management
+// Custom Retailers Management
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Custom retailers table', () => {
     it('initializes with one retailer row', () => {
-        expect($('#rr-custom-retailers-body .rr-custom-retailer-row').length).toBe(1);
+        expect(document.querySelectorAll('#rr-custom-retailers-body .rr-custom-retailer-row').length).toBe(1);
     });
 
     it('has correct structure for initial row', () => {
-        const $row = $('#rr-custom-retailers-body .rr-custom-retailer-row').eq(0);
-        const $inputs = $row.find('input');
-        expect($inputs.length).toBe(5); // name, domains, template, affiliate_id, merchant_id
+        const row = document.querySelector('#rr-custom-retailers-body .rr-custom-retailer-row');
+        expect(row.querySelectorAll('input').length).toBe(5);
     });
 
     it('has remove button in each row', () => {
-        const $removeBtn = $('#rr-custom-retailers-body .rr-remove-retailer');
-        expect($removeBtn.length).toBeGreaterThan(0);
+        expect(document.querySelectorAll('#rr-custom-retailers-body .rr-remove-retailer').length).toBeGreaterThan(0);
     });
 
-    it('preserves field values when DOM is rebuilt', () => {
-        const $input = $('#rr-custom-retailers-body input[name*="[0][name]"]');
-        const originalValue = $input.val();
-        expect(originalValue).toBe('Test Retailer');
+    it('preserves field values in initial row', () => {
+        const input = document.querySelector('#rr-custom-retailers-body input[name*="[0][name]"]');
+        expect(input.value).toBe('Test Retailer');
     });
 
     it('has all required input fields in row', () => {
-        const $row = $('#rr-custom-retailers-body .rr-custom-retailer-row').eq(0);
-        const $nameInput = $row.find('input[name*="[name]"]');
-        const $domainsInput = $row.find('input[name*="[domains]"]');
-        const $templateInput = $row.find('input[name*="[template]"]');
-        
-        expect($nameInput.length).toBe(1);
-        expect($domainsInput.length).toBe(1);
-        expect($templateInput.length).toBe(1);
+        const row = document.querySelector('#rr-custom-retailers-body .rr-custom-retailer-row');
+        expect(row.querySelector('input[name*="[name]"]')).not.toBeNull();
+        expect(row.querySelector('input[name*="[domains]"]')).not.toBeNull();
+        expect(row.querySelector('input[name*="[template]"]')).not.toBeNull();
     });
 
-    it('button to add retailer is present', () => {
-        const $addBtn = $('#rr-add-retailer');
-        expect($addBtn.length).toBe(1);
-        expect($addBtn.text()).toContain('Add');
+    it('add retailer button is present', () => {
+        const btn = document.getElementById('rr-add-retailer');
+        expect(btn).not.toBeNull();
+        expect(btn.textContent).toContain('Add');
     });
 
     it('retailer table body exists', () => {
-        const $tbody = $('#rr-custom-retailers-body');
-        expect($tbody.length).toBe(1);
+        expect(document.getElementById('rr-custom-retailers-body')).not.toBeNull();
     });
 
     it('initial row has correct index pattern in field names', () => {
-        const $row = $('#rr-custom-retailers-body .rr-custom-retailer-row').eq(0);
-        const $nameInput = $row.find('input[name*="[0][name]"]');
-        expect($nameInput.length).toBe(1);
+        expect(document.querySelector('#rr-custom-retailers-body input[name*="[0][name]"]')).not.toBeNull();
+    });
+
+    it('adds a new row when add button is clicked', () => {
+        document.getElementById('rr-add-retailer').click();
+        expect(document.querySelectorAll('#rr-custom-retailers-body .rr-custom-retailer-row').length).toBe(2);
+    });
+
+    it('new row uses the correct index', () => {
+        document.getElementById('rr-add-retailer').click();
+        expect(document.querySelector('#rr-custom-retailers-body input[name*="[1][name]"]')).not.toBeNull();
+    });
+
+    it('removes a row when remove button is clicked', () => {
+        document.getElementById('rr-add-retailer').click();
+        expect(document.querySelectorAll('#rr-custom-retailers-body .rr-custom-retailer-row').length).toBe(2);
+        document.querySelector('#rr-custom-retailers-body .rr-remove-retailer').click();
+        expect(document.querySelectorAll('#rr-custom-retailers-body .rr-custom-retailer-row').length).toBe(1);
+    });
+
+    it('renumbers rows after removal', () => {
+        document.getElementById('rr-add-retailer').click();
+        document.getElementById('rr-add-retailer').click();
+        // Remove the first row
+        document.querySelector('#rr-custom-retailers-body .rr-remove-retailer').click();
+        // Remaining rows should be renumbered starting at 0
+        const inputs = document.querySelectorAll('#rr-custom-retailers-body .rr-custom-retailer-row input');
+        inputs.forEach(input => {
+            expect(input.name).toMatch(/\[0\]|\[1\]/);
+        });
     });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Edge Cases & Integrations
+// Edge Cases
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Admin UI edge cases', () => {
-    it('does not crash when buttons are clicked before AJAX setup', () => {
+    it('does not crash when test lambda button is clicked', () => {
+        global.fetch = jest.fn(() => new Promise(() => {}));
         expect(() => {
-            $('#rr-test-lambda').trigger('click');
+            document.getElementById('rr-test-lambda').click();
         }).not.toThrow();
     });
 
-    it('handles rapid button clicks (debounce-like behavior)', (done) => {
-        let callCount = 0;
-        $.ajax.mockImplementationOnce(function(opts) {
-            callCount++;
-            opts.success({ success: true, data: { message: 'OK' } });
-        });
-
-        // Click multiple times rapidly
-        $('#rr-test-lambda').trigger('click');
-        $('#rr-test-lambda').trigger('click');
-        
-        // Verify button is disabled after click
-        expect($('#rr-test-lambda').prop('disabled')).toBe(true);
-        done();
+    it('disables button during in-flight request (debounce-like)', () => {
+        global.fetch = jest.fn(() => new Promise(() => {}));
+        document.getElementById('rr-test-lambda').click();
+        document.getElementById('rr-test-lambda').click(); // second click on disabled btn
+        expect(global.fetch).toHaveBeenCalledTimes(1); // second click ignored
     });
 
-    it('maintains custom retailer data when adding/removing rows', () => {
-        // Set values
-        $('#rr-custom-retailers-body .rr-custom-retailer-row').eq(0).find('input[name*="[0][name]"]').val('My Store');
-        
-        // Verify data persisted
-        expect($('#rr-custom-retailers-body .rr-custom-retailer-row').eq(0).find('input[name*="[0][name]"]').val()).toBe('My Store');
+    it('maintains custom retailer data when adding rows', () => {
+        const input = document.querySelector('#rr-custom-retailers-body input[name*="[0][name]"]');
+        input.value = 'My Store';
+        document.getElementById('rr-add-retailer').click();
+        expect(document.querySelector('#rr-custom-retailers-body input[name*="[0][name]"]').value).toBe('My Store');
     });
 
-    it('result divs clear content on new operation', () => {
-        $.ajax.mockImplementationOnce(function(opts) {
-            opts.success({ success: true, data: { message: 'Success' } });
+    it('re-enables the button after a completed request', async () => {
+        global.fetch.mockResolvedValueOnce({
+            json: async () => ({ success: true, data: { message: 'OK' } }),
         });
-
-        // First operation
-        $('#rr-test-lambda').trigger('click');
-        
-        // Verify AJAX was called
-        expect($.ajax).toHaveBeenCalled();
+        document.getElementById('rr-test-lambda').click();
+        await flushPromises();
+        expect(document.getElementById('rr-test-lambda').disabled).toBe(false);
     });
 });

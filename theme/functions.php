@@ -625,7 +625,7 @@ add_action('wp_enqueue_scripts', function () {
     wp_enqueue_script(
         'restart-auth',
         get_stylesheet_directory_uri() . '/assets/js/auth.js',
-        ['jquery'],
+        [],
         wp_get_theme()->get('Version'),
         true
     );
@@ -646,23 +646,26 @@ add_action('wp_footer', function () {
     }
     ?>
     <script>
-    (function($) {
-        $(document).on('click', '.restart-registry-list__restore', function() {
-            var $btn        = $(this).prop('disabled', true).text('Restoring…');
-            var registryId  = $btn.data('registry-id');
-            var nonce       = $btn.data('nonce');
-            $.post('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', {
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.restart-registry-list__restore');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = 'Restoring…';
+        fetch('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', {
+            method: 'POST',
+            body: new URLSearchParams({
                 action:      'restart_registry_restore',
-                nonce:        nonce,
-                registry_id: registryId
-            }).done(function() {
-                window.location.reload();
-            }).fail(function() {
-                $btn.prop('disabled', false).text('Restore');
-                alert('Could not restore the registry. Please try again.');
-            });
+                nonce:       btn.dataset.nonce,
+                registry_id: btn.dataset.registryId,
+            }),
+        }).then(function(r) { return r.json(); }).then(function() {
+            window.location.reload();
+        }).catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Restore';
+            alert('Could not restore the registry. Please try again.');
         });
-    })(jQuery);
+    });
     </script>
     <?php
 });
