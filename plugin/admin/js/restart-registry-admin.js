@@ -1,6 +1,6 @@
 'use strict';
 
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
 
     function post(url, data) {
         return fetch(url, { method: 'POST', body: new URLSearchParams(data) })
@@ -92,4 +92,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-});
+}());
