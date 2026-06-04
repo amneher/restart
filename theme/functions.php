@@ -60,6 +60,22 @@ add_action('wp_enqueue_scripts', function () {
     ]);
 });
 
+// Preload the hero background image on every page that renders it above the fold.
+// hero-sunrise.png is the CSS background-image for both .hero-cover (front page,
+// 520px tall) and .hero-page (auth/account pages, 220px tall). Browsers cannot
+// discover CSS background images until the stylesheet is parsed, so without this
+// hint they start loading late and become the LCP element. Priority 1 places the
+// <link> before stylesheet tags so the fetch begins in parallel with CSS parsing.
+add_action('wp_head', function () {
+    $uses_hero = is_front_page()
+        || is_home()
+        || is_page(['login', 'register', 'my-account', 'my-registries']);
+    if (!$uses_hero) return;
+
+    $url = get_stylesheet_directory_uri() . '/assets/hero-sunrise.png';
+    echo '<link rel="preload" as="image" href="' . esc_url($url) . '" fetchpriority="high">' . "\n";
+}, 1);
+
 // Favicon + Open Graph meta. Theme assets serve as fallback when no
 // site icon is set in the Customizer.
 add_action('wp_head', function () {
