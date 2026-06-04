@@ -644,7 +644,7 @@
         }
 
         var markBtn = modal.querySelector('.rr-item-detail__mark-btn');
-        if (isGuestView && !isFulfilled) {
+        if (!isFulfilled) {
             markBtn.dataset.itemId = row.dataset.itemId;
             markBtn.style.display = '';
         } else {
