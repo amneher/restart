@@ -76,6 +76,44 @@ add_action('wp_head', function () {
     echo '<link rel="preload" as="image" href="' . esc_url($url) . '" fetchpriority="high">' . "\n";
 }, 1);
 
+// Defer/async third-party scripts that have no role in the critical render path.
+//
+// script_loader_tag only fires for scripts registered via wp_enqueue_script().
+// If a plugin outputs GTM or other analytics as raw <script> HTML in wp_head,
+// this filter won't catch it — we'll need to target that plugin's hook directly
+// once we know which plugin is responsible (check with the plugin files).
+//
+// Defer: script runs after parse, before DOMContentLoaded. Right for scripts
+//   that need the DOM but aren't user-critical (Bluehost hosting plugin,
+//   WP.com stats).
+// Async: script fetches in parallel and runs as soon as it arrives, without
+//   blocking parse or waiting for other scripts. Right for self-contained
+//   analytics that have no DOM dependency (GTM, gtag).
+add_filter('script_loader_tag', function (string $tag, string $handle, string $src): string {
+    if (is_admin()) return $tag;
+
+    $defer = [
+        'bluehost-wordpress-plugin',
+        'stats.wp.com',
+    ];
+    $async = [
+        'googletagmanager.com',
+    ];
+
+    foreach ($defer as $pattern) {
+        if (str_contains($src, $pattern) && !str_contains($tag, ' defer')) {
+            return str_replace('<script ', '<script defer ', $tag);
+        }
+    }
+    foreach ($async as $pattern) {
+        if (str_contains($src, $pattern) && !str_contains($tag, ' async')) {
+            return str_replace('<script ', '<script async ', $tag);
+        }
+    }
+
+    return $tag;
+}, 10, 3);
+
 // Favicon + Open Graph meta. Theme assets serve as fallback when no
 // site icon is set in the Customizer.
 add_action('wp_head', function () {
