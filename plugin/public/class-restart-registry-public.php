@@ -94,7 +94,13 @@ class Restart_Registry_Public
             'nonce'             => wp_create_nonce('restart_registry_nonce'),
             'myRegistriesUrl'   => home_url('/my-registries/'),
             'isLoggedIn'        => is_user_logged_in(),
-            'hasRegistry'       => $user_id ? !empty($this->controller->get_user_registry($user_id)) : false,
+            'hasRegistry'       => $user_id ? !empty(get_posts([
+                'post_type'      => 'restart-registry',
+                'author'         => $user_id,
+                'posts_per_page' => 1,
+                'post_status'    => ['publish', 'private', 'draft'],
+                'fields'         => 'ids',
+            ])) : false,
             'loginUrl'          => wp_login_url(get_permalink() ?: home_url('/')),
             'createRegistryUrl' => home_url('/start-a-registry/'),
             'strings' => [
@@ -1705,7 +1711,7 @@ class Restart_Registry_Public
             'url'         => $url,
             'description' => sanitize_textarea_field($_POST['description'] ?? ''),
             'notes'       => sanitize_textarea_field($_POST['notes'] ?? ''),
-            'price'       => isset($_POST['price']) && $_POST['price'] !== '' ? (float) $_POST['price'] : 0.01,
+            'price'       => isset($_POST['price']) && $_POST['price'] !== '' ? (float) $_POST['price'] : null,
             'quantity'    => isset($_POST['quantity']) ? max(1, (int) $_POST['quantity']) : 1,
             'image_url'   => !empty($_POST['image_url']) ? esc_url_raw($_POST['image_url']) : null,
         ];

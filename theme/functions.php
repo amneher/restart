@@ -138,7 +138,7 @@ add_action('wp_head', function () {
         );
     });
 }, 1);
-add_action('wp_head', function () { ob_end_flush(); }, 999);
+add_action('wp_head', function () { if (ob_get_level() > 0) ob_end_flush(); }, 999);
 
 // Favicon + Open Graph meta. Theme assets serve as fallback when no
 // site icon is set in the Customizer.
