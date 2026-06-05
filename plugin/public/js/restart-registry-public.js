@@ -815,3 +815,149 @@
     }
 
 }());
+
+// ── [restart_item] quick-add ──────────────────────────────────────────────
+(function () {
+
+    // ── Image carousel ────────────────────────────────────────────────────
+
+    function goToSlide(carousel, idx) {
+        var slides = Array.from(carousel.querySelectorAll('.rr-article-item__slide'));
+        var dots   = Array.from(carousel.querySelectorAll('.rr-article-item__dot'));
+        slides.forEach(function (s, i) { s.classList.toggle('is-active', i === idx); });
+        dots.forEach(function (d, i)   { d.classList.toggle('is-active', i === idx); });
+    }
+
+    function activeIndex(carousel) {
+        var slides = Array.from(carousel.querySelectorAll('.rr-article-item__slide'));
+        return slides.findIndex(function (s) { return s.classList.contains('is-active'); });
+    }
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.rr-article-item__prev, .rr-article-item__next');
+        if (!btn) return;
+        var carousel = btn.closest('.rr-article-item__carousel');
+        var count    = parseInt(carousel.dataset.count, 10) || 1;
+        var current  = activeIndex(carousel);
+        var next = btn.classList.contains('rr-article-item__next')
+            ? (current + 1) % count
+            : (current - 1 + count) % count;
+        goToSlide(carousel, next);
+    });
+
+    document.addEventListener('click', function (e) {
+        var dot = e.target.closest('.rr-article-item__dot');
+        if (!dot) return;
+        var carousel = dot.closest('.rr-article-item__carousel');
+        var dots     = Array.from(carousel.querySelectorAll('.rr-article-item__dot'));
+        goToSlide(carousel, dots.indexOf(dot));
+    });
+
+    // ── Quick-add modal helpers ───────────────────────────────────────────
+
+    function openQAModal(id) {
+        var modal = document.getElementById(id);
+        if (!modal) return;
+        modal.setAttribute('aria-inert', 'false');
+        modal.classList.add('is-open');
+        document.body.classList.add('rr-modal-open');
+        var first = modal.querySelector('a, button:not(.rr-modal__close)');
+        if (first) first.focus();
+    }
+
+    function closeQAModal(id) {
+        var modal = document.getElementById(id);
+        if (!modal) return;
+        modal.setAttribute('aria-inert', 'true');
+        modal.classList.remove('is-open');
+        if (!document.querySelector('.rr-modal.is-open')) {
+            document.body.classList.remove('rr-modal-open');
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('.rr-quick-add-modal .rr-modal__backdrop, .rr-quick-add-modal .rr-modal__close, .rr-quick-add-modal .rr-modal-cancel');
+        if (!trigger) return;
+        var modal = trigger.closest('.rr-modal');
+        if (modal) closeQAModal(modal.id);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        var open = document.querySelector('.rr-quick-add-modal.is-open');
+        if (open) closeQAModal(open.id);
+    });
+
+    // ── Add-to-registry click handler ─────────────────────────────────────
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.rr-quick-add');
+        if (!btn || btn.disabled) return;
+
+        var name = btn.dataset.name || '';
+
+        // Not logged in → auth modal
+        if (!restartRegistry.isLoggedIn) {
+            var nameEl = document.querySelector('#rr-qa-auth-modal .rr-qa-modal__item-name');
+            if (nameEl) nameEl.textContent = name;
+            var loginLink    = document.getElementById('rr-qa-login-link');
+            var registerLink = document.getElementById('rr-qa-register-link');
+            if (loginLink)    loginLink.href    = restartRegistry.loginUrl;
+            if (registerLink) registerLink.href = restartRegistry.createRegistryUrl;
+            openQAModal('rr-qa-auth-modal');
+            return;
+        }
+
+        // Logged in, no registry
+        if (!restartRegistry.hasRegistry) {
+            openQAModal('rr-qa-no-registry-modal');
+            return;
+        }
+
+        // Logged in with registry — fire AJAX
+        var originalText = btn.textContent;
+        btn.disabled    = true;
+        btn.textContent = restartRegistry.strings.loading;
+
+        fetch(restartRegistry.ajaxUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+                action:      'restart_registry_quick_add',
+                nonce:       restartRegistry.nonce,
+                name:        name,
+                url:         btn.dataset.url         || '',
+                price:       btn.dataset.price        || '',
+                image_url:   btn.dataset.imageUrl     || '',
+                description: btn.dataset.description  || '',
+                notes:       btn.dataset.notes        || '',
+                quantity:    btn.dataset.quantity      || '1',
+            }),
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (response) {
+            if (response.success) {
+                btn.textContent = restartRegistry.strings.added;
+                btn.classList.add('rr-quick-add--added');
+                setTimeout(function () {
+                    btn.textContent = originalText;
+                    btn.classList.remove('rr-quick-add--added');
+                    btn.disabled = false;
+                }, 2500);
+            } else {
+                btn.disabled    = false;
+                btn.textContent = originalText;
+                if (response.data && response.data.code === 'no_registry') {
+                    openQAModal('rr-qa-no-registry-modal');
+                } else {
+                    alert((response.data && response.data.message) || restartRegistry.strings.error);
+                }
+            }
+        })
+        .catch(function () {
+            btn.disabled    = false;
+            btn.textContent = originalText;
+            alert(restartRegistry.strings.error);
+        });
+    });
+
+}());

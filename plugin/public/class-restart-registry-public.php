@@ -33,6 +33,7 @@ class Restart_Registry_Public
         add_shortcode('restart_registry',        [$this, 'registry_shortcode']);
         add_shortcode('restart_registry_view',   [$this, 'registry_view_shortcode']);
         add_shortcode('restart_registry_create', [$this, 'registry_create_shortcode']);
+        add_shortcode('restart_item',            [$this, 'item_shortcode']);
 
         add_action('wp_ajax_restart_registry_add_item',              [$this, 'ajax_add_item']);
         add_action('wp_ajax_restart_registry_delete_item',           [$this, 'ajax_delete_item']);
@@ -48,6 +49,8 @@ class Restart_Registry_Public
         add_action('wp_ajax_restart_registry_archive',                     [$this, 'ajax_archive_registry']);
         add_action('wp_ajax_restart_registry_restore',                     [$this, 'ajax_restore_registry']);
         add_action('wp_ajax_restart_registry_delete',                      [$this, 'ajax_delete_registry']);
+        add_action('wp_ajax_restart_registry_quick_add',        [$this, 'ajax_quick_add']);
+        add_action('wp_ajax_nopriv_restart_registry_quick_add', [$this, 'ajax_quick_add']);
     }
 
     // =========================================================================
@@ -85,10 +88,21 @@ class Restart_Registry_Public
             true
         );
 
+        $user_id = get_current_user_id();
         wp_localize_script($this->plugin_name, 'restartRegistry', [
-            'ajaxUrl'         => admin_url('admin-ajax.php'),
-            'nonce'           => wp_create_nonce('restart_registry_nonce'),
-            'myRegistriesUrl' => home_url('/my-registries/'),
+            'ajaxUrl'           => admin_url('admin-ajax.php'),
+            'nonce'             => wp_create_nonce('restart_registry_nonce'),
+            'myRegistriesUrl'   => home_url('/my-registries/'),
+            'isLoggedIn'        => is_user_logged_in(),
+            'hasRegistry'       => $user_id ? !empty(get_posts([
+                'post_type'      => 'restart-registry',
+                'author'         => $user_id,
+                'posts_per_page' => 1,
+                'post_status'    => ['publish', 'private', 'draft'],
+                'fields'         => 'ids',
+            ])) : false,
+            'loginUrl'          => wp_login_url(get_permalink() ?: home_url('/')),
+            'createRegistryUrl' => home_url('/start-a-registry/'),
             'strings' => [
                 'confirmDelete'   => __('Are you sure you want to remove this item?', 'restart-registry'),
                 'confirmPurchase' => __('Mark this item as purchased?', 'restart-registry'),
@@ -97,6 +111,8 @@ class Restart_Registry_Public
                 'prefsSaved'      => __('Preferences saved.', 'restart-registry'),
                 'heroPickerTitle' => __('Choose a hero image', 'restart-registry'),
                 'heroPickerCta'   => __('Use this image', 'restart-registry'),
+                'addedToRegistry' => __('Added to your registry!', 'restart-registry'),
+                'added'           => __('✓ Added!', 'restart-registry'),
             ],
         ]);
     }
@@ -737,8 +753,40 @@ class Restart_Registry_Public
                         <div class="rr-item-detail__qty-row"></div>
                         <div class="rr-item-detail__actions">
                             <a href="#" target="_blank" rel="noopener sponsored" class="rr-button rr-purchase-btn rr-item-detail__purchase-btn" style="display:none"><?php _e('Purchase', 'restart-registry'); ?></a>
-                            <button type="button" class="rr-button rr-button-small rr-button-secondary rr-mark-purchased rr-item-detail__mark-btn" style="display:none"><?php _e('Mark Fulfilled', 'restart-registry'); ?></button>
+                            <button type="button" class="rr-button rr-button-small rr-button-secondary rr-mark-purchased rr-item-detail__mark-btn" style="display:none"><?php _e('Mark Purchased', 'restart-registry'); ?></button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mark as purchased modal -->
+            <div class="rr-modal" id="rr-purchase-modal" aria-hidden="true">
+                <div class="rr-modal__backdrop"></div>
+                <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-purchase-modal-title" aria-modal="true">
+                    <div class="rr-modal__header">
+                        <h3 id="rr-purchase-modal-title"><?php _e('Mark as Purchased', 'restart-registry'); ?></h3>
+                        <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                    </div>
+                    <div class="rr-modal__body">
+                        <p class="rr-purchase-modal__item-name"></p>
+                        <p class="rr-purchase-modal__nudge"><?php _e('Record who purchased this item.', 'restart-registry'); ?></p>
+                        <form id="rr-purchase-form" class="rr-form">
+                            <input type="hidden" id="rr-purchase-item-id" name="item_id">
+                            <div class="rr-form-group">
+                                <label for="rr-purchaser-name"><?php _e('Purchased by', 'restart-registry'); ?> <span class="rr-optional"><?php _e('(optional)', 'restart-registry'); ?></span></label>
+                                <input type="text" id="rr-purchaser-name" name="purchaser_name"
+                                    placeholder="<?php esc_attr_e('e.g., Aunt Carol', 'restart-registry'); ?>">
+                            </div>
+                            <div class="rr-form-group">
+                                <label for="rr-purchaser-note"><?php _e('Note', 'restart-registry'); ?> <span class="rr-optional"><?php _e('(optional)', 'restart-registry'); ?></span></label>
+                                <textarea id="rr-purchaser-note" name="purchaser_note" rows="3"
+                                    placeholder="<?php esc_attr_e('Any notes about this purchase…', 'restart-registry'); ?>"></textarea>
+                            </div>
+                            <div class="rr-form-actions">
+                                <button type="submit" class="rr-button"><?php _e('Confirm Purchase', 'restart-registry'); ?></button>
+                                <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -1458,5 +1506,222 @@ class Restart_Registry_Public
             wp_send_json_success(['message' => __('Registry deleted.', 'restart-registry'), 'redirect' => home_url('/my-registries/')]);
         }
         wp_send_json_error(['message' => __('Could not delete registry.', 'restart-registry')]);
+    }
+
+    // =========================================================================
+    // [restart_item] shortcode — product card for favorites / gift-guide articles
+    // =========================================================================
+
+    /** @var bool Whether the quick-add modals have already been appended this request. */
+    private static bool $quick_add_modals_printed = false;
+
+    /**
+     * [restart_item title="…" price="…" image="…" images="url1,url2" url="…"
+     *               description="…" retailer="…" notes="…" quantity="1"]
+     *
+     * Renders a product card with image(s), details, a shop link, and an
+     * "Add to My Registry" button. Multiple images render as a simple carousel.
+     */
+    public function item_shortcode(array $atts): string
+    {
+        $a = shortcode_atts([
+            'title'       => '',
+            'price'       => '',
+            'image'       => '',
+            'images'      => '',
+            'description' => '',
+            'url'         => '',
+            'retailer'    => '',
+            'notes'       => '',
+            'quantity'    => '1',
+        ], $atts, 'restart_item');
+
+        if (empty($a['title'])) {
+            return '';
+        }
+
+        // Normalise image list: `images` wins over `image`.
+        $raw    = !empty($a['images']) ? $a['images'] : $a['image'];
+        $images = array_values(array_filter(array_map('trim', explode(',', $raw))));
+
+        // ── Image / carousel section ──────────────────────────────────────
+        $media_html = '';
+        if (count($images) === 1) {
+            $media_html = '<div class="rr-article-item__media">'
+                . '<img class="rr-article-item__img" src="' . esc_url($images[0]) . '" alt="' . esc_attr($a['title']) . '" loading="lazy">'
+                . '</div>';
+        } elseif (count($images) > 1) {
+            $slides = '';
+            $dots   = '';
+            foreach ($images as $i => $src) {
+                $active  = $i === 0 ? ' is-active' : '';
+                $slides .= '<img class="rr-article-item__slide' . $active . '" src="' . esc_url($src) . '" alt="' . esc_attr($a['title']) . '" loading="lazy">';
+                $dots   .= '<button type="button" class="rr-article-item__dot' . $active . '" aria-label="' . esc_attr(sprintf(__('Image %d', 'restart-registry'), $i + 1)) . '"></button>';
+            }
+            $media_html = '<div class="rr-article-item__media">'
+                . '<div class="rr-article-item__carousel" data-count="' . count($images) . '">'
+                . '<div class="rr-article-item__slides">' . $slides . '</div>'
+                . '<button type="button" class="rr-article-item__prev" aria-label="' . esc_attr__('Previous image', 'restart-registry') . '">&#8249;</button>'
+                . '<button type="button" class="rr-article-item__next" aria-label="' . esc_attr__('Next image', 'restart-registry') . '">&#8250;</button>'
+                . '<div class="rr-article-item__dots">' . $dots . '</div>'
+                . '</div>'
+                . '</div>';
+        }
+
+        // ── Price ─────────────────────────────────────────────────────────
+        $price_html = '';
+        if (!empty($a['price'])) {
+            $display    = str_starts_with(ltrim($a['price']), '$') ? $a['price'] : '$' . $a['price'];
+            $price_html = '<span class="rr-article-item__price">' . esc_html($display) . '</span>';
+        }
+
+        // ── Action buttons ────────────────────────────────────────────────
+        $shop_btn = '';
+        if (!empty($a['url'])) {
+            $shop_btn = '<a href="' . esc_url($a['url']) . '" class="rr-button rr-article-item__shop-btn" target="_blank" rel="noopener sponsored">'
+                . esc_html__('Shop Now', 'restart-registry') . '</a>';
+        }
+
+        $add_btn = '<button type="button" class="rr-button rr-button-secondary rr-quick-add"'
+            . ' data-name="' . esc_attr($a['title']) . '"'
+            . ' data-url="' . esc_attr($a['url']) . '"'
+            . ' data-price="' . esc_attr(preg_replace('/[^0-9.]/', '', $a['price'])) . '"'
+            . ' data-image-url="' . esc_attr($images[0] ?? '') . '"'
+            . ' data-description="' . esc_attr($a['description']) . '"'
+            . ' data-notes="' . esc_attr($a['notes']) . '"'
+            . ' data-quantity="' . esc_attr($a['quantity']) . '">'
+            . esc_html__('+ Add to My Registry', 'restart-registry')
+            . '</button>';
+
+        // ── Full card ─────────────────────────────────────────────────────
+        $retailer_html = !empty($a['retailer'])
+            ? '<span class="rr-article-item__retailer rr-item-retailer">' . esc_html($a['retailer']) . '</span>'
+            : '';
+
+        $desc_html = !empty($a['description'])
+            ? '<p class="rr-article-item__description">' . esc_html($a['description']) . '</p>'
+            : '';
+
+        $html = '<div class="rr-article-item">'
+            . $media_html
+            . '<div class="rr-article-item__body">'
+            . '<div class="rr-article-item__header">'
+            . '<h3 class="rr-article-item__title">' . esc_html($a['title']) . '</h3>'
+            . $retailer_html
+            . '</div>'
+            . $desc_html
+            . '<div class="rr-article-item__footer">'
+            . $price_html
+            . '<div class="rr-article-item__actions">' . $shop_btn . $add_btn . '</div>'
+            . '</div>'
+            . '</div>'
+            . '</div>';
+
+        // Output shared quick-add modals once per page.
+        if (!self::$quick_add_modals_printed) {
+            self::$quick_add_modals_printed = true;
+            $html .= $this->render_quick_add_modals();
+        }
+
+        return $html;
+    }
+
+    /**
+     * Shared modals for the quick-add flow.
+     * Auth modal: shown to non-logged-in visitors.
+     * No-registry modal: shown to logged-in users who haven't created a registry.
+     */
+    private function render_quick_add_modals(): string
+    {
+        ob_start();
+        ?>
+
+        <!-- Quick-add: auth modal (not logged in) -->
+        <div class="rr-modal rr-quick-add-modal" id="rr-qa-auth-modal" aria-inert="true">
+            <div class="rr-modal__backdrop"></div>
+            <div class="rr-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="rr-qa-auth-title">
+                <div class="rr-modal__header">
+                    <h3 id="rr-qa-auth-title" class="rr-modal__title"><?php esc_html_e('Add to Your Registry', 'restart-registry'); ?></h3>
+                    <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                </div>
+                <div class="rr-modal__body">
+                    <p class="rr-qa-modal__item-name"></p>
+                    <p><?php esc_html_e('Sign in or create a free registry to save items you love.', 'restart-registry'); ?></p>
+                    <div class="rr-modal__actions rr-qa-modal__actions">
+                        <a id="rr-qa-login-link" href="<?php echo esc_url(wp_login_url()); ?>" class="rr-button"><?php esc_html_e('Sign In', 'restart-registry'); ?></a>
+                        <a id="rr-qa-register-link" href="<?php echo esc_url(home_url('/start-a-registry/')); ?>" class="rr-button rr-button-secondary"><?php esc_html_e('Create a Registry', 'restart-registry'); ?></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick-add: no-registry modal (logged in, no registry) -->
+        <div class="rr-modal rr-quick-add-modal" id="rr-qa-no-registry-modal" aria-inert="true">
+            <div class="rr-modal__backdrop"></div>
+            <div class="rr-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="rr-qa-nr-title">
+                <div class="rr-modal__header">
+                    <h3 id="rr-qa-nr-title" class="rr-modal__title"><?php esc_html_e('Create a Registry First', 'restart-registry'); ?></h3>
+                    <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                </div>
+                <div class="rr-modal__body">
+                    <p><?php esc_html_e("You don't have a registry yet. Start one — it only takes a minute.", 'restart-registry'); ?></p>
+                    <div class="rr-modal__actions rr-qa-modal__actions">
+                        <a href="<?php echo esc_url(home_url('/start-a-registry/')); ?>" class="rr-button"><?php esc_html_e('Create My Registry', 'restart-registry'); ?></a>
+                        <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php esc_html_e('Maybe Later', 'restart-registry'); ?></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * AJAX: add an item to the current user's registry without requiring
+     * registry_id from the caller — looks it up automatically.
+     */
+    public function ajax_quick_add(): void
+    {
+        check_ajax_referer('restart_registry_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['code' => 'not_logged_in', 'message' => __('Please sign in to add items to your registry.', 'restart-registry')]);
+            return;
+        }
+
+        $registry = $this->controller->get_user_registry(get_current_user_id());
+        if (!$registry) {
+            wp_send_json_error(['code' => 'no_registry', 'message' => __("You don't have a registry yet.", 'restart-registry')]);
+            return;
+        }
+
+        $registry_id = (int) $registry['id'];
+
+        $name = sanitize_text_field($_POST['name'] ?? '');
+        $url  = esc_url_raw($_POST['url'] ?? '');
+
+        if (empty($name)) {
+            wp_send_json_error(['message' => __('Item name is required.', 'restart-registry')]);
+            return;
+        }
+
+        $data = [
+            'name'        => $name,
+            'url'         => $url,
+            'description' => sanitize_textarea_field($_POST['description'] ?? ''),
+            'notes'       => sanitize_textarea_field($_POST['notes'] ?? ''),
+            'price'       => isset($_POST['price']) && $_POST['price'] !== '' ? (float) $_POST['price'] : null,
+            'quantity'    => isset($_POST['quantity']) ? max(1, (int) $_POST['quantity']) : 1,
+            'image_url'   => !empty($_POST['image_url']) ? esc_url_raw($_POST['image_url']) : null,
+        ];
+
+        $result = $this->controller->add_item($registry_id, $data);
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+            return;
+        }
+
+        wp_send_json_success(['message' => __('Added to your registry!', 'restart-registry')]);
     }
 }

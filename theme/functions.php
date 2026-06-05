@@ -76,6 +76,70 @@ add_action('wp_head', function () {
     echo '<link rel="preload" as="image" href="' . esc_url($url) . '" fetchpriority="high">' . "\n";
 }, 1);
 
+// Defer/async third-party scripts that have no role in the critical render path.
+//
+// Two approaches needed because plugins load scripts different ways:
+//
+// 1. script_loader_tag: catches scripts registered via wp_enqueue_script().
+//    Site Kit (gtag/js) and Bluehost scripts go through this path.
+//
+// 2. wp_head output buffer (below): catches scripts output as raw HTML by
+//    plugins that bypass wp_enqueue_script. GTM4WP does this — it writes
+//    the GTM container snippet directly in wp_head.
+//
+// ANALYTICS NOTE: Site Kit, GTM4WP, and MonsterInsights are all active.
+// That is three analytics stacks loading on every page. Consolidating to
+// one would eliminate 1-2 of these script loads entirely — far more impactful
+// than async-ing them. Recommend keeping whichever is actually being used for
+// reporting and disabling the other two.
+//
+// BLUEHOST NOTE: The two slow Bluehost scripts (~904ms each) are Newfold AI
+// features (nfd-ai-chat, nfd-agents, nfd-editor-chat) — admin-only tools that
+// should not load on the front end at all. Deferring reduces the damage but
+// the real fix is disabling front-end loading in the Bluehost plugin settings,
+// or dequeuing by handle once we know the registered names.
+add_filter('script_loader_tag', function (string $tag, string $handle, string $src): string {
+    if (is_admin()) return $tag;
+
+    $defer = [
+        'bluehost-wordpress-plugin',
+        'newfold-labs',
+        'stats.wp.com',
+    ];
+    $async = [
+        'googletagmanager.com',
+    ];
+
+    foreach ($defer as $pattern) {
+        if (str_contains($src, $pattern) && !str_contains($tag, ' defer')) {
+            return str_replace('<script ', '<script defer ', $tag);
+        }
+    }
+    foreach ($async as $pattern) {
+        if (str_contains($src, $pattern) && !str_contains($tag, ' async')) {
+            return str_replace('<script ', '<script async ', $tag);
+        }
+    }
+
+    return $tag;
+}, 10, 3);
+
+// Intercept raw <script> tags written directly to wp_head by plugins that
+// bypass wp_enqueue_script (e.g. GTM4WP writes the GTM container snippet
+// as plain HTML). We buffer the entire wp_head output and add async to any
+// googletagmanager.com or google-analytics.com script tag that doesn't
+// already have it.
+add_action('wp_head', function () {
+    ob_start(function (string $output): string {
+        return preg_replace(
+            '/(<script\b(?![^>]*\basync\b)[^>]*\bsrc=["\'][^"\']*(?:googletagmanager\.com|google-analytics\.com)[^"\']*["\'][^>]*)>/i',
+            '$1 async>',
+            $output
+        );
+    });
+}, 1);
+add_action('wp_head', function () { if (ob_get_level() > 0) ob_end_flush(); }, 999);
+
 // Favicon + Open Graph meta. Theme assets serve as fallback when no
 // site icon is set in the Customizer.
 add_action('wp_head', function () {

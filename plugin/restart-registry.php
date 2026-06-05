@@ -16,7 +16,7 @@
  * Plugin Name:       Restart Registry
  * Plugin URI:        http://the-restart.co/restart-registry-uri/
  * Description:       Provides a gift registry custom post type, add item function, and associated features.
- * Version: 1.2.4
+ * Version: 1.2.5
  * Author:            Andrew Neher
  * Author URI:        http://the-restart.co/
  * License:           GPL-2.0+

@@ -1180,3 +1180,201 @@ body.rr-modal-open { overflow: hidden; }
     color: var(--rr-mid);
     margin: 0;
 }
+
+/* ── [restart_item] article product card ─────────────────────────────────── */
+.rr-article-item {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    background: #fff;
+    border: 1px solid var(--rr-border);
+    border-radius: var(--rr-radius-lg);
+    overflow: hidden;
+    margin: 28px 0;
+    font-family: var(--rr-font-body);
+    color: var(--rr-dark);
+}
+
+/* ── Media (image / carousel) ────────────────────────────────────────────── */
+.rr-article-item__media {
+    flex: 0 0 220px;
+    min-height: 220px;
+    background: var(--rr-mint-bg);
+    overflow: hidden;
+    position: relative;
+}
+
+.rr-article-item__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.rr-article-item__carousel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 220px;
+}
+
+.rr-article-item__slides {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.rr-article-item__slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 280ms ease;
+    pointer-events: none;
+}
+.rr-article-item__slide.is-active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.rr-article-item__prev,
+.rr-article-item__next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(25, 53, 64, 0.55);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 2;
+    transition: background 150ms;
+}
+.rr-article-item__prev { left: 8px; }
+.rr-article-item__next { right: 8px; }
+.rr-article-item__prev:hover,
+.rr-article-item__next:hover { background: var(--rr-dark); }
+
+.rr-article-item__dots {
+    position: absolute;
+    bottom: 8px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    z-index: 2;
+}
+.rr-article-item__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.55);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 150ms;
+}
+.rr-article-item__dot.is-active,
+.rr-article-item__dot:hover { background: #fff; }
+
+/* ── Body ────────────────────────────────────────────────────────────────── */
+.rr-article-item__body {
+    flex: 1;
+    padding: 20px 20px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.rr-article-item__header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rr-article-item__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--rr-dark);
+}
+
+.rr-article-item__description {
+    margin: 0;
+    font-size: 14px;
+    color: var(--rr-mid);
+    line-height: 1.6;
+    flex: 1;
+}
+
+.rr-article-item__footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.rr-article-item__price {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--rr-teal);
+    font-family: var(--rr-font-ui);
+    min-width: 72px;
+}
+
+.rr-article-item__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rr-quick-add--added {
+    background: var(--rr-teal);
+    color: #fff;
+    border-color: var(--rr-teal);
+}
+
+/* ── Quick-add modals ────────────────────────────────────────────────────── */
+.rr-qa-modal__item-name {
+    font-weight: 600;
+    color: var(--rr-dark);
+    margin: 0 0 6px;
+}
+
+.rr-qa-modal__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+    .rr-article-item {
+        flex-direction: column;
+        gap: 0;
+    }
+    .rr-article-item__media {
+        flex: none;
+        width: 100%;
+        min-height: 200px;
+    }
+    .rr-article-item__body {
+        padding: 16px;
+    }
+}
