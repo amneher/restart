@@ -35,6 +35,23 @@ class Restart_Registry_Public
         add_shortcode('restart_registry_create', [$this, 'registry_create_shortcode']);
         add_shortcode('restart_item',            [$this, 'item_shortcode']);
 
+        // Process [restart_item] before WordPress's make_clickable filter (priority 9)
+        // and strip any HTML tags that Gutenberg or make_clickable may have injected
+        // into attribute values (e.g. URLs auto-linked to <a href="url">url</a>).
+        // strip_tags() on the raw shortcode string restores clean attribute values
+        // before the shortcode parser sees them, regardless of when the corruption
+        // occurred (save-time Gutenberg linkification or render-time make_clickable).
+        add_filter('the_content', function (string $content): string {
+            if (!str_contains($content, '[restart_item')) {
+                return $content;
+            }
+            return preg_replace_callback(
+                '/\[restart_item\b.*?\]/s',
+                fn($m) => do_shortcode(strip_tags($m[0])),
+                $content
+            );
+        }, 8);
+
         add_action('wp_ajax_restart_registry_add_item',              [$this, 'ajax_add_item']);
         add_action('wp_ajax_restart_registry_delete_item',           [$this, 'ajax_delete_item']);
         add_action('wp_ajax_restart_registry_update_item',           [$this, 'ajax_update_item']);
