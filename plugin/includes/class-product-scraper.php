@@ -297,13 +297,14 @@ class Restart_Registry_Product_Scraper {
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL            => $url,
-            CURLOPT_RETURNTRANSFER => false,
-            CURLOPT_NOBODY         => true,
+            CURLOPT_RETURNTRANSFER => true,   // capture body to string (avoids stdout); we discard it
+            CURLOPT_NOBODY         => false,  // GET, not HEAD — a.co doesn't reliably redirect on HEAD
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 5,
             CURLOPT_TIMEOUT        => 10,
             CURLOPT_USERAGENT      => self::UA_CHROME,
             CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_COOKIEFILE     => '',     // in-memory cookie jar so redirect chain gets cookies
         ]);
         curl_exec($ch);
         $final = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
