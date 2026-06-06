@@ -496,3 +496,35 @@ Read-only, matches the frontend card layout exactly:
 - [x] `class-restart-registry-admin.php`: `handle_registry_edit()` save handler (action `restart_registry_admin_edit`)
 - [x] `restart-registry-admin.css`: edit page layout styles
 - [ ] Manual test: edit a registry, verify all fields save correctly
+
+---
+
+# Plan: Affiliate converter decorator pattern
+
+## What
+Add decorator-style methods to `Restart_Registry_Affiliate_Converter` so affiliate link conversion can be applied to a plain URL, the output of a callable, or an HTML string — without instantiating the converter multiple times.
+
+## Approach
+1. **`instance(): self`** — static singleton so callers never instantiate directly. Registers WP filters on first call.
+2. **`convert_content(string $html): string`** — parses HTML with `DOMDocument`, iterates `<a>` elements, rewrites `href` values through `convert_url()`. Returns the original string untouched if no `<a>` tag is present (fast-path skip).
+3. **`wrap(callable $fn, ...$args): string`** — calls `$fn(...$args)`, casts to string, then routes: plain URL (no whitespace + has scheme) → `convert_url()['affiliate_url']`; everything else → `convert_content()`.
+4. **`convert_url_string(string $url): string`** — thin public wrapper returning only the affiliate URL string; used as the WP filter callback.
+5. **WP filters** registered once in `instance()`:
+   - `restart_affiliate_url` — `apply_filters('restart_affiliate_url', $url)` returns the affiliate URL string.
+   - `restart_affiliate_content` — `apply_filters('restart_affiliate_content', $html)` returns rewritten HTML.
+6. **Clean up callsites** in `class-restart-registry-public.php` — replace the three `require_once + new` patterns with `Restart_Registry_Affiliate_Converter::instance()`.
+
+## DOMDocument fragment strategy
+Wrap input in `<html><body>`, load with `LIBXML_COMPACT | LIBXML_NONET | LIBXML_NOERROR`, extract inner HTML by iterating `<body>` child nodes with `saveHTML()`. Avoids regex on content.
+
+## Files touched
+- `plugin/includes/class-affiliate-converter.php`
+- `plugin/public/class-restart-registry-public.php`
+
+## Todo
+- [x] `class-affiliate-converter.php`: add `$instance` static property + `instance()` method with filter registration
+- [x] `class-affiliate-converter.php`: add `convert_url_string()` public method
+- [x] `class-affiliate-converter.php`: add `convert_content()` using DOMDocument
+- [x] `class-affiliate-converter.php`: add `wrap()` callable decorator
+- [x] `class-restart-registry-public.php`: replace three inline instantiations with `::instance()`
+- [x] Run `make plugin-test-php` and confirm green (229/229 with 15 new decorator tests)
