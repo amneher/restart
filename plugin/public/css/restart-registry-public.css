@@ -1219,9 +1219,8 @@ body.rr-modal-open { overflow: hidden; }
 }
 
 .rr-article-item__slides {
-    width: 100%;
-    height: 100%;
-    position: relative;
+    position: absolute;
+    inset: 0;
 }
 
 .rr-article-item__slide {
