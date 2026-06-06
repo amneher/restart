@@ -28,7 +28,9 @@ class Restart_Registry_Public
         $this->version     = $version;
 
         require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-restart-registry-controller.php';
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-affiliate-converter.php';
         $this->controller = new Restart_Registry_Controller();
+        Restart_Registry_Affiliate_Converter::instance();
 
         add_shortcode('restart_registry',        [$this, 'registry_shortcode']);
         add_shortcode('restart_registry_view',   [$this, 'registry_view_shortcode']);
@@ -1457,8 +1459,7 @@ class Restart_Registry_Public
         require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-retailer-api.php';
         $api_data = (new Restart_Registry_Retailer_API())->fetch_if_configured($url);
         if ($api_data !== null) {
-            require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-affiliate-converter.php';
-            $aff = (new Restart_Registry_Affiliate_Converter())->convert_url($url);
+            $aff = Restart_Registry_Affiliate_Converter::instance()->convert_url($url);
             wp_send_json_success(array_merge($api_data, [
                 'retailer'     => $aff['retailer'],
                 'is_affiliate' => $aff['is_affiliate'],
@@ -1469,8 +1470,7 @@ class Restart_Registry_Public
         require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-product-scraper.php';
         $data = (new Restart_Registry_Product_Scraper())->scrape($url);
 
-        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-affiliate-converter.php';
-        $aff = (new Restart_Registry_Affiliate_Converter())->convert_url($url);
+        $aff = Restart_Registry_Affiliate_Converter::instance()->convert_url($url);
 
         wp_send_json_success(array_merge($data, [
             'retailer'     => $aff['retailer'],
@@ -1593,15 +1593,18 @@ class Restart_Registry_Public
         }
 
         // ── Action buttons ────────────────────────────────────────────────
+        // TODO: if the URL is an affiliate link, show the retailer's logo instead of a generic "Shop Now" button. This would require normalizing known retailer URLs in the Affiliate_Converter and passing that info through here.
+        $aff = Restart_Registry_Affiliate_Converter::instance()->convert_url($a['url']);
         $shop_btn = '';
         if (!empty($a['url'])) {
-            $shop_btn = '<a href="' . esc_url($a['url']) . '" class="rr-button rr-article-item__shop-btn" target="_blank" rel="noopener sponsored">'
+            $shop_btn = '<a href="' . esc_url($aff['affiliate_url']) . '" class="rr-button rr-article-item__shop-btn" target="_blank" rel="noopener sponsored">'
                 . esc_html__('Shop Now', 'restart-registry') . '</a>';
         }
 
+        // TODO: if the URL is an affiliate link, show the retailer's logo instead of a generic "Shop Now" button. This would require normalizing known retailer URLs in the Affiliate_Converter and passing that info through here.
         $add_btn = '<button type="button" class="rr-button rr-button-secondary rr-quick-add"'
             . ' data-name="' . esc_attr($a['title']) . '"'
-            . ' data-url="' . esc_attr($a['url']) . '"'
+            . ' data-url="' . esc_attr($aff['affiliate_url']) . '"'
             . ' data-price="' . esc_attr(preg_replace('/[^0-9.]/', '', $a['price'])) . '"'
             . ' data-image-url="' . esc_attr($images[0] ?? '') . '"'
             . ' data-description="' . esc_attr($a['description']) . '"'
