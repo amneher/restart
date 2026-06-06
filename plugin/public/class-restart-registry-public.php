@@ -1594,24 +1594,28 @@ class Restart_Registry_Public
 
         // ── Action buttons ────────────────────────────────────────────────
         // TODO: if the URL is an affiliate link, show the retailer's logo instead of a generic "Shop Now" button. This would require normalizing known retailer URLs in the Affiliate_Converter and passing that info through here.
-        $aff = Restart_Registry_Affiliate_Converter::instance()->convert_url($a['url']);
+        // $aff = '';
         $shop_btn = '';
+        $add_btn  = '';
         if (!empty($a['url'])) {
+            $aff = Restart_Registry_Affiliate_Converter::instance()->convert_url($a['url']);
             $shop_btn = '<a href="' . esc_url($aff['affiliate_url']) . '" class="rr-button rr-article-item__shop-btn" target="_blank" rel="noopener sponsored">'
                 . esc_html__('Shop Now', 'restart-registry') . '</a>';
+            
+            // TODO: if the URL is an affiliate link, show the retailer's logo instead of a generic "Shop Now" button. This would require normalizing known retailer URLs in the Affiliate_Converter and passing that info through here.
+            $add_btn = '<button type="button" class="rr-button rr-button-secondary rr-quick-add"'
+                . ' data-name="' . esc_attr($a['title']) . '"'
+                . ' data-url="' . esc_attr($aff['affiliate_url']) . '"'
+                . ' data-price="' . esc_attr(preg_replace('/[^0-9.]/', '', $a['price'])) . '"'
+                . ' data-image-url="' . esc_attr($images[0] ?? '') . '"'
+                . ' data-description="' . esc_attr($a['description']) . '"'
+                . ' data-notes="' . esc_attr($a['notes']) . '"'
+                . ' data-quantity="' . esc_attr($a['quantity']) . '">'
+                . esc_html__('+ Add to My Registry', 'restart-registry')
+                . '</button>';
         }
 
-        // TODO: if the URL is an affiliate link, show the retailer's logo instead of a generic "Shop Now" button. This would require normalizing known retailer URLs in the Affiliate_Converter and passing that info through here.
-        $add_btn = '<button type="button" class="rr-button rr-button-secondary rr-quick-add"'
-            . ' data-name="' . esc_attr($a['title']) . '"'
-            . ' data-url="' . esc_attr($aff['affiliate_url']) . '"'
-            . ' data-price="' . esc_attr(preg_replace('/[^0-9.]/', '', $a['price'])) . '"'
-            . ' data-image-url="' . esc_attr($images[0] ?? '') . '"'
-            . ' data-description="' . esc_attr($a['description']) . '"'
-            . ' data-notes="' . esc_attr($a['notes']) . '"'
-            . ' data-quantity="' . esc_attr($a['quantity']) . '">'
-            . esc_html__('+ Add to My Registry', 'restart-registry')
-            . '</button>';
+       
 
         // ── Full card ─────────────────────────────────────────────────────
         $retailer_html = !empty($a['retailer'])

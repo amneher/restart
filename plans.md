@@ -28,7 +28,7 @@ Add a `notes` field to registry items — separate from `description` (scraper-o
 - [x] Plugin JS: edit-item submit sends `notes`
 - [x] Plugin JS: item detail modal shows notes
 - [x] Plugin JS tests: update for notes field (17/17 pass)
-- [ ] Close GH #22
+- [x] Close GH #22
 
 ---
 
@@ -70,8 +70,8 @@ Add a "Custom Retailers" section to the Affiliate Settings admin page so new aff
 - [x] `class-restart-registry-admin.php` — render Custom Retailers table section in `display_affiliates_page()`
 - [x] `restart-registry-admin.js` — add/remove row logic + index renumbering
 - [x] Tests: converter (5 cases) + admin sanitize (8 cases), 115/115 pass
-- [ ] Manual test: add a custom retailer row, save, add an item URL matching its domain, confirm affiliate URL is built from template
-- [ ] Close GH #25
+- [x] Manual test: add a custom retailer row, save, add an item URL matching its domain, confirm affiliate URL is built from template
+- [x] Close GH #25
 
 ---
 
@@ -125,19 +125,19 @@ Register a custom `restart-archived` post status on `init`. Items and purchase m
 - Auto-purge of archived registries after N days
 
 ## Todo
-- [ ] Branch: `feat/archive-delete-registry`
-- [ ] Main class: register `restart-archived` post status
-- [ ] Controller: `archive_registry()`, `restore_registry()`, `get_user_archived_registries()`
-- [ ] Controller: `get_registry_by_share_key()` — detect archived, return `registry_archived` error
-- [ ] Tests: archive/restore/delete/archived-url
-- [ ] Public class: `ajax_archive_registry()`, `ajax_restore_registry()`, `ajax_delete_registry()`
-- [ ] Public class: archive + delete buttons in settings modal
-- [ ] Public class: archive confirm modal
-- [ ] Public class: delete confirm modal with checkbox gate
-- [ ] Public class: archived registries section in My Account
-- [ ] Public class: "no longer active" message for archived URL
-- [ ] CSS: archive/delete button styles, archived section, confirm modals
-- [ ] Close GH #23
+- [x] Branch: `feat/archive-delete-registry`
+- [x] Main class: register `restart-archived` post status
+- [x] Controller: `archive_registry()`, `restore_registry()`, `get_user_archived_registries()`
+- [x] Controller: `get_registry_by_share_key()` — detect archived, return `registry_archived` error
+- [x] Tests: archive/restore/delete/archived-url
+- [x] Public class: `ajax_archive_registry()`, `ajax_restore_registry()`, `ajax_delete_registry()`
+- [x] Public class: archive + delete buttons in settings modal
+- [x] Public class: archive confirm modal
+- [x] Public class: delete confirm modal with checkbox gate
+- [x] Public class: archived registries section in My Account
+- [x] Public class: "no longer active" message for archived URL
+- [x] CSS: archive/delete button styles, archived section, confirm modals
+- [x] Close GH #23
 
 ---
 
@@ -203,7 +203,7 @@ Only records with a non-empty `purchaser_note` are stored (name-only purchase no
 - [x] Public class: message board section in owner view (1184371)
 - [x] Public class: confirm board absent from guest view — in render_manage_registry() only, not render_registry_view_html()
 - [x] CSS: message board and card styles (1184371)
-- [ ] Close GH #16
+- [x] Close GH #16
 
 ---
 
@@ -290,7 +290,7 @@ This deserves its own /plan-eng-review pass. I'd rather not touch it in the same
 - [x] Phase B PR (item 11).
 - [x] Phase C PR (items 12–17).
 - [x] Phase D PR (items 18–19).
-- [ ] Phase E plan + PR (item 20).
+- [x] Phase E plan + PR (item 20).
 
 ---
 
@@ -340,10 +340,10 @@ The current scraper uses Chrome desktop UA for West Elm and Pottery Barn → **s
 
 ## Immediate actions before Issue #20 implementation
 
-- [ ] **Bug fix**: update `class-product-scraper.php` to use `LinkedInBot` UA for `westelm.com` and `potterybarn.com` (and add catch for other Williams-Sonoma domains). This is a production bug, not a feature.
-- [ ] Apply as CJ Affiliate publisher and apply to West Elm + Pottery Barn programs (async — kicks off the 1-2 week approval clock)
-- [ ] Apply for Etsy Open API v3 developer account
-- [ ] Run a 1-day Scrapfly free trial against all 5 retailers to validate extraction accuracy
+- [x] **Bug fix**: update `class-product-scraper.php` to use `LinkedInBot` UA for `westelm.com` and `potterybarn.com` (and add catch for other Williams-Sonoma domains). This is a production bug, not a feature.
+- [x] Apply as CJ Affiliate publisher and apply to West Elm + Pottery Barn programs (async — kicks off the 1-2 week approval clock)
+- [x] Apply for Etsy Open API v3 developer account
+- [x] Run a 1-day Scrapfly free trial against all 5 retailers to validate extraction accuracy
 
 ## Raw data
 See `plugin/tests/assets/ua-matrix/` for full JSON results and `summary.md`.
@@ -388,17 +388,17 @@ Follow the migration pattern in `lambda/app/database/migrations/__init__.py`.
 - Dead URL (404 after 3 retries) → auto-archive item + notify owner
 
 ## Scope
-- [ ] `/plan-eng-review` pass for this architecture before implementation
-- [ ] Lambda: DB migration (4 new columns on items table)
-- [ ] Lambda: Python scraper port (`lambda/app/services/scraper.py`)
-- [ ] Lambda: enqueuer Lambda + SQS FIFO + EventBridge cron (IaC)
-- [ ] Lambda: worker Lambda with per-retailer routing + anomaly detection
-- [ ] Plugin: REST endpoints for refresh job status
-- [ ] Plugin admin: Refresh button + schedule UI
-- [ ] Plugin admin: per-item price change indicators
-- [ ] Plugin: owner email notification on price anomaly / dead URL
-- [ ] Tests
-- [ ] Close GH #20
+- [x] `/plan-eng-review` pass for this architecture before implementation
+- [x] Lambda: DB migration (4 new columns on items table)
+- [x] Lambda: Python scraper port (`lambda/app/services/scraper.py`)
+- [x] Lambda: enqueuer Lambda + SQS FIFO + EventBridge cron (IaC)
+- [x] Lambda: worker Lambda with per-retailer routing + anomaly detection
+- [x] Plugin: REST endpoints for refresh job status
+- [x] Plugin admin: Refresh button + schedule UI
+- [x] Plugin admin: per-item price change indicators
+- [x] Plugin: owner email notification on price anomaly / dead URL
+- [x] Tests
+- [x] Close GH #20
 
 ---
 
@@ -495,7 +495,7 @@ Read-only, matches the frontend card layout exactly:
 - [x] `class-restart-registry-admin.php`: `display_registry_edit_page()` render method (two-column layout)
 - [x] `class-restart-registry-admin.php`: `handle_registry_edit()` save handler (action `restart_registry_admin_edit`)
 - [x] `restart-registry-admin.css`: edit page layout styles
-- [ ] Manual test: edit a registry, verify all fields save correctly
+- [x] Manual test: edit a registry, verify all fields save correctly
 
 ---
 
@@ -528,3 +528,54 @@ Wrap input in `<html><body>`, load with `LIBXML_COMPACT | LIBXML_NONET | LIBXML_
 - [x] `class-affiliate-converter.php`: add `wrap()` callable decorator
 - [x] `class-restart-registry-public.php`: replace three inline instantiations with `::instance()`
 - [x] Run `make plugin-test-php` and confirm green (229/229 with 15 new decorator tests)
+- [x] PR merged
+
+---
+
+# Plan: TinyMCE inserter for `[restart_item]` shortcode
+
+## What
+A toolbar button in the Classic Editor that opens a form modal for filling in `[restart_item]` attributes. Colleagues click the button, fill in the fields, click Insert — the shortcode appears at the cursor.
+
+## Approach
+- `mce_external_plugins` filter → new `plugin/admin/js/restart-registry-tinymce.js`
+- `mce_buttons` filter → add button to toolbar row 1 (post/page screens only)
+- TinyMCE plugin JS uses `editor.windowManager.open()` (built-in form modal, no custom CSS) with fields: URL, Title, Price, Image URL(s), Description, Retailer, Notes, Quantity
+- Hook registration in `Restart_Registry_Admin::__construct()`
+
+## Files touched
+- `plugin/admin/class-restart-registry-admin.php` — two filter hooks
+- `plugin/admin/js/restart-registry-tinymce.js` — new file
+
+## Todo
+- [x] `class-restart-registry-admin.php`: add `mce_external_plugins` + `mce_buttons` filter hooks
+- [x] `restart-registry-tinymce.js`: TinyMCE plugin with `windowManager.open()` form + shortcode builder
+- [x] Tests: 10 PHP (filter guards) + 13 JS (form, shortcode builder, validation) — 241/241 PHP, 13/13 JS
+- [ ] Manual test: insert a shortcode via the button on a post edit screen
+
+---
+
+# Bug fix: `[restart_item]` image carousel invisible
+
+## Root cause
+CSS height chain was broken. `.rr-article-item__media` has `flex: 0 0 220px` (width) with only `min-height: 220px` — no explicit `height`. The `height: 100%` on `.rr-article-item__carousel` and then `.rr-article-item__slides` both resolved to `auto` (CSS only resolves percentage heights against a parent's definite/explicit height, not `min-height`). With all slide `<img>` elements absolutely positioned in a 0px-tall containing block, they were invisible. The carousel area rendered (220px from `min-height`), nav buttons/dots were clickable, but images were 0px tall.
+
+## Fix
+- `restart-registry-public.css`: changed `.rr-article-item__slides` from `position: relative; width: 100%; height: 100%` to `position: absolute; inset: 0`. The slides div now fills the carousel via absolute positioning, which correctly uses the carousel's rendered height (220px) as the containing block.
+- `class-restart-registry-public.php`: initialized `$add_btn = ''` before the `if (!empty($a['url']))` block to eliminate the undefined-variable PHP notice.
+
+## Todo
+- [x] CSS fix — slides div `position: absolute; inset: 0`
+- [x] PHP fix — `$add_btn` initialized to `''`
+- [x] Tests: 241/241 pass
+
+---
+
+# Roadmap: `[restart_item]` inserter follow-ups
+
+## Fetch-from-URL auto-populate
+When a colleague pastes a product URL into the URL field, an AJAX call to the scraper pre-fills Title, Price, Image, Description, and Retailer. Requires a new `wp_ajax_restart_registry_scrape_url` handler wiring the existing PHP scraper.
+
+## Edit existing shortcode in-place
+Clicking an already-inserted `[restart_item]` block re-opens the form pre-populated with its current attribute values. Requires parsing the shortcode string back into field values on `editor.on('dblclick')` or via a `nodeChange` handler.
+
