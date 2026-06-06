@@ -579,3 +579,88 @@ When a colleague pastes a product URL into the URL field, an AJAX call to the sc
 ## Edit existing shortcode in-place
 Clicking an already-inserted `[restart_item]` block re-opens the form pre-populated with its current attribute values. Requires parsing the shortcode string back into field values on `editor.on('dblclick')` or via a `nodeChange` handler.
 
+
+---
+
+# Plan: LLM-powered product scraper extraction
+
+## What
+
+Replace the brittle regex/meta-tag extraction chain in `class-product-scraper.php` with a lightweight LLM call (Claude Haiku) that interprets the fetched HTML and returns structured product data. The network layer (UA selection, Amazon fast-path, HTTP fetch) stays exactly as-is — only the *parsing* step changes.
+
+An Anthropic API key is stored as a WP option and configured in Admin → Gift Registry → Affiliates (alongside the existing Etsy key).
+
+## Why this approach
+
+- Regex chains for `og:title` / `og:image` / JSON-LD break whenever retailers change attribute order or markup — LLM handles any structure
+- Price extraction (`/\$/`) grabs the first dollar amount on the page; LLM picks the actual product price
+- Per-retailer hardcoding (Etsy, Williams-Sonoma) only needed for UA selection, not parsing
+- Haiku costs ~$0.001 per scrape — negligible at registry scale
+- Graceful degradation: if API key is not set, fall back to the existing regex path unchanged
+
+## Architecture
+
+### New class: `plugin/includes/class-llm-extractor.php`
+
+`Restart_Registry_LLM_Extractor::extract(string $url, string $html_body): array`
+
+1. Slice the HTML down to just the relevant context:
+   - Full `<head>` section (meta tags, title)
+   - All `<script type="application/ld+json">` blocks from `<body>`
+   - Typically 2–5 KB vs 50–100 KB for the full page
+2. Call `https://api.anthropic.com/v1/messages` via `wp_remote_post()` / cURL fallback
+   - Model: `claude-haiku-4-5-20251001`
+   - Prompt asks for JSON with keys: `name`, `price` (float or null), `image_url`, `description` (≤160 chars)
+   - Use a `tool_use` block to get guaranteed-structured output
+3. Parse the tool-use response and return `array{name,price,image_url,description}`
+4. If API call fails (network error, invalid key, non-200), return an empty array so the caller can fall back
+
+### Modified: `plugin/includes/class-product-scraper.php`
+
+`scrape()` flow becomes:
+
+```
+resolve short URLs (a.co) → same as now
+Amazon fast-path         → same as now, returns early
+select UA                → same as now
+http_get()               → same as now
+
+IF anthropic key configured:
+    result = LLM_Extractor::extract(url, body)
+    if result is non-empty → return result
+
+ELSE (or LLM fallback):
+    run existing regex/og:/JSON-LD chain → return result
+```
+
+The existing regex chain is preserved verbatim as the fallback.
+
+### Modified: `plugin/admin/class-restart-registry-admin.php`
+
+- `register_settings()`: add `restart_registry_anthropic_api_key` to the `restart_registry_affiliates` group, sanitized with `sanitize_text_field`
+- `api_keys_section_callback()` / `api_key_field_callback()`: the Anthropic key field reuses the existing `api_key_field_callback` (same pattern as Etsy key — password input, masked display)
+- The settings page already has an "API Keys" section; add the new field there
+
+### No JS changes needed
+
+The scraper is called server-side. The `fetch-url` AJAX path in the public JS is unaffected.
+
+## Test plan
+
+- **Unit**: `tests/unit/LLMExtractorTest.php` — mock `wp_remote_post()`, assert correct slicing of head + LD+JSON, assert parsing of tool-use response, assert empty-array return on API failure
+- **Integration**: existing `ProductScraperTest.php` runs unchanged (no API key in CI → exercises regex fallback path)
+- **Manual**: configure key in WP Admin, paste a Wayfair / Pottery Barn / Target URL, confirm populated fields
+
+## Out of scope
+
+- Caching LLM results (the existing item-storage layer is the cache)
+- Streaming or async extraction
+- Any changes to the Lambda backend
+
+## Todo
+
+- [x] `class-llm-extractor.php` — HTML slicing + Anthropic API call + structured output parsing
+- [x] `class-product-scraper.php` — wire LLM extractor before regex fallback
+- [x] `class-restart-registry-admin.php` — register `restart_registry_anthropic_api_key` setting + add field to API Keys section
+- [x] `tests/unit/LLMExtractorTest.php` — 18 unit tests; 259/259 pass
+- [ ] Manual QA: test key-not-set path (regex fallback), test key-set path (LLM), test API failure path (fallback)

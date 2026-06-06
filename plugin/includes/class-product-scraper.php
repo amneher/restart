@@ -67,6 +67,14 @@ class Restart_Registry_Product_Scraper {
         }
 
         $body = $this->http_get($url, $this->select_ua_for($url), 15);
+
+        // LLM extraction — preferred when Anthropic API key is configured.
+        // Returns [] immediately when no key is set, so the regex chain below is the fallback.
+        $llm_result = (new Restart_Registry_LLM_Extractor())->extract($url, $body);
+        if (!empty($llm_result['name']) || !empty($llm_result['image_url'])) {
+            return $llm_result;
+        }
+
         $data = ['name' => '', 'price' => '', 'image_url' => '', 'description' => ''];
 
         // og:title is the curated product name — preferred over <title> which adds site suffixes

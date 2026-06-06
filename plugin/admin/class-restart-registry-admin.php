@@ -157,6 +157,9 @@ class Restart_Registry_Admin {
         register_setting('restart_registry_affiliates', 'restart_registry_etsy_api_key', [
             'sanitize_callback' => 'sanitize_text_field',
         ]);
+        register_setting('restart_registry_affiliates', 'restart_registry_anthropic_api_key', [
+            'sanitize_callback' => 'sanitize_text_field',
+        ]);
 
         register_setting('restart_registry_settings', 'restart_registry_page_id');
         register_setting('restart_registry_settings', 'restart_registry_email_from');
@@ -234,6 +237,20 @@ class Restart_Registry_Admin {
                 'description' => __('Enables reliable title, image, price, and description fetching for Etsy items. Bypasses Cloudflare bot-detection entirely.', 'restart-registry'),
                 'get_key_url' => 'https://www.etsy.com/developers/register',
                 'get_key_label' => __('Get your Etsy API key →', 'restart-registry'),
+            )
+        );
+
+        add_settings_field(
+            'restart_registry_anthropic_api_key',
+            __('Anthropic API Key', 'restart-registry'),
+            array($this, 'api_key_field_callback'),
+            'restart_registry_affiliates',
+            'restart_registry_api_keys_section',
+            array(
+                'label_for'   => 'restart_registry_anthropic_api_key',
+                'description' => __('Enables AI-powered product data extraction via Claude. When configured, the scraper uses Claude Haiku to reliably extract name, price, image, and description from any retailer page — no per-retailer regex maintenance needed.', 'restart-registry'),
+                'get_key_url' => 'https://console.anthropic.com/settings/keys',
+                'get_key_label' => __('Get your Anthropic API key →', 'restart-registry'),
             )
         );
     }
