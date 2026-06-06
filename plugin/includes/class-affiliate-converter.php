@@ -11,10 +11,84 @@
 
 class Restart_Registry_Affiliate_Converter {
 
+    private static ?self $instance = null;
+
     private $affiliate_configs;
 
     public function __construct() {
         $this->affiliate_configs = $this->get_affiliate_configs();
+    }
+
+    public static function instance(): self {
+        if (self::$instance === null) {
+            self::$instance = new self();
+            // Wrap in lambdas so non-string filter values degrade gracefully
+            // instead of throwing TypeError on typed parameters.
+            add_filter('restart_affiliate_url', function ($v): string {
+                return is_string($v) ? self::$instance->convert_url_string($v) : (string) $v;
+            });
+            add_filter('restart_affiliate_content', function ($v): string {
+                return is_string($v) ? self::$instance->convert_content($v) : (string) $v;
+            });
+        }
+        return self::$instance;
+    }
+
+    /**
+     * Convert all <a href> values in an HTML fragment through the affiliate converter.
+     * Uses DOMDocument rather than regex so attribute parsing is handled correctly.
+     */
+    public function convert_content(string $html): string {
+        if (empty($html) || !str_contains($html, '<a')) {
+            return $html;
+        }
+
+        $doc      = new DOMDocument();
+        $prev_err = libxml_use_internal_errors(true);
+        $doc->loadHTML(
+            '<html><body>' . $html . '</body></html>',
+            LIBXML_COMPACT | LIBXML_NONET | LIBXML_NOERROR
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev_err);
+
+        foreach ($doc->getElementsByTagName('a') as $link) {
+            $href = $link->getAttribute('href');
+            if (!$href) continue;
+            $result = $this->convert_url($href);
+            if ($result['is_affiliate']) {
+                $link->setAttribute('href', $result['affiliate_url']);
+            }
+        }
+
+        $body = $doc->getElementsByTagName('body')->item(0);
+        if (!$body) {
+            return $html;
+        }
+
+        $output = '';
+        foreach ($body->childNodes as $child) {
+            $output .= $doc->saveHTML($child);
+        }
+        return $output;
+    }
+
+    /**
+     * Call $fn(...$args), cast to string, then apply affiliate conversion.
+     * Plain URLs (no whitespace, has scheme) go through convert_url(); everything
+     * else is treated as HTML and goes through convert_content().
+     */
+    public function wrap(callable $fn, ...$args): string {
+        $output = (string) $fn(...$args);
+        if (!preg_match('/\s/', $output) && parse_url($output, PHP_URL_SCHEME)) {
+            return $this->convert_url($output)['affiliate_url'];
+        }
+        return $this->convert_content($output);
+    }
+
+    /** Filter-safe wrapper: returns only the affiliate URL string. */
+    public function convert_url_string(string $url): string {
+        return $this->convert_url($url)['affiliate_url'];
     }
 
     private function get_affiliate_configs() {
