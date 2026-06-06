@@ -26,6 +26,26 @@ class Restart_Registry_Admin {
         add_action('wp_ajax_restart_registry_test_lambda',              array($this, 'ajax_test_lambda'));
         add_action('wp_ajax_restart_registry_reconvert_affiliates',     array($this, 'ajax_reconvert_affiliates'));
         add_filter('get_edit_post_link',                                array($this, 'filter_edit_post_link'), 10, 3);
+        add_filter('mce_external_plugins',                              array($this, 'mce_external_plugins'));
+        add_filter('mce_buttons',                                       array($this, 'mce_buttons'));
+    }
+
+    public function mce_external_plugins(array $plugins): array {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!$screen || !in_array($screen->base, ['post', 'page'], true)) {
+            return $plugins;
+        }
+        $plugins['restart_item'] = plugin_dir_url(__FILE__) . 'js/restart-registry-tinymce.js';
+        return $plugins;
+    }
+
+    public function mce_buttons(array $buttons): array {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!$screen || !in_array($screen->base, ['post', 'page'], true)) {
+            return $buttons;
+        }
+        $buttons[] = 'restart_item';
+        return $buttons;
     }
 
     public function enqueue_styles($hook) {
