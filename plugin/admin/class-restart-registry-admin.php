@@ -938,7 +938,7 @@ class Restart_Registry_Admin {
         $recipient_rel  = get_post_meta($post_id, 'restart_recipient_relationship', true) ?: '';
         $recipient_email = get_post_meta($post_id, 'restart_recipient_email', true) ?: '';
         $thumbnail_id   = get_post_thumbnail_id($post_id) ?: 0;
-        $hero_url       = $thumbnail_id ? get_the_post_thumbnail_url($post_id, 'large') : '';
+        $hero_url       = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'large') : '';
         $author         = get_userdata($post->post_author);
 
         $allowed_statuses = ['publish', 'private', 'draft', 'restart-archived'];
