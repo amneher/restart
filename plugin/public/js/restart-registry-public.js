@@ -413,9 +413,8 @@
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('.rr-copy-address');
         if (!btn) return;
-        var block = document.getElementById('rr-shipping-address-block');
-        if (!block) return;
-        var text = block.dataset.address;
+        var text = btn.dataset.address;
+        if (!text) return;
         navigator.clipboard.writeText(text).then(function() {
             var orig = btn.textContent;
             btn.textContent = 'Copied!';

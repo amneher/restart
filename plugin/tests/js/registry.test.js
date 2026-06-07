@@ -426,12 +426,13 @@ describe('shipping address', () => {
                     <div class="rr-modal__backdrop"></div>
                     <div class="rr-modal__dialog">
                         <button class="rr-modal__close">&times;</button>
-                        <button class="rr-copy-address">Copy</button>
+                        <button class="rr-copy-address" data-address="Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US">Copy</button>
                         <a id="rr-pre-purchase-continue" href="#">Continue to purchase</a>
                         <button class="rr-modal-cancel">Cancel</button>
                     </div>
                 </div>
                 <a class="rr-purchase-btn rr-button" href="https://etsy.com/listing/123">Purchase</a>
+                <button class="rr-copy-address rr-header-copy-address" data-address="Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US">Copy shipping address</button>
             </div>
         `;
     }
@@ -484,23 +485,20 @@ describe('shipping address', () => {
         expect(document.getElementById('rr-pre-purchase-continue').getAttribute('href')).toContain('etsy.com/listing/123');
     });
 
-    it('writes the page-level address to clipboard and shows Copied! feedback', async () => {
+    it('writes the address to clipboard and shows Copied! feedback', async () => {
         navigator.clipboard.writeText.mockClear();
 
-        document.querySelector('#rr-shipping-address-block .rr-copy-address').click();
+        document.querySelector('.rr-header-copy-address').click();
         await flushPromises();
 
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
             'Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US'
         );
-        expect(document.querySelector('#rr-shipping-address-block .rr-copy-address').textContent).toBe('Copied!');
+        expect(document.querySelector('.rr-header-copy-address').textContent).toBe('Copied!');
     });
 
-    it('does not write to clipboard when no address block is present', async () => {
+    it('does not write to clipboard when button has no data-address', async () => {
         navigator.clipboard.writeText.mockClear();
-        // A copy button exists but the data block does not — simulates the
-        // purchase modal copy button rendered while the page-level block is absent.
-        document.getElementById('rr-shipping-address-block').remove();
         document.body.insertAdjacentHTML(
             'beforeend',
             '<button class="rr-copy-address rr-orphan-copy">Copy</button>'

@@ -1362,6 +1362,13 @@ body.rr-modal-open { overflow: hidden; }
     margin-top: 20px;
 }
 
+/* ── Copy address button in registry header ──────────────────────────────── */
+.rr-header-copy-address {
+    margin-top: 16px;
+    padding-left: 0;
+    font-size: 0.8rem;
+}
+
 /* ── Shipping address block (invitee view) ───────────────────────────────── */
 .rr-shipping-address {
     background: var(--rr-light, #f8f9fa);

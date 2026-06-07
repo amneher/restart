@@ -1056,6 +1056,10 @@ class Restart_Registry_Public
                             <p class="rr-story__text rr-story__text--placeholder"><?php echo esc_html(sprintf(__('%s hasn\'t shared their story yet.', 'restart-registry'), $owner_name)); ?></p>
                         <?php endif; ?>
                     </section>
+                    <?php if ($show_address): ?>
+                        <button type="button" class="rr-btn-ghost rr-copy-address rr-header-copy-address"
+                                data-address="<?php echo esc_attr($address_formatted); ?>"><?php _e('Copy shipping address', 'restart-registry'); ?></button>
+                    <?php endif; ?>
                 </div>
                 <?php if ($hero_url): ?>
                     <div class="rr-registry-top__hero">
@@ -1093,27 +1097,6 @@ class Restart_Registry_Public
                 <?php endif; ?>
             </div>
 
-            <?php if ($show_address): ?>
-                <div class="rr-shipping-address" id="rr-shipping-address-block"
-                     data-address="<?php echo esc_attr($address_formatted); ?>">
-                    <h3 class="rr-shipping-address__heading"><?php _e('Ship your gift to:', 'restart-registry'); ?></h3>
-                    <address class="rr-shipping-address__body">
-                        <?php if (!empty($shipping_address['name'])): ?>
-                            <strong><?php echo esc_html($shipping_address['name']); ?></strong><br>
-                        <?php endif; ?>
-                        <?php echo esc_html($shipping_address['address_1']); ?><br>
-                        <?php if (!empty($shipping_address['address_2'])): ?>
-                            <?php echo esc_html($shipping_address['address_2']); ?><br>
-                        <?php endif; ?>
-                        <?php echo esc_html($shipping_address['city']); ?><?php if (!empty($shipping_address['state'])): ?>, <?php echo esc_html($shipping_address['state']); ?><?php endif; ?>
-                        <?php if (!empty($shipping_address['postal_code'])): ?> <?php echo esc_html($shipping_address['postal_code']); ?><?php endif; ?><br>
-                        <?php if (!empty($shipping_address['country'])): ?>
-                            <?php echo esc_html($shipping_address['country']); ?>
-                        <?php endif; ?>
-                    </address>
-                    <button type="button" class="rr-btn-ghost rr-copy-address"><?php _e('Copy address', 'restart-registry'); ?></button>
-                </div>
-            <?php endif; ?>
 
             <?php
             $purchase_messages = $this->controller->get_purchase_messages($registry['id']);
@@ -1208,31 +1191,32 @@ class Restart_Registry_Public
             </div>
 
             <?php if ($show_address): ?>
-            <!-- Pre-purchase address modal — shown before the retailer redirect -->
-            <div class="rr-modal" id="rr-pre-purchase-modal" aria-hidden="true">
-                <div class="rr-modal__backdrop"></div>
-                <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-pre-purchase-title" aria-modal="true">
-                    <div class="rr-modal__header">
-                        <h3 id="rr-pre-purchase-title"><?php _e('Before you check out', 'restart-registry'); ?></h3>
-                        <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
-                    </div>
-                    <div class="rr-modal__body">
-                        <p class="rr-purchase-modal__address-hint"><?php _e('Copy the shipping address before you head to the store:', 'restart-registry'); ?></p>
-                        <div class="rr-purchase-modal__address-row">
-                            <code class="rr-purchase-modal__address-text"><?php echo esc_html($address_formatted); ?></code>
-                            <button type="button" class="rr-btn-ghost rr-button-small rr-copy-address"><?php _e('Copy', 'restart-registry'); ?></button>
+                <!-- Pre-purchase address modal — shown before the retailer redirect -->
+                <div class="rr-modal" id="rr-pre-purchase-modal" aria-hidden="true">
+                    <div class="rr-modal__backdrop"></div>
+                    <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-pre-purchase-title" aria-modal="true">
+                        <div class="rr-modal__header">
+                            <h3 id="rr-pre-purchase-title"><?php _e('Before you check out', 'restart-registry'); ?></h3>
+                            <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
                         </div>
-                        <div class="rr-form-actions">
-                            <a href="#" id="rr-pre-purchase-continue" target="_blank" rel="noopener sponsored" class="rr-button"><?php _e('Continue to purchase', 'restart-registry'); ?></a>
-                            <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
+                        <div class="rr-modal__body">
+                            <p class="rr-purchase-modal__address-hint"><?php _e('Copy the shipping address before you head to the store:', 'restart-registry'); ?></p>
+                            <div class="rr-purchase-modal__address-row">
+                                <code class="rr-purchase-modal__address-text"><?php echo esc_html($address_formatted); ?></code>
+                                <button type="button" class="rr-btn-ghost rr-button-small rr-copy-address"
+                                        data-address="<?php echo esc_attr($address_formatted); ?>"><?php _e('Copy', 'restart-registry'); ?></button>
+                            </div>
+                            <div class="rr-form-actions">
+                                <a href="#" id="rr-pre-purchase-continue" target="_blank" rel="noopener sponsored" class="rr-button"><?php _e('Continue to purchase', 'restart-registry'); ?></a>
+                                <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
             <?php endif; ?>
 
         </div>
-<?php
+    <?php
         return $this->compact_html(ob_get_clean());
     }
 
@@ -1733,7 +1717,7 @@ class Restart_Registry_Public
             $aff = Restart_Registry_Affiliate_Converter::instance()->convert_url($a['url']);
             $shop_btn = '<a href="' . esc_url($aff['affiliate_url']) . '" class="rr-button rr-article-item__shop-btn" target="_blank" rel="noopener sponsored">'
                 . esc_html__('Shop Now', 'restart-registry') . '</a>';
-            
+
             // TODO: if the URL is an affiliate link, show the retailer's logo instead of a generic "Shop Now" button. This would require normalizing known retailer URLs in the Affiliate_Converter and passing that info through here.
             $add_btn = '<button type="button" class="rr-button rr-button-secondary rr-quick-add"'
                 . ' data-name="' . esc_attr($a['title']) . '"'
@@ -1747,7 +1731,7 @@ class Restart_Registry_Public
                 . '</button>';
         }
 
-       
+
 
         // ── Full card ─────────────────────────────────────────────────────
         $retailer_html = !empty($a['retailer'])
@@ -1790,7 +1774,7 @@ class Restart_Registry_Public
     private function render_quick_add_modals(): string
     {
         ob_start();
-        ?>
+    ?>
 
         <!-- Quick-add: auth modal (not logged in) -->
         <div class="rr-modal rr-quick-add-modal" id="rr-qa-auth-modal" aria-inert="true">
@@ -1829,7 +1813,7 @@ class Restart_Registry_Public
             </div>
         </div>
 
-        <?php
+<?php
         return ob_get_clean();
     }
 
