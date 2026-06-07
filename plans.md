@@ -571,6 +571,116 @@ CSS height chain was broken. `.rr-article-item__media` has `flex: 0 0 220px` (wi
 
 ---
 
+# Plan: Shipping address (GH #15)
+
+## What
+Registry owners can optionally save a shipping address to their account. The address is surfaced to invitees on the registry view and surfaced again at purchase time (copy-to-clipboard prompt before the retailer redirect), reducing the friction of gift-givers needing to ask where to ship.
+
+## Storage decision
+**Registry post meta** (`restart_shipping_address`): single JSON object on the registry CPT post. This correctly handles the "created for someone else" case — the address belongs to the recipient, not the creator. Sits alongside the existing `restart_recipient_name/email/relationship` fields. Stored as JSON following the same pattern as other registry meta.
+
+```json
+{
+  "name":        "Alex Rivera",
+  "address_1":   "123 Main St",
+  "address_2":   "Apt 4B",
+  "city":        "Portland",
+  "state":       "OR",
+  "postal_code": "97205",
+  "country":     "US"
+}
+```
+
+Address is optional — registries without one work exactly as today.
+
+## Scope
+
+### 1. Controller — address CRUD
+New methods in `class-restart-registry-controller.php`:
+- `save_shipping_address(int $registry_id, array $address): bool` — verifies caller is owner, sanitizes each field, encodes to JSON, calls `update_post_meta()`
+- `get_shipping_address(int $registry_id): ?array` — decodes JSON from `restart_shipping_address`; returns `null` if unset
+- `delete_shipping_address(int $registry_id): bool` — verifies caller is owner, calls `delete_post_meta()`
+
+### 2. AJAX handlers (public class)
+Three new AJAX actions, all requiring `is_user_logged_in()`:
+- `restart_save_shipping_address` — accepts `registry_id`; verifies owner; calls `save_shipping_address()`
+- `restart_get_shipping_address` — accepts `registry_id`; returns address only to owner or invitee
+- `restart_delete_shipping_address` — accepts `registry_id`; verifies owner; calls `delete_shipping_address()`
+
+### 3. Registry settings modal UI
+Add an "Address" section inside the existing registry settings modal (owner view):
+- If no address saved: empty form + "Save address" button
+- If address saved: fields pre-populated + "Update" and "Remove" buttons
+- Fields: Name, Address line 1, Address line 2 (optional), City, State, Zip / Postal code, Country
+- AJAX-driven; same `rr-notice` feedback pattern as other modal actions
+
+### 4. Registry view — invitee-visible address block
+In `render_registry_view_html()` (the invitee/guest view), after the items list:
+- Show a `<div class="rr-shipping-address">` block **only if** all three conditions are true:
+  1. The registry owner has a saved address
+  2. The current user is an authenticated invitee (checked via `is_invitee()`) **or** the owner themselves
+  3. The registry is not public (unauthenticated visitors never see it)
+- Block shows: label "Ship your gift to:", the formatted address, and a "Copy address" button (JS clipboard copy)
+
+### 5. Purchase flow — copy prompt
+In the mark-purchased modal (`render_registry_view_html()` purchase modal), if the registry owner has a shipping address and the current user is an invitee/owner:
+- Before the modal's "Open in new tab" / affiliate redirect, show the address with a "Copy address" button
+- Label: "Copy the recipient's shipping address before you check out"
+- Address is fetched inline (already present in the page markup from step 4 — no extra AJAX call)
+
+### 6. Visibility enforcement
+- `get_shipping_address()` is only called server-side after capability checks
+- AJAX `restart_get_shipping_address` returns only the current user's own address
+- The `rr-shipping-address` block is never rendered in the unauthenticated (`!is_user_logged_in()`) path
+- The address is never included in any `wp_localize_script` payload or REST response
+
+## What's NOT in scope
+- Shipping address pre-fill via retailer URL params (retailer-specific, unreliable; copy-to-clipboard is the universal fallback)
+- Address validation / geocoding
+- International address format differences (single `address_1/address_2/city/state/postal_code/country` covers global cases well enough)
+
+## Tests
+
+### Unit — `tests/unit/ShippingAddressTest.php`
+- `save_shipping_address()` sanitizes all fields (strips tags, trims whitespace)
+- `save_shipping_address()` with empty required fields returns false
+- `get_shipping_address()` returns null when meta not set
+- `get_shipping_address()` decodes and returns stored JSON
+- `delete_shipping_address()` removes the meta key
+
+### Integration — `tests/integration/Controller/ShippingAddressControllerTest.php`
+- Owner can save, retrieve, and delete the registry address
+- Saving with all required fields passes; missing required fields fail
+- Address does not appear in the registry view on the unauthenticated path
+- Address appears in the registry view for a valid invitee
+- Address does not appear for a non-invitee authenticated user
+
+### JS — `tests/js/registry.test.js` additions
+- Settings modal address form: submit sends correct payload to `restart_save_shipping_address`
+- Settings modal address form: "Remove" sends `restart_delete_shipping_address` and hides the form
+- Purchase modal: copy button writes address to clipboard and shows confirmation feedback
+- Copy button absent when no address block present in DOM
+
+## Documentation
+- `docs/docs/architecture.md` — add `restart_shipping_address` to the Registry Post Meta section of the data model; note invitee-only visibility rule
+
+## Todo
+- [x] Branch: `feat/15-shipping-data` ✓ (already active)
+- [x] Controller: `save_shipping_address()`, `get_shipping_address()`, `delete_shipping_address()`
+- [x] AJAX: `restart_save_shipping_address`, `restart_delete_shipping_address` handlers
+- [x] Settings modal UI: address section (form, pre-populate, update/remove)
+- [x] Registry view: `rr-shipping-address` block with invitee guard
+- [x] Purchase modal: copy-address prompt before retailer redirect
+- [x] CSS: address block, copy button, settings modal address section
+- [x] Tests (PHP unit): 7 cases in `ShippingAddressTest.php` (271/271 pass)
+- [x] Tests (PHP integration): 5 cases in `ShippingAddressControllerTest.php`
+- [x] Tests (JS): 4 cases added to `registry.test.js` (39/39 pass)
+- [x] `make plugin-test-php` green (271/271)
+- [x] `docs/docs/architecture.md` — update Registry Post Meta section
+- [ ] Close GH #15
+
+---
+
 # Roadmap: `[restart_item]` inserter follow-ups
 
 ## Fetch-from-URL auto-populate

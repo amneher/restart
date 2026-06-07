@@ -401,6 +401,116 @@ describe('body class management', () => {
     });
 });
 
+// ── Shipping address ──────────────────────────────────────────────────────────
+
+describe('shipping address', () => {
+    function addAddressForm() {
+        document.body.innerHTML += `
+            <div class="rr-manage-registry" data-registry-id="1">
+                <form id="rr-address-form">
+                    <input name="shipping_name" value="Alex Rivera">
+                    <input name="address_1" value="123 Main St">
+                    <input name="address_2" value="Apt 4B">
+                    <input name="city" value="Portland">
+                    <input name="state" value="OR">
+                    <input name="postal_code" value="97205">
+                    <input name="country" value="US">
+                    <div class="rr-form-actions">
+                        <button type="submit" id="rr-save-address-btn">Save Address</button>
+                    </div>
+                </form>
+                <div id="rr-shipping-address-block" data-address="Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US">
+                    <button class="rr-copy-address">Copy address</button>
+                </div>
+                <div id="rr-pre-purchase-modal" class="rr-modal" aria-hidden="true">
+                    <div class="rr-modal__backdrop"></div>
+                    <div class="rr-modal__dialog">
+                        <button class="rr-modal__close">&times;</button>
+                        <button class="rr-copy-address" data-address="Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US">Copy</button>
+                        <a id="rr-pre-purchase-continue" href="#">Continue to purchase</a>
+                        <button class="rr-modal-cancel">Cancel</button>
+                    </div>
+                </div>
+                <a class="rr-purchase-btn rr-button" href="https://etsy.com/listing/123">Purchase</a>
+                <button class="rr-copy-address rr-header-copy-address" data-address="Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US">Copy shipping address</button>
+            </div>
+        `;
+    }
+
+    beforeEach(() => {
+        addAddressForm();
+    });
+
+    it('submits correct payload to restart_registry_save_shipping_address', async () => {
+        fetch.mockResolvedValueOnce({
+            json: async () => ({ success: true, data: { message: 'Address saved.' } }),
+        });
+
+        document.getElementById('rr-address-form').dispatchEvent(
+            new Event('submit', { bubbles: true })
+        );
+        await flushPromises();
+
+        const body = new URLSearchParams(fetch.mock.calls[0][1].body);
+        expect(body.get('action')).toBe('restart_registry_save_shipping_address');
+        expect(body.get('city')).toBe('Portland');
+        expect(body.get('postal_code')).toBe('97205');
+    });
+
+    it('sends restart_registry_delete_shipping_address and removes Remove button on success', async () => {
+        // Add a Remove button to the DOM
+        document.querySelector('#rr-address-form .rr-form-actions').insertAdjacentHTML(
+            'beforeend',
+            '<button type="button" id="rr-remove-address">Remove</button>'
+        );
+
+        fetch.mockResolvedValueOnce({
+            json: async () => ({ success: true, data: { message: 'Address removed.' } }),
+        });
+
+        document.getElementById('rr-remove-address').click();
+        await flushPromises();
+
+        const body = new URLSearchParams(fetch.mock.calls[0][1].body);
+        expect(body.get('action')).toBe('restart_registry_delete_shipping_address');
+        expect(document.getElementById('rr-remove-address')).toBeNull();
+    });
+
+    it('intercepts the Purchase button and opens the pre-purchase modal', () => {
+        // Target the standalone purchase link added by addAddressForm(), not the
+        // one inside the item-detail modal (which has href="#").
+        document.querySelector('a.rr-purchase-btn[href*="etsy.com"]').click();
+
+        expect(document.getElementById('rr-pre-purchase-modal').classList.contains('is-open')).toBe(true);
+        expect(document.getElementById('rr-pre-purchase-continue').getAttribute('href')).toContain('etsy.com/listing/123');
+    });
+
+    it('writes the address to clipboard and shows Copied! feedback', async () => {
+        navigator.clipboard.writeText.mockClear();
+
+        document.querySelector('.rr-header-copy-address').click();
+        await flushPromises();
+
+        expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+            'Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US'
+        );
+        expect(document.querySelector('.rr-header-copy-address').textContent).toBe('Copied!');
+    });
+
+    it('does not write to clipboard when button has no data-address', async () => {
+        navigator.clipboard.writeText.mockClear();
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<button class="rr-copy-address rr-orphan-copy">Copy</button>'
+        );
+
+        document.querySelector('.rr-orphan-copy').click();
+        await flushPromises();
+
+        expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    });
+});
+
 // ── Edge cases ────────────────────────────────────────────────────────────────
 
 describe('edge cases', () => {

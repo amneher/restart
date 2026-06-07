@@ -318,6 +318,110 @@
         e.target.closest('#rr-hero-clear').hidden = true;
     });
 
+    // ── Shipping address form ─────────────────────────────────────────────────
+
+    document.addEventListener('submit', function(e) {
+        var addressForm = e.target.closest('#rr-address-form');
+        if (!addressForm) return;
+        e.preventDefault();
+        var btn = document.getElementById('rr-save-address-btn');
+        btn.disabled = true;
+        var origText = btn.textContent;
+        btn.textContent = restartRegistry.strings.loading;
+
+        post(restartRegistry.ajaxUrl, {
+            action:        'restart_registry_save_shipping_address',
+            nonce:         restartRegistry.nonce,
+            registry_id:   registryId,
+            shipping_name: addressForm.querySelector('[name="shipping_name"]').value,
+            address_1:     addressForm.querySelector('[name="address_1"]').value,
+            address_2:     addressForm.querySelector('[name="address_2"]').value,
+            city:          addressForm.querySelector('[name="city"]').value,
+            state:         addressForm.querySelector('[name="state"]').value,
+            postal_code:   addressForm.querySelector('[name="postal_code"]').value,
+            country:       addressForm.querySelector('[name="country"]').value,
+        }).then(function(response) {
+            if (response.success) {
+                btn.textContent = 'Update Address';
+                btn.disabled = false;
+                if (!document.getElementById('rr-remove-address')) {
+                    var actions = addressForm.querySelector('.rr-form-actions');
+                    var removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'rr-btn-ghost rr-button-small';
+                    removeBtn.id = 'rr-remove-address';
+                    removeBtn.textContent = 'Remove';
+                    actions.appendChild(removeBtn);
+                }
+                showNotice(response.data.message, 'success');
+            } else {
+                btn.disabled = false;
+                btn.textContent = origText;
+                alert(response.data.message || restartRegistry.strings.error);
+            }
+        }).catch(function() {
+            btn.disabled = false;
+            btn.textContent = origText;
+            alert(restartRegistry.strings.error);
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#rr-remove-address')) return;
+        var btn = e.target.closest('#rr-remove-address');
+        btn.disabled = true;
+        post(restartRegistry.ajaxUrl, {
+            action:      'restart_registry_delete_shipping_address',
+            nonce:       restartRegistry.nonce,
+            registry_id: registryId,
+        }).then(function(response) {
+            if (response.success) {
+                btn.remove();
+                var form = document.getElementById('rr-address-form');
+                if (form) form.reset();
+                document.getElementById('rr-save-address-btn').textContent = 'Save Address';
+                showNotice(response.data.message, 'success');
+            } else {
+                btn.disabled = false;
+                alert(response.data.message || restartRegistry.strings.error);
+            }
+        }).catch(function() {
+            btn.disabled = false;
+            alert(restartRegistry.strings.error);
+        });
+    });
+
+    // ── Pre-purchase address modal ────────────────────────────────────────────
+
+    document.addEventListener('click', function(e) {
+        var purchaseBtn = e.target.closest('.rr-purchase-btn');
+        if (!purchaseBtn) return;
+        var modal = document.getElementById('rr-pre-purchase-modal');
+        if (!modal) return; // no address saved — let the link open normally
+        e.preventDefault();
+        document.getElementById('rr-pre-purchase-continue').href = purchaseBtn.href;
+        openModal('#rr-pre-purchase-modal');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#rr-pre-purchase-continue')) return;
+        closeModal('#rr-pre-purchase-modal');
+    });
+
+    // ── Copy shipping address ─────────────────────────────────────────────────
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.rr-copy-address');
+        if (!btn) return;
+        var text = btn.dataset.address;
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(function() {
+            var orig = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(function() { btn.textContent = orig; }, 2000);
+        });
+    });
+
     var editRegistryForm = document.getElementById('rr-edit-registry-form');
     if (editRegistryForm) {
         editRegistryForm.addEventListener('submit', function(e) {

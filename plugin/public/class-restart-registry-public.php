@@ -70,6 +70,8 @@ class Restart_Registry_Public
         add_action('wp_ajax_restart_registry_delete',                      [$this, 'ajax_delete_registry']);
         add_action('wp_ajax_restart_registry_quick_add',        [$this, 'ajax_quick_add']);
         add_action('wp_ajax_nopriv_restart_registry_quick_add', [$this, 'ajax_quick_add']);
+        add_action('wp_ajax_restart_registry_save_shipping_address',   [$this, 'ajax_save_shipping_address']);
+        add_action('wp_ajax_restart_registry_delete_shipping_address', [$this, 'ajax_delete_shipping_address']);
     }
 
     // =========================================================================
@@ -695,6 +697,69 @@ class Restart_Registry_Public
                                 <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
                             </div>
                         </form>
+                        <?php
+                        $shipping_address = $this->controller->get_shipping_address($registry['id']);
+                        $has_address      = !empty($shipping_address);
+                        ?>
+                        <div class="rr-modal__divider"></div>
+                        <div class="rr-settings-section" id="rr-address-section">
+                            <h4 class="rr-settings-section__title"><?php _e('Shipping Address', 'restart-registry'); ?></h4>
+                            <p class="rr-settings-section__hint"><?php _e('Save a shipping address so gift-givers can copy it before they check out. Only visible to you and people you invite.', 'restart-registry'); ?></p>
+                            <form id="rr-address-form" class="rr-form">
+                                <div class="rr-form-group">
+                                    <label for="rr-shipping-name"><?php _e('Recipient name', 'restart-registry'); ?></label>
+                                    <input type="text" id="rr-shipping-name" name="shipping_name"
+                                        value="<?php echo esc_attr($shipping_address['name'] ?? ''); ?>"
+                                        placeholder="<?php esc_attr_e('e.g., Alex Rivera', 'restart-registry'); ?>">
+                                </div>
+                                <div class="rr-form-group">
+                                    <label for="rr-shipping-address-1"><?php _e('Address line 1', 'restart-registry'); ?></label>
+                                    <input type="text" id="rr-shipping-address-1" name="address_1"
+                                        value="<?php echo esc_attr($shipping_address['address_1'] ?? ''); ?>"
+                                        placeholder="<?php esc_attr_e('Street address', 'restart-registry'); ?>">
+                                </div>
+                                <div class="rr-form-group">
+                                    <label for="rr-shipping-address-2"><?php _e('Address line 2', 'restart-registry'); ?> <span class="rr-optional"><?php _e('(optional)', 'restart-registry'); ?></span></label>
+                                    <input type="text" id="rr-shipping-address-2" name="address_2"
+                                        value="<?php echo esc_attr($shipping_address['address_2'] ?? ''); ?>"
+                                        placeholder="<?php esc_attr_e('Apt, suite, unit…', 'restart-registry'); ?>">
+                                </div>
+                                <div class="rr-form-row">
+                                    <div class="rr-form-group">
+                                        <label for="rr-shipping-city"><?php _e('City', 'restart-registry'); ?></label>
+                                        <input type="text" id="rr-shipping-city" name="city"
+                                            value="<?php echo esc_attr($shipping_address['city'] ?? ''); ?>">
+                                    </div>
+                                    <div class="rr-form-group">
+                                        <label for="rr-shipping-state"><?php _e('State / Province', 'restart-registry'); ?></label>
+                                        <input type="text" id="rr-shipping-state" name="state"
+                                            value="<?php echo esc_attr($shipping_address['state'] ?? ''); ?>">
+                                    </div>
+                                </div>
+                                <div class="rr-form-row">
+                                    <div class="rr-form-group">
+                                        <label for="rr-shipping-postal"><?php _e('Zip / Postal code', 'restart-registry'); ?></label>
+                                        <input type="text" id="rr-shipping-postal" name="postal_code"
+                                            value="<?php echo esc_attr($shipping_address['postal_code'] ?? ''); ?>">
+                                    </div>
+                                    <div class="rr-form-group">
+                                        <label for="rr-shipping-country"><?php _e('Country', 'restart-registry'); ?></label>
+                                        <input type="text" id="rr-shipping-country" name="country"
+                                            value="<?php echo esc_attr($shipping_address['country'] ?? ''); ?>"
+                                            placeholder="<?php esc_attr_e('e.g., US', 'restart-registry'); ?>">
+                                    </div>
+                                </div>
+                                <div class="rr-form-actions">
+                                    <button type="submit" class="rr-button rr-button-small" id="rr-save-address-btn">
+                                        <?php echo $has_address ? esc_html__('Update Address', 'restart-registry') : esc_html__('Save Address', 'restart-registry'); ?>
+                                    </button>
+                                    <?php if ($has_address): ?>
+                                        <button type="button" class="rr-btn-ghost rr-button-small" id="rr-remove-address"><?php _e('Remove', 'restart-registry'); ?></button>
+                                    <?php endif; ?>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="rr-modal__divider"></div>
                         <div class="rr-settings-danger-zone">
                             <h4 class="rr-settings-danger-zone__title"><?php _e('Danger zone', 'restart-registry'); ?></h4>
                             <div class="rr-settings-danger-zone__actions">
@@ -917,6 +982,26 @@ class Restart_Registry_Public
         $event_date   = $registry['meta']['event_date'] ?? '';
         $hero_url     = get_the_post_thumbnail_url($registry['id'], 'large');
 
+        // Shipping address — only shown to authenticated invitees.
+        $current_user_id  = get_current_user_id();
+        $shipping_address = $this->controller->get_shipping_address($registry['id']);
+        $invitees         = $registry['meta']['invitees'] ?? [];
+        $viewer           = $current_user_id ? get_userdata($current_user_id) : null;
+        $is_invitee       = $viewer && (
+            in_array($viewer->user_email, $invitees, true) ||
+            in_array($viewer->user_login, $invitees, true)
+        );
+        $show_address     = $shipping_address && $is_invitee;
+        $address_formatted = $show_address ? implode(', ', array_filter([
+            $shipping_address['name']        ?? '',
+            $shipping_address['address_1']   ?? '',
+            $shipping_address['address_2']   ?? '',
+            $shipping_address['city']        ?? '',
+            $shipping_address['state']       ?? '',
+            $shipping_address['postal_code'] ?? '',
+            $shipping_address['country']     ?? '',
+        ])) : '';
+
         ob_start();
     ?>
         <div class="rr-view-registry" data-registry-id="<?php echo esc_attr($registry['id']); ?>">
@@ -971,6 +1056,10 @@ class Restart_Registry_Public
                             <p class="rr-story__text rr-story__text--placeholder"><?php echo esc_html(sprintf(__('%s hasn\'t shared their story yet.', 'restart-registry'), $owner_name)); ?></p>
                         <?php endif; ?>
                     </section>
+                    <?php if ($show_address): ?>
+                        <button type="button" class="rr-btn-ghost rr-copy-address rr-header-copy-address"
+                                data-address="<?php echo esc_attr($address_formatted); ?>"><?php _e('Copy shipping address', 'restart-registry'); ?></button>
+                    <?php endif; ?>
                 </div>
                 <?php if ($hero_url): ?>
                     <div class="rr-registry-top__hero">
@@ -1007,6 +1096,7 @@ class Restart_Registry_Public
                     <p class="rr-affiliate-note"><small><?php echo esc_html($disclosure); ?></small></p>
                 <?php endif; ?>
             </div>
+
 
             <?php
             $purchase_messages = $this->controller->get_purchase_messages($registry['id']);
@@ -1100,8 +1190,33 @@ class Restart_Registry_Public
                 </div>
             </div>
 
+            <?php if ($show_address): ?>
+                <!-- Pre-purchase address modal — shown before the retailer redirect -->
+                <div class="rr-modal" id="rr-pre-purchase-modal" aria-hidden="true">
+                    <div class="rr-modal__backdrop"></div>
+                    <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-pre-purchase-title" aria-modal="true">
+                        <div class="rr-modal__header">
+                            <h3 id="rr-pre-purchase-title"><?php _e('Before you check out', 'restart-registry'); ?></h3>
+                            <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                        </div>
+                        <div class="rr-modal__body">
+                            <p class="rr-purchase-modal__address-hint"><?php _e('Copy the shipping address before you head to the store:', 'restart-registry'); ?></p>
+                            <div class="rr-purchase-modal__address-row">
+                                <code class="rr-purchase-modal__address-text"><?php echo esc_html($address_formatted); ?></code>
+                                <button type="button" class="rr-btn-ghost rr-button-small rr-copy-address"
+                                        data-address="<?php echo esc_attr($address_formatted); ?>"><?php _e('Copy', 'restart-registry'); ?></button>
+                            </div>
+                            <div class="rr-form-actions">
+                                <a href="#" id="rr-pre-purchase-continue" target="_blank" rel="noopener sponsored" class="rr-button"><?php _e('Continue to purchase', 'restart-registry'); ?></a>
+                                <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
         </div>
-<?php
+    <?php
         return $this->compact_html(ob_get_clean());
     }
 
@@ -1602,7 +1717,7 @@ class Restart_Registry_Public
             $aff = Restart_Registry_Affiliate_Converter::instance()->convert_url($a['url']);
             $shop_btn = '<a href="' . esc_url($aff['affiliate_url']) . '" class="rr-button rr-article-item__shop-btn" target="_blank" rel="noopener sponsored">'
                 . esc_html__('Shop Now', 'restart-registry') . '</a>';
-            
+
             // TODO: if the URL is an affiliate link, show the retailer's logo instead of a generic "Shop Now" button. This would require normalizing known retailer URLs in the Affiliate_Converter and passing that info through here.
             $add_btn = '<button type="button" class="rr-button rr-button-secondary rr-quick-add"'
                 . ' data-name="' . esc_attr($a['title']) . '"'
@@ -1616,7 +1731,7 @@ class Restart_Registry_Public
                 . '</button>';
         }
 
-       
+
 
         // ── Full card ─────────────────────────────────────────────────────
         $retailer_html = !empty($a['retailer'])
@@ -1659,7 +1774,7 @@ class Restart_Registry_Public
     private function render_quick_add_modals(): string
     {
         ob_start();
-        ?>
+    ?>
 
         <!-- Quick-add: auth modal (not logged in) -->
         <div class="rr-modal rr-quick-add-modal" id="rr-qa-auth-modal" aria-inert="true">
@@ -1698,7 +1813,7 @@ class Restart_Registry_Public
             </div>
         </div>
 
-        <?php
+<?php
         return ob_get_clean();
     }
 
@@ -1706,6 +1821,45 @@ class Restart_Registry_Public
      * AJAX: add an item to the current user's registry without requiring
      * registry_id from the caller — looks it up automatically.
      */
+    public function ajax_save_shipping_address(): void
+    {
+        check_ajax_referer('restart_registry_nonce', 'nonce');
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
+        }
+        $registry_id = (int) ($_POST['registry_id'] ?? 0);
+        if (!$this->controller->can_edit_registry($registry_id, get_current_user_id())) {
+            wp_send_json_error(['message' => __('You cannot edit this registry.', 'restart-registry')]);
+        }
+        $address = [
+            'name'        => $_POST['shipping_name'] ?? '',
+            'address_1'   => $_POST['address_1']     ?? '',
+            'address_2'   => $_POST['address_2']     ?? '',
+            'city'        => $_POST['city']          ?? '',
+            'state'       => $_POST['state']         ?? '',
+            'postal_code' => $_POST['postal_code']   ?? '',
+            'country'     => $_POST['country']       ?? '',
+        ];
+        if ($this->controller->save_shipping_address($registry_id, $address)) {
+            wp_send_json_success(['message' => __('Address saved.', 'restart-registry')]);
+        }
+        wp_send_json_error(['message' => __('Address line 1 and city are required.', 'restart-registry')]);
+    }
+
+    public function ajax_delete_shipping_address(): void
+    {
+        check_ajax_referer('restart_registry_nonce', 'nonce');
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'restart-registry')]);
+        }
+        $registry_id = (int) ($_POST['registry_id'] ?? 0);
+        if (!$this->controller->can_edit_registry($registry_id, get_current_user_id())) {
+            wp_send_json_error(['message' => __('You cannot edit this registry.', 'restart-registry')]);
+        }
+        $this->controller->delete_shipping_address($registry_id);
+        wp_send_json_success(['message' => __('Address removed.', 'restart-registry')]);
+    }
+
     public function ajax_quick_add(): void
     {
         check_ajax_referer('restart_registry_nonce', 'nonce');
