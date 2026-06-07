@@ -259,6 +259,24 @@
     resize: vertical;
 }
 
+/* Item table — admin edit page overrides */
+
+/* Modal z-index must clear WP admin bar (99999) */
+.rr-admin-edit-wrap .rr-modal { z-index: 100100; }
+
+/* Item name as modal trigger — looks like text, not a button */
+.rr-admin-item-name {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: #2271b1;
+    cursor: pointer;
+    text-align: left;
+}
+.rr-admin-item-name:hover { color: #135e96; text-decoration: underline; }
+
 /* Invitees section */
 .rr-admin-invitees .rr-admin-section__heading {
     margin: 0 0 12px;
