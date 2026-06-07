@@ -377,7 +377,8 @@
         }).then(function(response) {
             if (response.success) {
                 btn.remove();
-                addressForm.reset();
+                var form = document.getElementById('rr-address-form');
+                if (form) form.reset();
                 document.getElementById('rr-save-address-btn').textContent = 'Save Address';
                 showNotice(response.data.message, 'success');
             } else {
