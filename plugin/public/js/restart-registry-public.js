@@ -391,6 +391,23 @@
         });
     });
 
+    // ── Pre-purchase address modal ────────────────────────────────────────────
+
+    document.addEventListener('click', function(e) {
+        var purchaseBtn = e.target.closest('.rr-purchase-btn');
+        if (!purchaseBtn) return;
+        var modal = document.getElementById('rr-pre-purchase-modal');
+        if (!modal) return; // no address saved — let the link open normally
+        e.preventDefault();
+        document.getElementById('rr-pre-purchase-continue').href = purchaseBtn.href;
+        openModal('#rr-pre-purchase-modal');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#rr-pre-purchase-continue')) return;
+        closeModal('#rr-pre-purchase-modal');
+    });
+
     // ── Copy shipping address ─────────────────────────────────────────────────
 
     document.addEventListener('click', function(e) {

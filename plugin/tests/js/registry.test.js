@@ -422,6 +422,16 @@ describe('shipping address', () => {
                 <div id="rr-shipping-address-block" data-address="Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US">
                     <button class="rr-copy-address">Copy address</button>
                 </div>
+                <div id="rr-pre-purchase-modal" class="rr-modal" aria-hidden="true">
+                    <div class="rr-modal__backdrop"></div>
+                    <div class="rr-modal__dialog">
+                        <button class="rr-modal__close">&times;</button>
+                        <button class="rr-copy-address">Copy</button>
+                        <a id="rr-pre-purchase-continue" href="#">Continue to purchase</a>
+                        <button class="rr-modal-cancel">Cancel</button>
+                    </div>
+                </div>
+                <a class="rr-purchase-btn rr-button" href="https://etsy.com/listing/123">Purchase</a>
             </div>
         `;
     }
@@ -465,16 +475,25 @@ describe('shipping address', () => {
         expect(document.getElementById('rr-remove-address')).toBeNull();
     });
 
-    it('writes the address to clipboard and shows Copied! feedback', async () => {
+    it('intercepts the Purchase button and opens the pre-purchase modal', () => {
+        // Target the standalone purchase link added by addAddressForm(), not the
+        // one inside the item-detail modal (which has href="#").
+        document.querySelector('a.rr-purchase-btn[href*="etsy.com"]').click();
+
+        expect(document.getElementById('rr-pre-purchase-modal').classList.contains('is-open')).toBe(true);
+        expect(document.getElementById('rr-pre-purchase-continue').getAttribute('href')).toContain('etsy.com/listing/123');
+    });
+
+    it('writes the page-level address to clipboard and shows Copied! feedback', async () => {
         navigator.clipboard.writeText.mockClear();
 
-        document.querySelector('.rr-copy-address').click();
+        document.querySelector('#rr-shipping-address-block .rr-copy-address').click();
         await flushPromises();
 
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
             'Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US'
         );
-        expect(document.querySelector('.rr-copy-address').textContent).toBe('Copied!');
+        expect(document.querySelector('#rr-shipping-address-block .rr-copy-address').textContent).toBe('Copied!');
     });
 
     it('does not write to clipboard when no address block is present', async () => {
