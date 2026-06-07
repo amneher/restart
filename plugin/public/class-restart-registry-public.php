@@ -22,9 +22,13 @@ class Restart_Registry_Public
     /** @var Restart_Registry_Controller */
     private $controller;
 
+    /** @var string */
+    public $disclosure = '';
+
     public function __construct(string $plugin_name, string $version)
     {
         $this->plugin_name = $plugin_name;
+        $this->disclosure = get_option('restart_registry_affiliate_disclosure', __('Some links on this registry are affiliate links.', 'restart-registry'));
         $this->version     = $version;
 
         require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-restart-registry-controller.php';
@@ -1742,6 +1746,10 @@ class Restart_Registry_Public
             ? '<p class="rr-article-item__description">' . esc_html($a['description']) . '</p>'
             : '';
 
+        $disc_html = !empty($this->disclosure)
+            ? '<p class="rr-affiliate-note"><small>' . esc_html($this->disclosure) . '</small></p>'
+            : '';
+        
         $html = '<div class="rr-article-item">'
             . $media_html
             . '<div class="rr-article-item__body">'
@@ -1753,6 +1761,7 @@ class Restart_Registry_Public
             . '<div class="rr-article-item__footer">'
             . $price_html
             . '<div class="rr-article-item__actions">' . $shop_btn . $add_btn . '</div>'
+            . $disc_html
             . '</div>'
             . '</div>'
             . '</div>';
