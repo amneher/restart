@@ -157,6 +157,9 @@ class Restart_Registry_Admin {
         register_setting('restart_registry_affiliates', 'restart_registry_etsy_api_key', [
             'sanitize_callback' => 'sanitize_text_field',
         ]);
+        register_setting('restart_registry_affiliates', 'restart_registry_anthropic_api_key', [
+            'sanitize_callback' => 'sanitize_text_field',
+        ]);
 
         register_setting('restart_registry_settings', 'restart_registry_page_id');
         register_setting('restart_registry_settings', 'restart_registry_email_from');
@@ -234,6 +237,20 @@ class Restart_Registry_Admin {
                 'description' => __('Enables reliable title, image, price, and description fetching for Etsy items. Bypasses Cloudflare bot-detection entirely.', 'restart-registry'),
                 'get_key_url' => 'https://www.etsy.com/developers/register',
                 'get_key_label' => __('Get your Etsy API key →', 'restart-registry'),
+            )
+        );
+
+        add_settings_field(
+            'restart_registry_anthropic_api_key',
+            __('Anthropic API Key', 'restart-registry'),
+            array($this, 'api_key_field_callback'),
+            'restart_registry_affiliates',
+            'restart_registry_api_keys_section',
+            array(
+                'label_for'   => 'restart_registry_anthropic_api_key',
+                'description' => __('Enables AI-powered product data extraction via Claude. When configured, the scraper uses Claude Haiku to reliably extract name, price, image, and description from any retailer page — no per-retailer regex maintenance needed.', 'restart-registry'),
+                'get_key_url' => 'https://console.anthropic.com/settings/keys',
+                'get_key_label' => __('Get your Anthropic API key →', 'restart-registry'),
             )
         );
     }
@@ -921,7 +938,7 @@ class Restart_Registry_Admin {
         $recipient_rel  = get_post_meta($post_id, 'restart_recipient_relationship', true) ?: '';
         $recipient_email = get_post_meta($post_id, 'restart_recipient_email', true) ?: '';
         $thumbnail_id   = get_post_thumbnail_id($post_id) ?: 0;
-        $hero_url       = $thumbnail_id ? get_the_post_thumbnail_url($post_id, 'large') : '';
+        $hero_url       = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'large') : '';
         $author         = get_userdata($post->post_author);
 
         $allowed_statuses = ['publish', 'private', 'draft', 'restart-archived'];
@@ -1048,18 +1065,27 @@ class Restart_Registry_Admin {
                             </div>
                             <ul class="rr-item-list">
                                 <?php foreach ($items as $item):
-                                    $qty_needed    = (int) ($item['quantity'] ?? 1);
+                                    $qty_needed    = (int) ($item['quantity_needed'] ?? 1);
                                     $qty_purchased = (int) ($item['quantity_purchased'] ?? 0);
                                     $is_fulfilled  = $qty_purchased >= $qty_needed;
                                 ?>
-                                    <li class="rr-item-row <?php echo $is_fulfilled ? 'is-fulfilled' : ''; ?>">
+                                    <li class="rr-item-row <?php echo $is_fulfilled ? 'is-fulfilled' : ''; ?>"
+                                        data-item-id="<?php echo esc_attr($item['id'] ?? ''); ?>"
+                                        data-name="<?php echo esc_attr($item['name'] ?? ''); ?>"
+                                        data-url="<?php echo esc_attr($item['url'] ?? ''); ?>"
+                                        data-price="<?php echo esc_attr($item['price'] ?? ''); ?>"
+                                        data-quantity="<?php echo esc_attr($qty_needed); ?>"
+                                        data-description="<?php echo esc_attr($item['description'] ?? ''); ?>"
+                                        data-notes="<?php echo esc_attr($item['notes'] ?? ''); ?>"
+                                        data-image-url="<?php echo esc_attr($item['image_url'] ?? ''); ?>"
+                                        data-retailer="<?php echo esc_attr($item['retailer'] ?? ''); ?>">
                                         <span class="rr-col-thumb">
                                             <?php if (!empty($item['image_url'])): ?>
                                                 <img src="<?php echo esc_url($item['image_url']); ?>" alt="" loading="lazy">
                                             <?php endif; ?>
                                         </span>
                                         <span class="rr-col-item">
-                                            <a href="<?php echo esc_url($item['url'] ?? ''); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($item['name']); ?></a>
+                                            <button type="button" class="rr-admin-edit-item rr-admin-item-name"><?php echo esc_html($item['name']); ?></button>
                                             <?php if (!empty($item['notes'])): ?>
                                                 <span class="rr-item__notes"><?php echo esc_html($item['notes']); ?></span>
                                             <?php endif; ?>
@@ -1120,6 +1146,71 @@ class Restart_Registry_Admin {
                 </div>
 
             </form>
+
+            <!-- Data for item edit AJAX -->
+            <input type="hidden" id="rr-admin-update-nonce" value="<?php echo esc_attr(wp_create_nonce('restart_registry_nonce')); ?>">
+            <input type="hidden" id="rr-admin-edit-registry-id" value="<?php echo esc_attr($post_id); ?>">
+
+            <!-- Item edit modal -->
+            <div class="rr-modal" id="rr-admin-item-edit-modal">
+                <div class="rr-modal__backdrop"></div>
+                <div class="rr-modal__dialog" role="dialog" aria-labelledby="rr-admin-item-edit-title" aria-modal="true">
+                    <div class="rr-modal__header">
+                        <h3 id="rr-admin-item-edit-title"><?php _e('Edit Item', 'restart-registry'); ?></h3>
+                        <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                    </div>
+                    <div class="rr-modal__body">
+                        <form id="rr-admin-item-edit-form" class="rr-form">
+                            <input type="hidden" id="rr-admin-item-id">
+                            <div class="rr-form-group">
+                                <label for="rr-admin-item-name"><?php _e('Name', 'restart-registry'); ?></label>
+                                <input type="text" id="rr-admin-item-name" name="name" required>
+                            </div>
+                            <div class="rr-form-group">
+                                <label for="rr-admin-item-url"><?php _e('URL', 'restart-registry'); ?></label>
+                                <input type="url" id="rr-admin-item-url" name="url" required>
+                            </div>
+                            <div class="rr-form-row">
+                                <div class="rr-form-group">
+                                    <label for="rr-admin-item-price"><?php _e('Price', 'restart-registry'); ?></label>
+                                    <input type="number" id="rr-admin-item-price" name="price" step="0.01" min="0" placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
+                                </div>
+                                <div class="rr-form-group">
+                                    <label for="rr-admin-item-quantity"><?php _e('Quantity needed', 'restart-registry'); ?></label>
+                                    <input type="number" id="rr-admin-item-quantity" name="quantity" min="1" value="1">
+                                </div>
+                            </div>
+                            <div class="rr-form-group">
+                                <label for="rr-admin-item-description"><?php _e('Description', 'restart-registry'); ?></label>
+                                <textarea id="rr-admin-item-description" name="description" rows="3" maxlength="500" placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>"></textarea>
+                            </div>
+                            <div class="rr-form-group">
+                                <label for="rr-admin-item-notes"><?php _e('Notes', 'restart-registry'); ?></label>
+                                <input type="text" id="rr-admin-item-notes" name="notes" placeholder="<?php esc_attr_e('Optional — visible to gift-givers', 'restart-registry'); ?>">
+                            </div>
+                            <div class="rr-form-group">
+                                <label for="rr-admin-item-image-url"><?php _e('Image URL', 'restart-registry'); ?></label>
+                                <input type="url" id="rr-admin-item-image-url" name="image_url" placeholder="<?php esc_attr_e('Optional', 'restart-registry'); ?>">
+                            </div>
+                            <div class="rr-form-group">
+                                <label for="rr-admin-item-retailer"><?php _e('Retailer', 'restart-registry'); ?></label>
+                                <input type="text" id="rr-admin-item-retailer" name="retailer" readonly>
+                            </div>
+                            <div class="rr-form-group rr-form-group--checkbox">
+                                <label for="rr-admin-item-fulfilled">
+                                    <input type="checkbox" id="rr-admin-item-fulfilled" name="mark_fulfilled" value="1">
+                                    <?php _e('Mark as fulfilled (no more needed)', 'restart-registry'); ?>
+                                </label>
+                            </div>
+                            <div class="rr-form-actions">
+                                <button type="submit" class="rr-button"><?php _e('Save Changes', 'restart-registry'); ?></button>
+                                <button type="button" class="rr-btn-ghost rr-admin-item-modal-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </div>
         <?php
     }
@@ -1174,6 +1265,7 @@ class Restart_Registry_Admin {
     private function get_registry_edit_inline_js(): string {
         return <<<'JS'
 (function($) {
+    // ── Hero image picker ─────────────────────────────────────────────────────
     var frame;
     $('#rr-admin-hero-pick').on('click', function() {
         if (frame) { frame.open(); return; }
@@ -1213,6 +1305,80 @@ class Restart_Registry_Admin {
         var fields = document.getElementById('rr-admin-recipient-fields');
         if (this.checked) { fields.setAttribute('hidden', ''); }
         else              { fields.removeAttribute('hidden'); }
+    });
+
+    // ── Item edit modal ───────────────────────────────────────────────────────
+    var itemModal = document.getElementById('rr-admin-item-edit-modal');
+
+    function openItemModal() {
+        itemModal.classList.add('is-open');
+        document.body.classList.add('rr-modal-open');
+    }
+    function closeItemModal() {
+        itemModal.classList.remove('is-open');
+        document.body.classList.remove('rr-modal-open');
+    }
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.rr-admin-edit-item');
+        if (!btn) return;
+        var row = btn.closest('.rr-item-row');
+        var d   = row.dataset;
+        document.getElementById('rr-admin-item-id').value          = d.itemId       || '';
+        document.getElementById('rr-admin-item-name').value        = d.name         || '';
+        document.getElementById('rr-admin-item-url').value         = d.url          || '';
+        document.getElementById('rr-admin-item-price').value       = d.price        || '';
+        document.getElementById('rr-admin-item-quantity').value    = d.quantity     || 1;
+        document.getElementById('rr-admin-item-description').value = d.description  || '';
+        document.getElementById('rr-admin-item-notes').value       = d.notes        || '';
+        document.getElementById('rr-admin-item-image-url').value   = d.imageUrl     || '';
+        document.getElementById('rr-admin-item-retailer').value    = d.retailer     || '';
+        document.getElementById('rr-admin-item-fulfilled').checked = false;
+        openItemModal();
+    });
+
+    itemModal.addEventListener('click', function(e) {
+        if (e.target === itemModal || e.target.closest('.rr-modal__backdrop') || e.target.closest('.rr-modal__close') || e.target.closest('.rr-admin-item-modal-cancel')) {
+            closeItemModal();
+        }
+    });
+
+    var itemEditForm = document.getElementById('rr-admin-item-edit-form');
+    itemEditForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var submitBtn = itemEditForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving…';
+
+        var data = new FormData();
+        data.append('action',       'restart_registry_update_item');
+        data.append('nonce',        document.getElementById('rr-admin-update-nonce').value);
+        data.append('registry_id',  document.getElementById('rr-admin-edit-registry-id').value);
+        data.append('item_id',      document.getElementById('rr-admin-item-id').value);
+        data.append('name',         document.getElementById('rr-admin-item-name').value);
+        data.append('url',          document.getElementById('rr-admin-item-url').value);
+        data.append('price',        document.getElementById('rr-admin-item-price').value);
+        data.append('quantity',     document.getElementById('rr-admin-item-quantity').value);
+        data.append('description',  document.getElementById('rr-admin-item-description').value);
+        data.append('notes',        document.getElementById('rr-admin-item-notes').value);
+        data.append('image_url',    document.getElementById('rr-admin-item-image-url').value);
+        data.append('mark_fulfilled', document.getElementById('rr-admin-item-fulfilled').checked ? '1' : '0');
+
+        fetch(rrAdmin.ajaxurl, { method: 'POST', body: data })
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                if (resp.success) {
+                    window.location.reload();
+                } else {
+                    alert(resp.data && resp.data.message ? resp.data.message : 'An error occurred.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Save Changes';
+                }
+            }).catch(function() {
+                alert('An error occurred.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Changes';
+            });
     });
 }(jQuery));
 JS;

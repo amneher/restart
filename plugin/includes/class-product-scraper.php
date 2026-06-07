@@ -10,9 +10,9 @@ declare(strict_types=1);
  * private cURL implementation so integration tests can drive real HTTP
  * requests without bootstrapping WordPress.
  *
- * The Amazon early-return path extracts ASIN + slug-title directly from
- * the URL and skips the network entirely — Amazon serves CAPTCHA or 503
- * to all server-side scrapers regardless of User-Agent.
+ * Amazon: facebookexternalhit UA is allowlisted by Amazon for link previews.
+ * ASIN and slug-title are extracted from the URL as fallbacks in case the
+ * fetched page lacks og:title or og:image.
  */
 class Restart_Registry_Product_Scraper {
 
@@ -36,37 +36,31 @@ class Restart_Registry_Product_Scraper {
             }
         }
 
-        // Amazon blocks all server-side scrapers (CAPTCHA or 503 regardless of UA).
-        // Extract what we can directly from the URL — no network request needed.
+        // Amazon: extract ASIN and URL-slug name as fallbacks for when the fetched page
+        // lacks og:title or og:image (Amazon doesn't serve og:* to social crawlers).
+        $amazon_asin      = '';
+        $amazon_slug_name = '';
         if (preg_match('/amazon\.[a-z.]+/i', $url)) {
-            $asin  = '';
-            $name  = '';
-            $image = '';
-
-            // ASIN: 10-char alphanumeric after /dp/ or /gp/product/
             if (preg_match('/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i', $url, $m)) {
-                $asin = strtoupper($m[1]);
+                $amazon_asin = strtoupper($m[1]);
             }
-
-            // Title from URL slug: "KitchenAid-Artisan-5-Qt-Stand-Mixer" → "KitchenAid Artisan 5 Qt Stand Mixer"
             if (preg_match('/amazon\.[^\/]+\/([^\/]+)\/dp\//i', $url, $m)) {
-                $name = str_replace('-', ' ', rawurldecode($m[1]));
+                $amazon_slug_name = str_replace('-', ' ', rawurldecode($m[1]));
             }
-
-            // Amazon's public product image CDN accepts ASIN directly
-            if ($asin) {
-                $image = "https://images-na.ssl-images-amazon.com/images/P/{$asin}.01._SL500_.jpg";
-            }
-
-            return [
-                'name'        => $name,
-                'price'       => '',
-                'image_url'   => $image,
-                'description' => '',
-            ];
         }
 
         $body = $this->http_get($url, $this->select_ua_for($url), 15);
+
+        // LLM extraction — preferred when Anthropic API key is configured.
+        // Returns [] immediately when no key is set, so the regex chain below is the fallback.
+        $llm_result = (new Restart_Registry_LLM_Extractor())->extract($url, $body);
+        if (!empty($llm_result['name']) || !empty($llm_result['image_url'])) {
+            if (empty($llm_result['image_url']) && $amazon_asin) {
+                $llm_result['image_url'] = "https://images-na.ssl-images-amazon.com/images/P/{$amazon_asin}.01._SL500_.jpg";
+            }
+            return $llm_result;
+        }
+
         $data = ['name' => '', 'price' => '', 'image_url' => '', 'description' => ''];
 
         // og:title is the curated product name — preferred over <title> which adds site suffixes
@@ -79,6 +73,10 @@ class Restart_Registry_Product_Scraper {
         if (empty($data['name']) && preg_match('/<title[^>]*>([^<]+)<\/title>/i', $body, $m)) {
             $data['name'] = html_entity_decode(trim($m[1]), ENT_QUOTES, 'UTF-8');
             $data['name'] = preg_replace('/\s*[-|:].*(?:Amazon|Target|Walmart|eBay|Etsy).*$/i', '', $data['name']);
+        }
+        // Strip Amazon link-preview title prefix: "Amazon.com: Product Name"
+        if ($amazon_asin && !empty($data['name'])) {
+            $data['name'] = trim(preg_replace('/^Amazon\.com\s*:\s*/iu', '', $data['name']));
         }
         if (preg_match('/\$([0-9,]+\.?\d{0,2})/', $body, $m)) {
             $data['price'] = (float) str_replace(',', '', $m[1]);
@@ -105,13 +103,19 @@ class Restart_Registry_Product_Scraper {
             }
         }
 
-        // Strategy 3: Amazon — parse colorImages JSON from page HTML for real CDN URL
-        // (kept for parity even though the Amazon early-return above usually means we
-        // never reach this branch with an amazon.* URL)
+        // Strategy 3: Amazon — parse colorImages JSON embedded in page HTML
         if (empty($data['image_url']) && strpos($url, 'amazon.') !== false) {
             if (preg_match('/"large":"(https:\/\/m\.media-amazon\.com\/images\/[^"]+)"/i', $body, $m)) {
                 $data['image_url'] = $this->maybe_esc_url($m[1]);
             }
+        }
+
+        // Amazon fallbacks: CDN image from ASIN, URL-slug name when page extraction found nothing
+        if (empty($data['image_url']) && $amazon_asin) {
+            $data['image_url'] = "https://images-na.ssl-images-amazon.com/images/P/{$amazon_asin}.01._SL500_.jpg";
+        }
+        if (empty($data['name']) && $amazon_slug_name) {
+            $data['name'] = $amazon_slug_name;
         }
 
         // Etsy: Chrome UAs get Cloudflare-blocked; retry with a social crawler UA that Etsy allows for link previews.
@@ -217,6 +221,10 @@ class Restart_Registry_Product_Scraper {
             str_contains($host, 'markangraham.com')) {
             return self::UA_LINKEDIN;
         }
+        // Amazon: Chrome UA gets bot-detected; facebookexternalhit is allowlisted for link previews.
+        if (str_contains($host, 'amazon.com') || str_contains($host, 'amazon.co.') || str_contains($host, 'amazon.ca')) {
+            return self::UA_FACEBOOK;
+        }
         return self::UA_CHROME;
     }
 
@@ -289,13 +297,14 @@ class Restart_Registry_Product_Scraper {
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL            => $url,
-            CURLOPT_RETURNTRANSFER => false,
-            CURLOPT_NOBODY         => true,
+            CURLOPT_RETURNTRANSFER => true,   // capture body to string (avoids stdout); we discard it
+            CURLOPT_NOBODY         => false,  // GET, not HEAD — a.co doesn't reliably redirect on HEAD
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 5,
             CURLOPT_TIMEOUT        => 10,
             CURLOPT_USERAGENT      => self::UA_CHROME,
             CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_COOKIEFILE     => '',     // in-memory cookie jar so redirect chain gets cookies
         ]);
         curl_exec($ch);
         $final = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);

@@ -1467,6 +1467,7 @@ class Restart_Registry_Public
             return;
         }
 
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-llm-extractor.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-product-scraper.php';
         $data = (new Restart_Registry_Product_Scraper())->scrape($url);
 
