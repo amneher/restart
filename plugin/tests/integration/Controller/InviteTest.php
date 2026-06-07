@@ -6,13 +6,15 @@ use Brain\Monkey\Functions;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase;
 
-class InviteTest extends TestCase {
+class InviteTest extends TestCase
+{
     use MockeryPHPUnitIntegration;
 
     private LambdaClientFake $fake;
     private Restart_Registry_Controller $controller;
 
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
         parent::setUp();
         Monkey\setUp();
 
@@ -42,12 +44,14 @@ class InviteTest extends TestCase {
         $this->controller = new Restart_Registry_Controller($this->fake);
     }
 
-    protected function tearDown(): void {
+    protected function tearDown(): void
+    {
         Monkey\tearDown();
         parent::tearDown();
     }
 
-    public function test_adds_invitee_to_meta(): void {
+    public function test_adds_invitee_to_meta(): void
+    {
         Functions\when('get_post_meta')->justReturn('[]');
         Functions\when('is_email')->justReturn(true);
 
@@ -66,7 +70,8 @@ class InviteTest extends TestCase {
         $this->assertSame(['friend@example.com'], json_decode($captured, true));
     }
 
-    public function test_returns_error_for_duplicate_invitee(): void {
+    public function test_returns_error_for_duplicate_invitee(): void
+    {
         Functions\when('get_post_meta')->justReturn(json_encode(['friend@example.com']));
 
         $result = $this->controller->send_invite(42, 'friend@example.com');
@@ -75,7 +80,8 @@ class InviteTest extends TestCase {
         $this->assertSame('already_invited', $result->get_error_code());
     }
 
-    public function test_sends_invite_email_to_email_address(): void {
+    public function test_sends_invite_email_to_email_address(): void
+    {
         Functions\when('get_post_meta')->justReturn('[]');
         Functions\when('update_post_meta')->justReturn(true);
         Functions\when('is_email')->alias(fn($v) => $v === 'friend@example.com');
@@ -84,7 +90,8 @@ class InviteTest extends TestCase {
         $this->controller->send_invite(42, 'friend@example.com');
     }
 
-    public function test_does_not_send_email_for_username_invitee(): void {
+    public function test_does_not_send_email_for_username_invitee(): void
+    {
         Functions\when('get_post_meta')->justReturn('[]');
         Functions\when('update_post_meta')->justReturn(true);
         Functions\when('is_email')->alias(fn($v) => false);
@@ -93,7 +100,8 @@ class InviteTest extends TestCase {
         $this->controller->send_invite(42, 'username');
     }
 
-    public function test_get_registry_invites_returns_indexed_list(): void {
+    public function test_get_registry_invites_returns_indexed_list(): void
+    {
         Functions\when('get_post_meta')->justReturn(json_encode(['a@b.com', 'user1']));
 
         $result = $this->controller->get_registry_invites(42);

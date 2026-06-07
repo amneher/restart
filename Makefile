@@ -131,9 +131,10 @@ install:
 	cd theme && composer install --no-interaction && npm ci
 
 lint:
-	cd plugin && ./vendor/bin/phpcs
+	cd plugin && ./vendor/bin/phpcs --colors -p --ignore=vendor,node_modules . 
+	cd plugin && ./vendor/bin/phpcbf --colors -p --ignore=vendor,node_modules .
 	cd lambda && uv run ruff check .
-	cd theme && ./vendor/bin/phpcs
+	cd theme && ./vendor/bin/phpcs --colors -p --ignore=vendor,node_modules . && ./vendor/bin/phpcbf --colors -p --ignore=vendor,node_modules .
 
 typecheck:
 	cd lambda && uv run mypy app/

@@ -13,7 +13,8 @@
  * @subpackage Restart_Registry/includes
  */
 
-class Restart_Registry_Retailer_API {
+class Restart_Registry_Retailer_API
+{
 
     /**
      * Retailer slug → domains map. Consistent with class-affiliate-converter.php.
@@ -33,7 +34,8 @@ class Restart_Registry_Retailer_API {
      *
      * @return string|null  Retailer slug ('etsy', 'amazon', …) or null.
      */
-    public function detect_retailer(string $url): ?string {
+    public function detect_retailer(string $url): ?string
+    {
         $host = strtolower(preg_replace('/^www\./', '', parse_url($url, PHP_URL_HOST) ?: ''));
         foreach (self::RETAILER_DOMAINS as $retailer => $domains) {
             foreach ($domains as $domain) {
@@ -48,7 +50,8 @@ class Restart_Registry_Retailer_API {
     /**
      * Whether an API key is configured for the given retailer slug.
      */
-    public function has_api(string $retailer): bool {
+    public function has_api(string $retailer): bool
+    {
         return !empty(get_option('restart_registry_' . $retailer . '_api_key'));
     }
 
@@ -62,7 +65,8 @@ class Restart_Registry_Retailer_API {
      *
      * @return array|null  Partial product data array, or null to skip API path.
      */
-    public function fetch_if_configured(string $url): ?array {
+    public function fetch_if_configured(string $url): ?array
+    {
         $retailer = $this->detect_retailer($url);
         if (!$retailer || !$this->has_api($retailer)) {
             return null;
@@ -78,13 +82,14 @@ class Restart_Registry_Retailer_API {
      *
      * @return array  Subset of: name, price, image_url, description.
      */
-    public function fetch(string $url, string $retailer): array {
+    public function fetch(string $url, string $retailer): array
+    {
         switch ($retailer) {
-            case 'etsy':
-                return $this->fetch_etsy($url);
+        case 'etsy':
+            return $this->fetch_etsy($url);
             // Amazon: Phase 2 (requires AWS SigV4 signing)
-            default:
-                return [];
+        default:
+            return [];
         }
     }
 
@@ -93,10 +98,12 @@ class Restart_Registry_Retailer_API {
     // Docs: https://developers.etsy.com/documentation/reference#operation/getListing
     // =========================================================================
 
-    private function fetch_etsy(string $url): array {
+    private function fetch_etsy(string $url): array
+    {
         $api_key    = get_option('restart_registry_etsy_api_key', '');
         $listing_id = $this->extract_etsy_listing_id($url);
-        if (!$listing_id) return [];
+        if (!$listing_id) { return [];
+        }
 
         $response = wp_remote_get(
             'https://openapi.etsy.com/v3/application/listings/' . $listing_id . '?includes=Images',
@@ -114,7 +121,8 @@ class Restart_Registry_Retailer_API {
         }
 
         $listing = json_decode(wp_remote_retrieve_body($response), true);
-        if (empty($listing)) return [];
+        if (empty($listing)) { return [];
+        }
 
         $data = [];
 
@@ -142,7 +150,8 @@ class Restart_Registry_Retailer_API {
         return $data;
     }
 
-    private function extract_etsy_listing_id(string $url): ?string {
+    private function extract_etsy_listing_id(string $url): ?string
+    {
         return preg_match('/etsy\.com\/listing\/(\d+)/i', $url, $m) ? $m[1] : null;
     }
 
@@ -154,7 +163,8 @@ class Restart_Registry_Retailer_API {
      * Strip HTML, collapse whitespace, and truncate at a sentence boundary
      * within 160 characters. Shared by all retailer implementations.
      */
-    private function clean_description(string $raw): string {
+    private function clean_description(string $raw): string
+    {
         $text = wp_strip_all_tags($raw);
         $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
         $text = trim(preg_replace('/\s+/', ' ', $text));

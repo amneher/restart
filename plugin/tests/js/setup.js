@@ -9,6 +9,7 @@
 const _originalConsoleError = console.error.bind(console);
 console.error = function (...args) {
     const first = args[0];
-    if (first && typeof first === 'object' && first.type === 'not implemented') return;
+    if (first && typeof first === 'object' && first.type === 'not implemented') { return;
+    }
     _originalConsoleError(...args);
 };

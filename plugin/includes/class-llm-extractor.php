@@ -16,7 +16,8 @@ declare(strict_types=1);
  * Usable outside WordPress: falls back to a cURL implementation when
  * wp_remote_post() is unavailable (integration tests, CLI).
  */
-class Restart_Registry_LLM_Extractor {
+class Restart_Registry_LLM_Extractor
+{
 
     private const API_URL = 'https://api.anthropic.com/v1/messages';
     private const MODEL   = 'claude-haiku-4-5-20251001';
@@ -41,7 +42,8 @@ class Restart_Registry_LLM_Extractor {
      *
      * @return array{name:string,price:mixed,image_url:string,description:string}|array{}
      */
-    public function extract(string $url, string $html_body): array {
+    public function extract(string $url, string $html_body): array
+    {
         $api_key = $this->get_api_key();
         if ($api_key === '') {
             return [];
@@ -77,7 +79,8 @@ class Restart_Registry_LLM_Extractor {
      * Reduce a full HTML document to only the parts useful for extraction:
      * the <head> section and any JSON-LD <script> blocks from anywhere in the document.
      */
-    public function slice_html(string $html): string {
+    public function slice_html(string $html): string
+    {
         $parts = [];
 
         if (preg_match('/<head[^>]*>(.*?)<\/head>/is', $html, $m)) {
@@ -98,7 +101,8 @@ class Restart_Registry_LLM_Extractor {
      *
      * @return array{name:string,price:mixed,image_url:string,description:string}|array{}
      */
-    public function parse_response(string $response_body): array {
+    public function parse_response(string $response_body): array
+    {
         $data = json_decode($response_body, true);
         if (!is_array($data)) {
             return [];
@@ -119,14 +123,16 @@ class Restart_Registry_LLM_Extractor {
         return [];
     }
 
-    private function get_api_key(): string {
+    private function get_api_key(): string
+    {
         if (function_exists('get_option')) {
             return (string) get_option('restart_registry_anthropic_api_key', '');
         }
         return '';
     }
 
-    private function http_post(string $url, string $api_key, array $payload): string {
+    private function http_post(string $url, string $api_key, array $payload): string
+    {
         $body    = (string) json_encode($payload);
         $headers = [
             'Content-Type'      => 'application/json',
@@ -135,11 +141,13 @@ class Restart_Registry_LLM_Extractor {
         ];
 
         if (function_exists('wp_remote_post')) {
-            $response = wp_remote_post($url, [
+            $response = wp_remote_post(
+                $url, [
                 'timeout' => 15,
                 'headers' => $headers,
                 'body'    => $body,
-            ]);
+                ]
+            );
 
             if (function_exists('is_wp_error') && is_wp_error($response)) {
                 return '';
@@ -163,7 +171,8 @@ class Restart_Registry_LLM_Extractor {
         return $this->curl_post($url, $body, $headers);
     }
 
-    private function curl_post(string $url, string $body, array $headers): string {
+    private function curl_post(string $url, string $body, array $headers): string
+    {
         $header_lines = array_map(
             static fn(string $k, string $v): string => "{$k}: {$v}",
             array_keys($headers),
@@ -171,7 +180,8 @@ class Restart_Registry_LLM_Extractor {
         );
 
         $ch = curl_init();
-        curl_setopt_array($ch, [
+        curl_setopt_array(
+            $ch, [
             CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
@@ -179,7 +189,8 @@ class Restart_Registry_LLM_Extractor {
             CURLOPT_TIMEOUT        => 15,
             CURLOPT_HTTPHEADER     => $header_lines,
             CURLOPT_SSL_VERIFYPEER => true,
-        ]);
+            ]
+        );
         $result = curl_exec($ch);
         $code   = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);

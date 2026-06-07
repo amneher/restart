@@ -18,25 +18,35 @@ use PHPUnit\Framework\TestCase;
  *  - WordPress options are set correctly (front page, registration, registry page ID)
  *  - Every slug referenced in header.html / footer.html maps to a created page
  */
-class ActivatorCreatePagesTest extends TestCase {
+class ActivatorCreatePagesTest extends TestCase
+{
 
-    /** Slugs → ['id', 'data'] for every wp_insert_post call during a run */
+    /**
+     * Slugs → ['id', 'data'] for every wp_insert_post call during a run 
+     */
     private array $inserted = [];
 
-    /** Each array passed to wp_update_post during a run */
+    /**
+     * Each array passed to wp_update_post during a run 
+     */
     private array $updated = [];
 
-    /** Each ['id', 'key', 'val'] passed to update_post_meta during a run */
+    /**
+     * Each ['id', 'key', 'val'] passed to update_post_meta during a run 
+     */
     private array $meta = [];
 
-    /** option_name → value for every update_option call during a run */
+    /**
+     * option_name → value for every update_option call during a run 
+     */
     private array $options = [];
 
     private int $nextId = 100;
 
     // ── Test lifecycle ────────────────────────────────────────────────────────
 
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
         parent::setUp();
         Monkey\setUp();
 
@@ -50,28 +60,36 @@ class ActivatorCreatePagesTest extends TestCase {
         Functions\when('get_template_directory')->justReturn(
             dirname(__DIR__, 3) . '/theme'
         );
-        Functions\when('update_post_meta')->alias(function(int $id, string $key, mixed $val): bool {
-            $this->meta[] = compact('id', 'key', 'val');
-            return true;
-        });
-        Functions\when('update_option')->alias(function(string $key, mixed $val): bool {
-            $this->options[$key] = $val;
-            return true;
-        });
-        Functions\when('wp_update_post')->alias(function(array $data): int {
-            $this->updated[] = $data;
-            return $data['ID'];
-        });
+        Functions\when('update_post_meta')->alias(
+            function (int $id, string $key, mixed $val): bool {
+                $this->meta[] = compact('id', 'key', 'val');
+                return true;
+            }
+        );
+        Functions\when('update_option')->alias(
+            function (string $key, mixed $val): bool {
+                $this->options[$key] = $val;
+                return true;
+            }
+        );
+        Functions\when('wp_update_post')->alias(
+            function (array $data): int {
+                $this->updated[] = $data;
+                return $data['ID'];
+            }
+        );
     }
 
-    protected function tearDown(): void {
+    protected function tearDown(): void
+    {
         Monkey\tearDown();
         parent::tearDown();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private function nextId(): int {
+    private function nextId(): int
+    {
         return $this->nextId++;
     }
 
@@ -80,29 +98,35 @@ class ActivatorCreatePagesTest extends TestCase {
      * Pages whose slug appears as a key in $existing_by_slug are returned as
      * pre-existing; all others return [].
      *
-     * @param WP_Post[] $existing  Pre-existing pages to simulate.
+     * @param WP_Post[] $existing Pre-existing pages to simulate.
      */
-    private function runCreatePages(array $existing = []): void {
+    private function runCreatePages(array $existing = []): void
+    {
         $by_slug = [];
         foreach ($existing as $post) {
             $by_slug[$post->post_name] = $post;
         }
 
-        Functions\when('get_posts')->alias(function(array $args) use ($by_slug) {
-            $slug = $args['name'] ?? '';
-            return isset($by_slug[$slug]) ? [$by_slug[$slug]] : [];
-        });
+        Functions\when('get_posts')->alias(
+            function (array $args) use ($by_slug) {
+                $slug = $args['name'] ?? '';
+                return isset($by_slug[$slug]) ? [$by_slug[$slug]] : [];
+            }
+        );
 
-        Functions\when('wp_insert_post')->alias(function(array $data): int {
-            $id = $this->nextId();
-            $this->inserted[$data['post_name']] = ['id' => $id, 'data' => $data];
-            return $id;
-        });
+        Functions\when('wp_insert_post')->alias(
+            function (array $data): int {
+                $id = $this->nextId();
+                $this->inserted[$data['post_name']] = ['id' => $id, 'data' => $data];
+                return $id;
+            }
+        );
 
         Restart_Registry_Activator::create_pages();
     }
 
-    private function make_post(string $slug, string $content = '', string $status = 'publish'): WP_Post {
+    private function make_post(string $slug, string $content = '', string $status = 'publish'): WP_Post
+    {
         $post               = new WP_Post();
         $post->ID           = $this->nextId();
         $post->post_name    = $slug;
@@ -113,7 +137,8 @@ class ActivatorCreatePagesTest extends TestCase {
 
     // ── Pages created ─────────────────────────────────────────────────────────
 
-    public function test_creates_exactly_the_expected_set_of_pages(): void {
+    public function test_creates_exactly_the_expected_set_of_pages(): void
+    {
         $this->runCreatePages();
 
         $expected = [
@@ -129,7 +154,8 @@ class ActivatorCreatePagesTest extends TestCase {
         $this->assertSame($expected, $actual);
     }
 
-    public function test_all_new_pages_are_published(): void {
+    public function test_all_new_pages_are_published(): void
+    {
         $this->runCreatePages();
 
         foreach ($this->inserted as $slug => $entry) {
@@ -143,7 +169,8 @@ class ActivatorCreatePagesTest extends TestCase {
 
     // ── Page templates ────────────────────────────────────────────────────────
 
-    public function test_templated_pages_have_correct_page_template_meta(): void {
+    public function test_templated_pages_have_correct_page_template_meta(): void
+    {
         $this->runCreatePages();
 
         $expected_templates = [
@@ -169,7 +196,8 @@ class ActivatorCreatePagesTest extends TestCase {
         }
     }
 
-    public function test_pages_without_template_do_not_get_template_meta(): void {
+    public function test_pages_without_template_do_not_get_template_meta(): void
+    {
         $this->runCreatePages();
 
         $no_template = ['home', 'find-a-registry', 'terms-and-conditions', 'privacy-policy'];
@@ -188,7 +216,8 @@ class ActivatorCreatePagesTest extends TestCase {
 
     // ── Copy content ──────────────────────────────────────────────────────────
 
-    public function test_copy_pages_are_inserted_with_html_content(): void {
+    public function test_copy_pages_are_inserted_with_html_content(): void
+    {
         $this->runCreatePages();
 
         foreach (['faq', 'about-us', 'terms-and-conditions', 'privacy-policy'] as $slug) {
@@ -198,7 +227,8 @@ class ActivatorCreatePagesTest extends TestCase {
         }
     }
 
-    public function test_copy_content_matches_theme_copy_files_exactly(): void {
+    public function test_copy_content_matches_theme_copy_files_exactly(): void
+    {
         $this->runCreatePages();
 
         $theme = dirname(__DIR__, 3) . '/theme';
@@ -209,7 +239,8 @@ class ActivatorCreatePagesTest extends TestCase {
         }
     }
 
-    public function test_non_copy_pages_are_created_with_empty_content(): void {
+    public function test_non_copy_pages_are_created_with_empty_content(): void
+    {
         $this->runCreatePages();
 
         $no_copy = ['home', 'login', 'register', 'my-account', 'my-registries', 'start-a-registry', 'find-a-registry'];
@@ -221,7 +252,8 @@ class ActivatorCreatePagesTest extends TestCase {
 
     // ── WordPress options ─────────────────────────────────────────────────────
 
-    public function test_sets_home_page_as_site_front_page(): void {
+    public function test_sets_home_page_as_site_front_page(): void
+    {
         $this->runCreatePages();
 
         $this->assertSame('page', $this->options['show_on_front'] ?? null);
@@ -231,7 +263,8 @@ class ActivatorCreatePagesTest extends TestCase {
         );
     }
 
-    public function test_sets_restart_registry_page_id_to_my_registries(): void {
+    public function test_sets_restart_registry_page_id_to_my_registries(): void
+    {
         $this->runCreatePages();
 
         $this->assertSame(
@@ -240,13 +273,15 @@ class ActivatorCreatePagesTest extends TestCase {
         );
     }
 
-    public function test_enables_user_registration(): void {
+    public function test_enables_user_registration(): void
+    {
         $this->runCreatePages();
 
         $this->assertSame(1, $this->options['users_can_register'] ?? null);
     }
 
-    public function test_sets_default_role_to_subscriber(): void {
+    public function test_sets_default_role_to_subscriber(): void
+    {
         $this->runCreatePages();
 
         $this->assertSame('registry-user', $this->options['default_role'] ?? null);
@@ -254,14 +289,16 @@ class ActivatorCreatePagesTest extends TestCase {
 
     // ── Idempotency ───────────────────────────────────────────────────────────
 
-    public function test_existing_published_page_with_content_is_not_re_inserted(): void {
+    public function test_existing_published_page_with_content_is_not_re_inserted(): void
+    {
         $existing = $this->make_post('faq', '<p>existing</p>', 'publish');
         $this->runCreatePages([$existing]);
 
         $this->assertArrayNotHasKey('faq', $this->inserted);
     }
 
-    public function test_existing_published_page_with_content_is_not_updated(): void {
+    public function test_existing_published_page_with_content_is_not_updated(): void
+    {
         $existing = $this->make_post('about-us', '<p>Custom editorial copy.</p>', 'publish');
         $this->runCreatePages([$existing]);
 
@@ -276,7 +313,8 @@ class ActivatorCreatePagesTest extends TestCase {
 
     // ── Content backfill ──────────────────────────────────────────────────────
 
-    public function test_empty_existing_copy_page_gets_content_backfilled(): void {
+    public function test_empty_existing_copy_page_gets_content_backfilled(): void
+    {
         $existing = $this->make_post('faq', '', 'publish');
         $this->runCreatePages([$existing]);
 
@@ -292,7 +330,8 @@ class ActivatorCreatePagesTest extends TestCase {
         $this->assertNotEmpty($update['post_content']);
     }
 
-    public function test_backfilled_content_matches_copy_file(): void {
+    public function test_backfilled_content_matches_copy_file(): void
+    {
         $existing = $this->make_post('faq', '', 'publish');
         $this->runCreatePages([$existing]);
 
@@ -308,7 +347,8 @@ class ActivatorCreatePagesTest extends TestCase {
         $this->assertSame($expected, $update['post_content'] ?? null);
     }
 
-    public function test_existing_page_with_content_is_not_overwritten_even_if_copy_exists(): void {
+    public function test_existing_page_with_content_is_not_overwritten_even_if_copy_exists(): void
+    {
         $custom   = '<p>Hand-written FAQ content that must not be lost.</p>';
         $existing = $this->make_post('faq', $custom, 'publish');
         $this->runCreatePages([$existing]);
@@ -328,7 +368,8 @@ class ActivatorCreatePagesTest extends TestCase {
 
     // ── Draft publishing ──────────────────────────────────────────────────────
 
-    public function test_existing_draft_page_is_published(): void {
+    public function test_existing_draft_page_is_published(): void
+    {
         $draft = $this->make_post('privacy-policy', '', 'draft');
         $this->runCreatePages([$draft]);
 
@@ -344,7 +385,8 @@ class ActivatorCreatePagesTest extends TestCase {
         $this->assertSame('publish', $update['post_status'] ?? null);
     }
 
-    public function test_existing_draft_is_not_re_inserted(): void {
+    public function test_existing_draft_is_not_re_inserted(): void
+    {
         $draft = $this->make_post('privacy-policy', '', 'draft');
         $this->runCreatePages([$draft]);
 
@@ -360,7 +402,8 @@ class ActivatorCreatePagesTest extends TestCase {
      * Note: /registry/ (Find a Registry) is the restart-registry CPT archive URL,
      * not a page, so it is intentionally excluded from this list.
      */
-    public function test_all_nav_page_slugs_are_created(): void {
+    public function test_all_nav_page_slugs_are_created(): void
+    {
         $this->runCreatePages();
 
         // Collected from theme/parts/header.html and theme/parts/footer.html

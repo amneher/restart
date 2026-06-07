@@ -4,20 +4,29 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 if (!class_exists('WP_Error')) {
-    class WP_Error {
+    class WP_Error
+    {
         public string $code;
         public string $message;
-        public function __construct(string $code = '', string $message = '', mixed $data = null) {
+        public function __construct(string $code = '', string $message = '', mixed $data = null)
+        {
             $this->code    = $code;
             $this->message = $message;
         }
-        public function get_error_message(): string { return $this->message; }
-        public function get_error_code(): string    { return $this->code; }
+        public function get_error_message(): string
+        {
+            return $this->message; 
+        }
+        public function get_error_code(): string
+        {
+            return $this->code; 
+        }
     }
 }
 
 if (!class_exists('WP_Post')) {
-    class WP_Post {
+    class WP_Post
+    {
         public int    $ID           = 0;
         public int    $post_author  = 0;
         public string $post_title   = '';
@@ -29,7 +38,8 @@ if (!class_exists('WP_Post')) {
 }
 
 if (!class_exists('WP_User')) {
-    class WP_User {
+    class WP_User
+    {
         public int    $ID           = 0;
         public string $user_email   = '';
         public string $user_login   = '';

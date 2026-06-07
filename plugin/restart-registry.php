@@ -8,9 +8,9 @@
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
- * @link              https://the-restart.co
- * @since             1.0.0
- * @package           Restart_Registry
+ * @link    https://the-restart.co
+ * @since   1.0.0
+ * @package Restart_Registry
  *
  * @wordpress-plugin
  * Plugin Name:       Restart Registry
@@ -26,8 +26,8 @@
  */
 
 // If this file is called directly, abort.
-if ( ! defined( 'WPINC' ) ) {
-	die;
+if (! defined('WPINC') ) {
+    die;
 }
 
 /**
@@ -35,34 +35,36 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'RESTART_REGISTRY_VERSION', '1.2.6' );
+define('RESTART_REGISTRY_VERSION', '1.2.6');
 
 /**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-restart-registry-activator.php
  */
-function activate_restart_registry() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-restart-registry-activator.php';
-	Restart_Registry_Activator::activate();
+function activate_restart_registry()
+{
+    include_once plugin_dir_path(__FILE__) . 'includes/class-restart-registry-activator.php';
+    Restart_Registry_Activator::activate();
 }
 
 /**
  * The code that runs during plugin deactivation.
  * This action is documented in includes/class-restart-registry-deactivator.php
  */
-function deactivate_restart_registry() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-restart-registry-deactivator.php';
-	Restart_Registry_Deactivator::deactivate();
+function deactivate_restart_registry()
+{
+    include_once plugin_dir_path(__FILE__) . 'includes/class-restart-registry-deactivator.php';
+    Restart_Registry_Deactivator::deactivate();
 }
 
-register_activation_hook( __FILE__, 'activate_restart_registry' );
-register_deactivation_hook( __FILE__, 'deactivate_restart_registry' );
+register_activation_hook(__FILE__, 'activate_restart_registry');
+register_deactivation_hook(__FILE__, 'deactivate_restart_registry');
 
 /**
  * The core plugin class that is used to define internationalization,
  * admin-specific hooks, and public-facing site hooks.
  */
-require plugin_dir_path( __FILE__ ) . 'includes/class-restart-registry.php';
+require plugin_dir_path(__FILE__) . 'includes/class-restart-registry.php';
 
 /**
  * Begins execution of the plugin.
@@ -71,12 +73,13 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-restart-registry.php';
  * then kicking off the plugin from this point in the file does
  * not affect the page life cycle.
  *
- * @since    1.0.0
+ * @since 1.0.0
  */
-function run_restart_registry() {
+function run_restart_registry()
+{
 
-	$plugin = new Restart_Registry();
-	$plugin->run();
+    $plugin = new Restart_Registry();
+    $plugin->run();
 
 }
 run_restart_registry();

@@ -11,21 +11,31 @@
  * @subpackage Restart_Registry/includes
  */
 
-class Restart_Registry_Lambda_Client {
+class Restart_Registry_Lambda_Client
+{
 
-    /** @var string Base URL for the Lambda/FastAPI service (no trailing slash). */
+    /**
+     * @var string Base URL for the Lambda/FastAPI service (no trailing slash). 
+     */
     private $base_url;
 
-    /** @var int HTTP request timeout in seconds. */
+    /**
+     * @var int HTTP request timeout in seconds. 
+     */
     private $timeout = 10;
 
-    /** @var string|null API Gateway x-api-key value, or null if unconfigured. */
+    /**
+     * @var string|null API Gateway x-api-key value, or null if unconfigured. 
+     */
     private $api_key;
 
-    /** @var string|null Basic-auth credentials as "username:password", or null if unconfigured. */
+    /**
+     * @var string|null Basic-auth credentials as "username:password", or null if unconfigured. 
+     */
     private $auth;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->base_url = rtrim(
             get_option('restart_lambda_url') ?: getenv('RESTART_LAMBDA_URL') ?: '',
             '/'
@@ -40,8 +50,11 @@ class Restart_Registry_Lambda_Client {
         }
     }
 
-    /** True when a Lambda URL has been configured. */
-    public function is_configured(): bool {
+    /**
+     * True when a Lambda URL has been configured. 
+     */
+    public function is_configured(): bool
+    {
         return !empty($this->base_url);
     }
 
@@ -52,7 +65,8 @@ class Restart_Registry_Lambda_Client {
     /**
      * Fetch a single item. Returns the item array, null if 404, or WP_Error.
      */
-    public function get_item(int $item_id) {
+    public function get_item(int $item_id)
+    {
         $response = $this->request('GET', "/items/{$item_id}");
         if (is_wp_error($response) || $response === null) {
             return $response;
@@ -64,7 +78,8 @@ class Restart_Registry_Lambda_Client {
      * Fetch multiple items by ID. Skips IDs that return 404.
      * Returns a flat array of item arrays.
      */
-    public function get_items(array $item_ids): array {
+    public function get_items(array $item_ids): array
+    {
         $items = [];
         foreach ($item_ids as $id) {
             $item = $this->get_item((int) $id);
@@ -81,7 +96,8 @@ class Restart_Registry_Lambda_Client {
      * Required keys: name, url, price.
      * Optional: description, retailer, affiliate_status, quantity_needed.
      */
-    public function create_item(array $data) {
+    public function create_item(array $data)
+    {
         $response = $this->request('POST', '/items', $data);
         if (is_wp_error($response)) {
             return $response;
@@ -95,7 +111,8 @@ class Restart_Registry_Lambda_Client {
      * Accepted keys: name, description, price, quantity_needed,
      *                quantity_purchased, is_active.
      */
-    public function update_item(int $item_id, array $data) {
+    public function update_item(int $item_id, array $data)
+    {
         $response = $this->request('PUT', "/items/{$item_id}", $data);
         if (is_wp_error($response)) {
             return $response;
@@ -106,7 +123,8 @@ class Restart_Registry_Lambda_Client {
     /**
      * Delete an item. Returns the deleted item array or WP_Error.
      */
-    public function delete_item(int $item_id) {
+    public function delete_item(int $item_id)
+    {
         $response = $this->request('DELETE', "/items/{$item_id}");
         if (is_wp_error($response)) {
             return $response;
@@ -123,7 +141,8 @@ class Restart_Registry_Lambda_Client {
      *
      * @return array|null|WP_Error  Parsed JSON body, null on 404, WP_Error on failure.
      */
-    private function request(string $method, string $path, ?array $body = null) {
+    private function request(string $method, string $path, ?array $body = null)
+    {
         if (!$this->is_configured()) {
             return new WP_Error(
                 'lambda_not_configured',

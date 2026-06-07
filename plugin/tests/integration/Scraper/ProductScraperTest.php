@@ -18,7 +18,8 @@ use PHPUnit\Framework\TestCase;
  * fatal. The tests only fail when a URL we expected to scrape returns
  * neither a name nor an image.
  */
-class ProductScraperTest extends TestCase {
+class ProductScraperTest extends TestCase
+{
 
     private const UA_CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -54,7 +55,8 @@ class ProductScraperTest extends TestCase {
         'https://a.co/d/00YdZXXx',
     ];
 
-    public function test_static_urls_from_file(): void {
+    public function test_static_urls_from_file(): void
+    {
         $path = dirname(__DIR__, 2) . '/assets/TestItemUrls.txt';
         $this->assertFileExists($path, 'TestItemUrls.txt must exist — run the discovery test to regenerate it.');
 
@@ -77,7 +79,8 @@ class ProductScraperTest extends TestCase {
         }
     }
 
-    public function test_discover_and_scrape(): void {
+    public function test_discover_and_scrape(): void
+    {
         $scraper    = new Restart_Registry_Product_Scraper();
         $discovered = ['amazon' => self::STATIC_AMAZON_URLS];
 
@@ -125,7 +128,8 @@ class ProductScraperTest extends TestCase {
      * name/image_url populated. On failure we dump the result so the
      * operator can diagnose without re-running.
      */
-    private function assert_scrape_result(string $url, array $result): void {
+    private function assert_scrape_result(string $url, array $result): void
+    {
         $is_amazon = (bool) preg_match('/amazon\.[a-z.]+|a\.co/i', $url);
 
         if ($is_amazon) {
@@ -148,9 +152,11 @@ class ProductScraperTest extends TestCase {
      * Plain cURL fetch — used to drive retailer category pages directly
      * from the test (the scraper itself only takes a URL, not a body).
      */
-    private function curl_fetch(string $url, string $ua, int $timeout): string {
+    private function curl_fetch(string $url, string $ua, int $timeout): string
+    {
         $ch = curl_init();
-        curl_setopt_array($ch, [
+        curl_setopt_array(
+            $ch, [
             CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
@@ -163,7 +169,8 @@ class ProductScraperTest extends TestCase {
                 'Accept-Language: en-US,en;q=0.5',
             ],
             CURLOPT_SSL_VERIFYPEER => true,
-        ]);
+            ]
+        );
         $body = curl_exec($ch);
         curl_close($ch);
         return is_string($body) ? $body : '';
@@ -177,7 +184,8 @@ class ProductScraperTest extends TestCase {
      * preserved verbatim.  This means curated static URLs survive even when
      * every discovery seed is bot-blocked.
      */
-    private function write_test_urls_file(array $discovered): void {
+    private function write_test_urls_file(array $discovered): void
+    {
         $path = dirname(__DIR__, 2) . '/assets/TestItemUrls.txt';
 
         // Parse the existing file into: header lines and per-section URL lists.

@@ -14,7 +14,8 @@ declare(strict_types=1);
  * ASIN and slug-title are extracted from the URL as fallbacks in case the
  * fetched page lacks og:title or og:image.
  */
-class Restart_Registry_Product_Scraper {
+class Restart_Registry_Product_Scraper
+{
 
     private const UA_CHROME   = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
     private const UA_FACEBOOK = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
@@ -27,7 +28,8 @@ class Restart_Registry_Product_Scraper {
      *
      * @return array{name:string,price:mixed,image_url:string,description:string}
      */
-    public function scrape(string $url): array {
+    public function scrape(string $url): array
+    {
         // a.co is Amazon's short-link domain; resolve to the full URL so ASIN/title extraction works.
         if (preg_match('/^https?:\/\/a\.co\//i', $url)) {
             $resolved = $this->resolve_url($url);
@@ -64,8 +66,9 @@ class Restart_Registry_Product_Scraper {
         $data = ['name' => '', 'price' => '', 'image_url' => '', 'description' => ''];
 
         // og:title is the curated product name — preferred over <title> which adds site suffixes
-        if (preg_match('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $body, $m) ||
-            preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:title["\'][^>]*>/i', $body, $m)) {
+        if (preg_match('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $body, $m) 
+            || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:title["\'][^>]*>/i', $body, $m)
+        ) {
             $data['name'] = html_entity_decode(trim($m[1]), ENT_QUOTES, 'UTF-8');
             $data['name'] = preg_replace('/\s*[-|–]\s*(Etsy|Amazon\.com|Amazon|Target|Walmart|eBay)\s*$/iu', '', $data['name']);
         }
@@ -83,8 +86,9 @@ class Restart_Registry_Product_Scraper {
         }
 
         // Strategy 1: og:image meta tag (attribute order varies)
-        if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $body, $m) ||
-            preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\'][^>]*>/i', $body, $m)) {
+        if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $body, $m) 
+            || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\'][^>]*>/i', $body, $m)
+        ) {
             $data['image_url'] = $this->maybe_esc_url(html_entity_decode($m[1], ENT_QUOTES, 'UTF-8'));
         }
 
@@ -92,12 +96,15 @@ class Restart_Registry_Product_Scraper {
         if (empty($data['image_url']) && preg_match_all('/<script[^>]+type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/is', $body, $scripts)) {
             foreach ($scripts[1] as $json_raw) {
                 $ld = json_decode(trim($json_raw), true);
-                if (!$ld) continue;
+                if (!$ld) { continue;
+                }
                 foreach (isset($ld[0]) ? $ld : [$ld] as $node) {
                     if (in_array($node['@type'] ?? '', ['Product', 'ItemPage'], true) && !empty($node['image'])) {
                         $img = is_array($node['image']) ? reset($node['image']) : $node['image'];
-                        if (is_array($img)) $img = $img['url'] ?? '';
-                        if ($img) { $data['image_url'] = $this->maybe_esc_url($img); break 2; }
+                        if (is_array($img)) { $img = $img['url'] ?? '';
+                        }
+                        if ($img) { $data['image_url'] = $this->maybe_esc_url($img); break 2; 
+                        }
                     }
                 }
             }
@@ -124,15 +131,17 @@ class Restart_Registry_Product_Scraper {
             $etsy_body = $this->http_get($url, self::UA_FACEBOOK, 10);
             if ($etsy_body !== '') {
                 $etsy_og_title = '';
-                if (preg_match('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $etsy_body, $m) ||
-                    preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:title["\'][^>]*>/i', $etsy_body, $m)) {
+                if (preg_match('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $etsy_body, $m) 
+                    || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:title["\'][^>]*>/i', $etsy_body, $m)
+                ) {
                     $etsy_og_title = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
                 }
                 // Only trust the result if it's a real listing page, not a bot-detection shell
                 if ($etsy_og_title && !preg_match('/^etsy(\.com)?$/i', trim($etsy_og_title))) {
                     $data['name'] = preg_replace('/\s*[-|–]\s*Etsy\s*$/iu', '', $etsy_og_title);
-                    if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $etsy_body, $m) ||
-                        preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\'][^>]*>/i', $etsy_body, $m)) {
+                    if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $etsy_body, $m) 
+                        || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\'][^>]*>/i', $etsy_body, $m)
+                    ) {
                         $data['image_url'] = $this->maybe_esc_url(html_entity_decode($m[1], ENT_QUOTES, 'UTF-8'));
                     }
                     // Replace $body so the description extraction section below uses the real page
@@ -152,7 +161,8 @@ class Restart_Registry_Product_Scraper {
         if (preg_match_all('/<script[^>]+type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/is', $body, $ld_blocks)) {
             foreach ($ld_blocks[1] as $json_raw) {
                 $ld = json_decode(trim($json_raw), true);
-                if (!$ld) continue;
+                if (!$ld) { continue;
+                }
                 foreach (isset($ld[0]) ? $ld : [$ld] as $node) {
                     if (in_array($node['@type'] ?? '', ['Product', 'ItemPage'], true) && !empty($node['description'])) {
                         $description = $node['description'];
@@ -164,16 +174,18 @@ class Restart_Registry_Product_Scraper {
 
         // Description — Strategy 2: og:description
         if (empty($description)) {
-            if (preg_match('/<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $body, $m) ||
-                preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:description["\'][^>]*>/i', $body, $m)) {
+            if (preg_match('/<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $body, $m) 
+                || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:description["\'][^>]*>/i', $body, $m)
+            ) {
                 $description = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
             }
         }
 
         // Description — Strategy 3: meta description
         if (empty($description)) {
-            if (preg_match('/<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $body, $m) ||
-                preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']description["\'][^>]*>/i', $body, $m)) {
+            if (preg_match('/<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\'][^>]*>/i', $body, $m) 
+                || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']description["\'][^>]*>/i', $body, $m)
+            ) {
                 $description = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
             }
         }
@@ -212,13 +224,15 @@ class Restart_Registry_Product_Scraper {
      * Pick the best primary User-Agent for a given URL based on empirical testing.
      * See plugin/tests/assets/ua-matrix/summary.md for the test results that inform these choices.
      */
-    private function select_ua_for(string $url): string {
+    private function select_ua_for(string $url): string
+    {
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
         // Williams-Sonoma family: Akamai 403s all browser and social-crawler UAs; LinkedInBot passes.
-        if (str_contains($host, 'westelm.com') || str_contains($host, 'potterybarn.com') ||
-            str_contains($host, 'williams-sonoma.com') || str_contains($host, 'pbteen.com') ||
-            str_contains($host, 'pbkids.com') || str_contains($host, 'rejuvenation.com') ||
-            str_contains($host, 'markangraham.com')) {
+        if (str_contains($host, 'westelm.com') || str_contains($host, 'potterybarn.com') 
+            || str_contains($host, 'williams-sonoma.com') || str_contains($host, 'pbteen.com') 
+            || str_contains($host, 'pbkids.com') || str_contains($host, 'rejuvenation.com') 
+            || str_contains($host, 'markangraham.com')
+        ) {
             return self::UA_LINKEDIN;
         }
         // Amazon: Chrome UA gets bot-detected; facebookexternalhit is allowlisted for link previews.
@@ -232,16 +246,19 @@ class Restart_Registry_Product_Scraper {
      * HTTP GET using wp_remote_get() when available, cURL otherwise.
      * Always returns a string body; on failure returns ''.
      */
-    private function http_get(string $url, string $ua, int $timeout): string {
+    private function http_get(string $url, string $ua, int $timeout): string
+    {
         if (function_exists('wp_remote_get')) {
-            $response = wp_remote_get($url, [
+            $response = wp_remote_get(
+                $url, [
                 'timeout'    => $timeout,
                 'user-agent' => $ua,
                 'headers'    => [
                     'Accept'          => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'Accept-Language' => 'en-US,en;q=0.5',
                 ],
-            ]);
+                ]
+            );
 
             if (function_exists('is_wp_error') && is_wp_error($response)) {
                 return '';
@@ -261,9 +278,11 @@ class Restart_Registry_Product_Scraper {
     /**
      * Plain cURL fallback for non-WordPress contexts (CLI/tests).
      */
-    private function curl_get(string $url, string $ua, int $timeout): string {
+    private function curl_get(string $url, string $ua, int $timeout): string
+    {
         $ch = curl_init();
-        curl_setopt_array($ch, [
+        curl_setopt_array(
+            $ch, [
             CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
@@ -276,7 +295,8 @@ class Restart_Registry_Product_Scraper {
                 'Accept-Language: en-US,en;q=0.5',
             ],
             CURLOPT_SSL_VERIFYPEER => true,
-        ]);
+            ]
+        );
         $body = curl_exec($ch);
         curl_close($ch);
         return is_string($body) ? $body : '';
@@ -286,16 +306,19 @@ class Restart_Registry_Product_Scraper {
      * Use esc_url_raw() when in WordPress, otherwise return the value as-is.
      * Test contexts don't have WordPress sanitization available.
      */
-    private function maybe_esc_url(string $url): string {
+    private function maybe_esc_url(string $url): string
+    {
         return function_exists('esc_url_raw') ? esc_url_raw($url) : $url;
     }
 
     /**
      * Follow redirects and return the final URL. Used to resolve short-link domains (a.co).
      */
-    private function resolve_url(string $url): string {
+    private function resolve_url(string $url): string
+    {
         $ch = curl_init();
-        curl_setopt_array($ch, [
+        curl_setopt_array(
+            $ch, [
             CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,   // capture body to string (avoids stdout); we discard it
             CURLOPT_NOBODY         => false,  // GET, not HEAD — a.co doesn't reliably redirect on HEAD
@@ -305,7 +328,8 @@ class Restart_Registry_Product_Scraper {
             CURLOPT_USERAGENT      => self::UA_CHROME,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_COOKIEFILE     => '',     // in-memory cookie jar so redirect chain gets cookies
-        ]);
+            ]
+        );
         curl_exec($ch);
         $final = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         curl_close($ch);

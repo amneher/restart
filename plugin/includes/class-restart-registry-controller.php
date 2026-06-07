@@ -13,20 +13,25 @@
  * @subpackage Restart_Registry/includes
  */
 
-class Restart_Registry_Controller {
+class Restart_Registry_Controller
+{
 
-    /** @var Restart_Registry_Lambda_Client */
+    /**
+     * @var Restart_Registry_Lambda_Client 
+     */
     private $lambda;
 
-    /** @var Restart_Registry_Affiliate_Converter */
+    /**
+     * @var Restart_Registry_Affiliate_Converter 
+     */
     private $affiliate_converter;
 
     public function __construct(
         ?Restart_Registry_Lambda_Client $lambda = null,
         ?Restart_Registry_Affiliate_Converter $affiliate_converter = null
     ) {
-        require_once plugin_dir_path(__FILE__) . 'class-lambda-api-client.php';
-        require_once plugin_dir_path(__FILE__) . 'class-affiliate-converter.php';
+        include_once plugin_dir_path(__FILE__) . 'class-lambda-api-client.php';
+        include_once plugin_dir_path(__FILE__) . 'class-affiliate-converter.php';
         $this->lambda              = $lambda ?? new Restart_Registry_Lambda_Client();
         $this->affiliate_converter = $affiliate_converter ?? new Restart_Registry_Affiliate_Converter();
     }
@@ -38,7 +43,8 @@ class Restart_Registry_Controller {
     /**
      * Build a registry array from a WP post object (without items).
      */
-    private function post_to_registry(\WP_Post $post): array {
+    private function post_to_registry(\WP_Post $post): array
+    {
         $invitees = json_decode(get_post_meta($post->ID, 'restart_invitees', true) ?: '[]', true) ?: [];
         $item_ids = json_decode(get_post_meta($post->ID, 'restart_item_ids', true) ?: '[]', true) ?: [];
 
@@ -76,7 +82,8 @@ class Restart_Registry_Controller {
     /**
      * Get a registry by WP post ID (with items loaded from Lambda).
      */
-    public function get_registry(int $registry_id) {
+    public function get_registry(int $registry_id)
+    {
         $post = get_post($registry_id);
         if (!$post || $post->post_type !== 'restart-registry') {
             return new WP_Error('not_found', __('Registry not found.', 'restart-registry'));
@@ -90,26 +97,31 @@ class Restart_Registry_Controller {
      * Look up a registry by its WP post ID (numeric string) or post slug.
      * Used by the ?registry=<key> share-link flow.
      */
-    public function get_registry_by_share_key(string $key) {
+    public function get_registry_by_share_key(string $key)
+    {
         if (is_numeric($key)) {
             return $this->get_registry((int) $key);
         }
 
-        $posts = get_posts([
+        $posts = get_posts(
+            [
             'post_type'      => 'restart-registry',
             'name'           => $key,
             'posts_per_page' => 1,
             'post_status'    => ['publish', 'private'],
-        ]);
+            ]
+        );
 
         if (empty($posts)) {
             // Check if it exists but is archived before returning a generic 404.
-            $archived = get_posts([
+            $archived = get_posts(
+                [
                 'post_type'      => 'restart-registry',
                 'name'           => $key,
                 'posts_per_page' => 1,
                 'post_status'    => ['restart-archived'],
-            ]);
+                ]
+            );
             if (!empty($archived)) {
                 return new WP_Error('registry_archived', __('This registry is no longer active.', 'restart-registry'));
             }
@@ -124,13 +136,16 @@ class Restart_Registry_Controller {
     /**
      * Get the first registry belonging to a WP user (with items).
      */
-    public function get_user_registry(int $user_id): ?array {
-        $posts = get_posts([
+    public function get_user_registry(int $user_id): ?array
+    {
+        $posts = get_posts(
+            [
             'post_type'      => 'restart-registry',
             'author'         => $user_id,
             'posts_per_page' => 1,
             'post_status'    => ['publish', 'private', 'draft'],
-        ]);
+            ]
+        );
 
         if (empty($posts)) {
             return null;
@@ -149,7 +164,8 @@ class Restart_Registry_Controller {
      * Generate a unique 6-character alphanumeric slug for a new registry.
      * Uses an unambiguous character set (no 0/O/1/I/l) and retries on collision.
      */
-    private function _generate_short_code(): string {
+    private function _generate_short_code(): string
+    {
         $chars = 'abcdefghjkmnpqrstuvwxyz23456789';
         $len   = strlen($chars);
 
@@ -160,12 +176,14 @@ class Restart_Registry_Controller {
             }
 
             // Confirm no existing post uses this slug.
-            $collision = get_posts([
+            $collision = get_posts(
+                [
                 'post_type'      => 'restart-registry',
                 'name'           => $code,
                 'posts_per_page' => 1,
                 'post_status'    => 'any',
-            ]);
+                ]
+            );
 
             if (empty($collision)) {
                 return $code;
@@ -180,26 +198,31 @@ class Restart_Registry_Controller {
      * Create a new registry WP post for a user.
      * Returns ['id' => post_id, 'share_key' => post_id] or WP_Error.
      */
-    public function create_registry(int $user_id, string $title, string $description = '', bool $is_public = false, array $meta = []) {
-        $existing = get_posts([
+    public function create_registry(int $user_id, string $title, string $description = '', bool $is_public = false, array $meta = [])
+    {
+        $existing = get_posts(
+            [
             'post_type'      => 'restart-registry',
             'author'         => $user_id,
             'posts_per_page' => 1,
             'post_status'    => ['publish', 'private', 'draft'],
-        ]);
+            ]
+        );
 
         if (!empty($existing)) {
             return new WP_Error('registry_exists', __('You already have a registry.', 'restart-registry'));
         }
 
-        $post_id = wp_insert_post([
+        $post_id = wp_insert_post(
+            [
             'post_type'    => 'restart-registry',
             'post_title'   => sanitize_text_field($title),
             'post_name'    => $this->_generate_short_code(),
             'post_content' => sanitize_textarea_field($description),
             'post_status'  => $is_public ? 'publish' : 'private',
             'post_author'  => $user_id,
-        ], true);
+            ], true
+        );
 
         if (is_wp_error($post_id)) {
             return $post_id;
@@ -229,7 +252,8 @@ class Restart_Registry_Controller {
      * is_for_self, recipient_name, recipient_relationship, recipient_email,
      * hero_image_id (sets the post's featured image / thumbnail).
      */
-    public function update_registry(int $registry_id, array $data): bool {
+    public function update_registry(int $registry_id, array $data): bool
+    {
         $update = ['ID' => $registry_id];
 
         if (isset($data['title'])) {
@@ -280,7 +304,8 @@ class Restart_Registry_Controller {
      * Archive a registry: sets post_status to 'restart-archived'.
      * Items and purchase messages are preserved.
      */
-    public function archive_registry(int $registry_id): bool {
+    public function archive_registry(int $registry_id): bool
+    {
         $post = get_post($registry_id);
         if (!$post || $post->post_type !== 'restart-registry') {
             return false;
@@ -292,7 +317,8 @@ class Restart_Registry_Controller {
     /**
      * Restore an archived registry to private (non-public) status.
      */
-    public function restore_registry(int $registry_id): bool {
+    public function restore_registry(int $registry_id): bool
+    {
         $post = get_post($registry_id);
         if (!$post || $post->post_type !== 'restart-registry' || $post->post_status !== 'restart-archived') {
             return false;
@@ -305,22 +331,26 @@ class Restart_Registry_Controller {
      * Return slim registry arrays for all archived registries belonging to a user.
      * Does not load Lambda items — for listing only.
      */
-    public function get_user_archived_registries(int $user_id): array {
-        $posts = get_posts([
+    public function get_user_archived_registries(int $user_id): array
+    {
+        $posts = get_posts(
+            [
             'post_type'      => 'restart-registry',
             'author'         => $user_id,
             'post_status'    => ['restart-archived'],
             'posts_per_page' => -1,
             'orderby'        => 'date',
             'order'          => 'DESC',
-        ]);
+            ]
+        );
         return array_map([$this, 'post_to_registry'], $posts);
     }
 
     /**
      * Delete a registry post and all its Lambda items.
      */
-    public function delete_registry(int $registry_id): bool {
+    public function delete_registry(int $registry_id): bool
+    {
         $item_ids = json_decode(get_post_meta($registry_id, 'restart_item_ids', true) ?: '[]', true) ?: [];
         foreach ($item_ids as $item_id) {
             $this->lambda->delete_item((int) $item_id);
@@ -335,7 +365,8 @@ class Restart_Registry_Controller {
     /**
      * Fetch all Lambda items for a registry (order preserved from meta).
      */
-    public function get_registry_items(int $registry_id): array {
+    public function get_registry_items(int $registry_id): array
+    {
         $item_ids = json_decode(get_post_meta($registry_id, 'restart_item_ids', true) ?: '[]', true) ?: [];
         if (empty($item_ids)) {
             return [];
@@ -346,7 +377,8 @@ class Restart_Registry_Controller {
     /**
      * Fetch a single Lambda item.
      */
-    public function get_item(int $item_id) {
+    public function get_item(int $item_id)
+    {
         return $this->lambda->get_item($item_id);
     }
 
@@ -356,7 +388,8 @@ class Restart_Registry_Controller {
      *
      * Required: name, url.  Optional: description, price, quantity.
      */
-    public function add_item(int $registry_id, array $data) {
+    public function add_item(int $registry_id, array $data)
+    {
         $url              = esc_url_raw($data['url']);
         $affiliate_result = $this->affiliate_converter->convert_url($url);
 
@@ -409,15 +442,23 @@ class Restart_Registry_Controller {
      * Update a Lambda item's editable fields.
      * Accepted keys: name, url, description, notes, price, quantity (→ quantity_needed).
      */
-    public function update_item(int $item_id, array $data) {
+    public function update_item(int $item_id, array $data)
+    {
         $update = [];
-        if (isset($data['name']))        $update['name']           = $this->truncate_name(sanitize_text_field($data['name']));
-        if (!empty($data['url']))        $update['url']            = esc_url_raw($data['url']);
-        if (isset($data['description'])) $update['description']    = sanitize_textarea_field($data['description']);
-        if (isset($data['notes']))       $update['notes']          = sanitize_textarea_field($data['notes']);
-        if (!empty($data['price']))      $update['price']          = max(0.01, (float) $data['price']);
-        if (isset($data['quantity']))    $update['quantity_needed'] = max(1, (int) $data['quantity']);
-        if (isset($data['image_url']))   $update['image_url']      = !empty($data['image_url']) ? esc_url_raw($data['image_url']) : null;
+        if (isset($data['name'])) {        $update['name']           = $this->truncate_name(sanitize_text_field($data['name']));
+        }
+        if (!empty($data['url'])) {        $update['url']            = esc_url_raw($data['url']);
+        }
+        if (isset($data['description'])) { $update['description']    = sanitize_textarea_field($data['description']);
+        }
+        if (isset($data['notes'])) {       $update['notes']          = sanitize_textarea_field($data['notes']);
+        }
+        if (!empty($data['price'])) {      $update['price']          = max(0.01, (float) $data['price']);
+        }
+        if (isset($data['quantity'])) {    $update['quantity_needed'] = max(1, (int) $data['quantity']);
+        }
+        if (isset($data['image_url'])) {   $update['image_url']      = !empty($data['image_url']) ? esc_url_raw($data['image_url']) : null;
+        }
 
         if (empty($update)) {
             return new WP_Error('no_data', __('No data to update.', 'restart-registry'));
@@ -429,7 +470,8 @@ class Restart_Registry_Controller {
     /**
      * Delete a Lambda item and remove it from the registry meta.
      */
-    public function delete_item(int $item_id, int $registry_id): bool {
+    public function delete_item(int $item_id, int $registry_id): bool
+    {
         $this->lambda->delete_item($item_id);
 
         $item_ids = json_decode(get_post_meta($registry_id, 'restart_item_ids', true) ?: '[]', true) ?: [];
@@ -443,7 +485,8 @@ class Restart_Registry_Controller {
      * Increment quantity_purchased for an item.
      * Returns the updated item or WP_Error.
      */
-    public function mark_item_purchased(int $item_id, int $quantity = 1, string $purchaser_name = '', string $purchaser_email = '', string $purchaser_note = '', bool $is_anonymous = false) {
+    public function mark_item_purchased(int $item_id, int $quantity = 1, string $purchaser_name = '', string $purchaser_email = '', string $purchaser_note = '', bool $is_anonymous = false)
+    {
         $item = $this->lambda->get_item($item_id);
         if (!$item || is_wp_error($item)) {
             return new WP_Error('not_found', __('Item not found.', 'restart-registry'));
@@ -474,9 +517,11 @@ class Restart_Registry_Controller {
      * Append a purchase message record to the registry's message board.
      * Only called when the gift-giver left a non-empty note.
      */
-    private function persist_purchase_message(array $item, string $purchaser_name, string $purchaser_note): void {
+    private function persist_purchase_message(array $item, string $purchaser_name, string $purchaser_note): void
+    {
         $registry_id = (int) ($item['registry_id'] ?? 0);
-        if (!$registry_id) return;
+        if (!$registry_id) { return;
+        }
 
         $messages   = json_decode(get_post_meta($registry_id, 'restart_purchase_messages', true) ?: '[]', true) ?: [];
         $messages[] = [
@@ -494,7 +539,8 @@ class Restart_Registry_Controller {
     /**
      * Return stored purchase messages for a registry, newest first.
      */
-    public function get_purchase_messages(int $registry_id): array {
+    public function get_purchase_messages(int $registry_id): array
+    {
         $messages = json_decode(get_post_meta($registry_id, 'restart_purchase_messages', true) ?: '[]', true) ?: [];
         return array_reverse($messages);
     }
@@ -507,7 +553,8 @@ class Restart_Registry_Controller {
      * Add an email or WP username to the registry invitee list and send an email.
      * Returns ['invite_id' => index] or WP_Error.
      */
-    public function send_invite(int $registry_id, string $invitee) {
+    public function send_invite(int $registry_id, string $invitee)
+    {
         $invitees = json_decode(get_post_meta($registry_id, 'restart_invitees', true) ?: '[]', true) ?: [];
 
         if (in_array($invitee, $invitees, true)) {
@@ -527,7 +574,8 @@ class Restart_Registry_Controller {
     /**
      * Return the invitee list as an array of row-like arrays.
      */
-    public function get_registry_invites(int $registry_id): array {
+    public function get_registry_invites(int $registry_id): array
+    {
         $invitees = json_decode(get_post_meta($registry_id, 'restart_invitees', true) ?: '[]', true) ?: [];
         return array_map(
             fn($invitee, $i) => ['id' => $i, 'email' => $invitee],
@@ -540,7 +588,8 @@ class Restart_Registry_Controller {
      * Remove a single invitee from the registry by their email/username string.
      * Returns true on success, WP_Error if the invitee wasn't on the list.
      */
-    public function delete_invitee(int $registry_id, string $invitee) {
+    public function delete_invitee(int $registry_id, string $invitee)
+    {
         $invitees = json_decode(get_post_meta($registry_id, 'restart_invitees', true) ?: '[]', true) ?: [];
         $idx = array_search($invitee, $invitees, true);
         if ($idx === false) {
@@ -551,19 +600,24 @@ class Restart_Registry_Controller {
         return true;
     }
 
-    private function send_purchase_notification(array $item, string $purchaser_name, string $purchaser_note): void {
+    private function send_purchase_notification(array $item, string $purchaser_name, string $purchaser_note): void
+    {
         $registry_id = (int) ($item['registry_id'] ?? 0);
-        if (!$registry_id) return;
+        if (!$registry_id) { return;
+        }
 
         $post = get_post($registry_id);
-        if (!$post) return;
+        if (!$post) { return;
+        }
 
         $owner_id = (int) $post->post_author;
         $owner    = get_userdata($owner_id);
-        if (!$owner) return;
+        if (!$owner) { return;
+        }
 
         // Respect opt-out (default: notify)
-        if (get_user_meta($owner_id, 'restart_notify_on_purchase', true) === '0') return;
+        if (get_user_meta($owner_id, 'restart_notify_on_purchase', true) === '0') { return;
+        }
 
         $registry_title = $post->post_title;
         $registry_url   = get_permalink($registry_id) ?: home_url('/');
@@ -624,7 +678,8 @@ class Restart_Registry_Controller {
         );
     }
 
-    private function send_invite_email(string $email, int $registry_id): void {
+    private function send_invite_email(string $email, int $registry_id): void
+    {
         $post      = get_post($registry_id);
         $author    = $post ? get_userdata((int) $post->post_author) : null;
         $name      = $author ? $author->display_name : __('Someone', 'restart-registry');
@@ -649,7 +704,8 @@ class Restart_Registry_Controller {
     /**
      * True if the user may view the registry (public, owner, admin, or invitee).
      */
-    public function can_view_registry(int $registry_id, ?int $user_id = null): bool {
+    public function can_view_registry(int $registry_id, ?int $user_id = null): bool
+    {
         $post = get_post($registry_id);
         if (!$post || $post->post_type !== 'restart-registry') {
             return false;
@@ -669,10 +725,9 @@ class Restart_Registry_Controller {
         if ($user_id) {
             $invitees = json_decode(get_post_meta($registry_id, 'restart_invitees', true) ?: '[]', true) ?: [];
             $user     = get_userdata($user_id);
-            if ($user && (
-                in_array($user->user_email, $invitees, true) ||
-                in_array($user->user_login, $invitees, true)
-            )) {
+            if ($user && (in_array($user->user_email, $invitees, true) 
+                || in_array($user->user_login, $invitees, true)                )
+            ) {
                 return true;
             }
         }
@@ -688,7 +743,8 @@ class Restart_Registry_Controller {
      * word-boundary cut. Comma-space is tried last and only when the leading
      * segment is at least 20 characters, to avoid splitting "Brand, Product".
      */
-    private function truncate_name(string $name): string {
+    private function truncate_name(string $name): string
+    {
         if (mb_strlen($name) <= 100) {
             return $name;
         }
@@ -722,7 +778,8 @@ class Restart_Registry_Controller {
     /**
      * True if the user may edit the registry (author or admin).
      */
-    public function can_edit_registry(int $registry_id, int $user_id): bool {
+    public function can_edit_registry(int $registry_id, int $user_id): bool
+    {
         $post = get_post($registry_id);
         if (!$post || $post->post_type !== 'restart-registry') {
             return false;

@@ -5,9 +5,11 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
 
-class CustomRetailersAdminTest extends TestCase {
+class CustomRetailersAdminTest extends TestCase
+{
 
-    protected function setUp(): void {
+    protected function setUp(): void
+    {
         parent::setUp();
         Monkey\setUp();
         Functions\when('add_action')->justReturn(true);
@@ -15,18 +17,21 @@ class CustomRetailersAdminTest extends TestCase {
         Functions\when('sanitize_text_field')->alias(fn($v) => is_string($v) ? trim(strip_tags($v)) : '');
     }
 
-    protected function tearDown(): void {
+    protected function tearDown(): void
+    {
         Monkey\tearDown();
         parent::tearDown();
     }
 
-    private function admin(): Restart_Registry_Admin {
+    private function admin(): Restart_Registry_Admin
+    {
         return new Restart_Registry_Admin('restart-registry', '1.0.0');
     }
 
     // ── sanitize_custom_retailers ────────────────────────────────────────────
 
-    public function test_valid_rows_are_preserved(): void {
+    public function test_valid_rows_are_preserved(): void
+    {
         $input = [
             [
                 'name'         => 'Pottery Barn',
@@ -47,13 +52,15 @@ class CustomRetailersAdminTest extends TestCase {
         $this->assertSame('M456', $result[0]['merchant_id']);
     }
 
-    public function test_non_array_input_returns_empty_array(): void {
+    public function test_non_array_input_returns_empty_array(): void
+    {
         $this->assertSame([], $this->admin()->sanitize_custom_retailers('not-an-array'));
         $this->assertSame([], $this->admin()->sanitize_custom_retailers(null));
         $this->assertSame([], $this->admin()->sanitize_custom_retailers(42));
     }
 
-    public function test_row_missing_name_is_dropped(): void {
+    public function test_row_missing_name_is_dropped(): void
+    {
         $input = [[
             'name'         => '',
             'domains'      => 'example.com',
@@ -65,7 +72,8 @@ class CustomRetailersAdminTest extends TestCase {
         $this->assertCount(0, $this->admin()->sanitize_custom_retailers($input));
     }
 
-    public function test_row_missing_domains_is_dropped(): void {
+    public function test_row_missing_domains_is_dropped(): void
+    {
         $input = [[
             'name'         => 'Some Store',
             'domains'      => '',
@@ -77,7 +85,8 @@ class CustomRetailersAdminTest extends TestCase {
         $this->assertCount(0, $this->admin()->sanitize_custom_retailers($input));
     }
 
-    public function test_row_missing_template_is_dropped(): void {
+    public function test_row_missing_template_is_dropped(): void
+    {
         $input = [[
             'name'         => 'Some Store',
             'domains'      => 'somestore.com',
@@ -89,7 +98,8 @@ class CustomRetailersAdminTest extends TestCase {
         $this->assertCount(0, $this->admin()->sanitize_custom_retailers($input));
     }
 
-    public function test_html_tags_are_stripped_from_fields(): void {
+    public function test_html_tags_are_stripped_from_fields(): void
+    {
         $input = [[
             'name'         => '<b>Evil Store</b>',
             'domains'      => '<script>alert(1)</script>evil.com',
@@ -106,7 +116,8 @@ class CustomRetailersAdminTest extends TestCase {
         $this->assertSame('M1', $result[0]['merchant_id']);
     }
 
-    public function test_multiple_valid_rows_all_kept_and_reindexed(): void {
+    public function test_multiple_valid_rows_all_kept_and_reindexed(): void
+    {
         $input = [
             5 => ['name' => 'Store A', 'domains' => 'a.com', 'template' => 'https://net.com/{url}', 'affiliate_id' => '1', 'merchant_id' => ''],
             9 => ['name' => 'Store B', 'domains' => 'b.com', 'template' => 'https://net.com/{url}', 'affiliate_id' => '2', 'merchant_id' => ''],
@@ -121,7 +132,8 @@ class CustomRetailersAdminTest extends TestCase {
         $this->assertSame('Store B', $result[1]['name']);
     }
 
-    public function test_merchant_id_is_optional(): void {
+    public function test_merchant_id_is_optional(): void
+    {
         $input = [[
             'name'         => 'Store A',
             'domains'      => 'a.com',

@@ -9,27 +9,34 @@
  * @subpackage Restart_Registry/includes
  */
 
-class Restart_Registry_Affiliate_Converter {
+class Restart_Registry_Affiliate_Converter
+{
 
     private static ?self $instance = null;
 
     private $affiliate_configs;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->affiliate_configs = $this->get_affiliate_configs();
     }
 
-    public static function instance(): self {
+    public static function instance(): self
+    {
         if (self::$instance === null) {
             self::$instance = new self();
             // Wrap in lambdas so non-string filter values degrade gracefully
             // instead of throwing TypeError on typed parameters.
-            add_filter('restart_affiliate_url', function ($v): string {
-                return is_string($v) ? self::$instance->convert_url_string($v) : (string) $v;
-            });
-            add_filter('restart_affiliate_content', function ($v): string {
-                return is_string($v) ? self::$instance->convert_content($v) : (string) $v;
-            });
+            add_filter(
+                'restart_affiliate_url', function ($v): string {
+                    return is_string($v) ? self::$instance->convert_url_string($v) : (string) $v;
+                }
+            );
+            add_filter(
+                'restart_affiliate_content', function ($v): string {
+                    return is_string($v) ? self::$instance->convert_content($v) : (string) $v;
+                }
+            );
         }
         return self::$instance;
     }
@@ -38,7 +45,8 @@ class Restart_Registry_Affiliate_Converter {
      * Convert all <a href> values in an HTML fragment through the affiliate converter.
      * Uses DOMDocument rather than regex so attribute parsing is handled correctly.
      */
-    public function convert_content(string $html): string {
+    public function convert_content(string $html): string
+    {
         if (empty($html) || !str_contains($html, '<a')) {
             return $html;
         }
@@ -54,7 +62,8 @@ class Restart_Registry_Affiliate_Converter {
 
         foreach ($doc->getElementsByTagName('a') as $link) {
             $href = $link->getAttribute('href');
-            if (!$href) continue;
+            if (!$href) { continue;
+            }
             $result = $this->convert_url($href);
             if ($result['is_affiliate']) {
                 $link->setAttribute('href', $result['affiliate_url']);
@@ -78,7 +87,8 @@ class Restart_Registry_Affiliate_Converter {
      * Plain URLs (no whitespace, has scheme) go through convert_url(); everything
      * else is treated as HTML and goes through convert_content().
      */
-    public function wrap(callable $fn, ...$args): string {
+    public function wrap(callable $fn, ...$args): string
+    {
         $output = (string) $fn(...$args);
         if (!preg_match('/\s/', $output) && parse_url($output, PHP_URL_SCHEME)) {
             return $this->convert_url($output)['affiliate_url'];
@@ -86,12 +96,16 @@ class Restart_Registry_Affiliate_Converter {
         return $this->convert_content($output);
     }
 
-    /** Filter-safe wrapper: returns only the affiliate URL string. */
-    public function convert_url_string(string $url): string {
+    /**
+     * Filter-safe wrapper: returns only the affiliate URL string. 
+     */
+    public function convert_url_string(string $url): string
+    {
         return $this->convert_url($url)['affiliate_url'];
     }
 
-    private function get_affiliate_configs() {
+    private function get_affiliate_configs()
+    {
         $defaults = array(
             'amazon' => array(
                 'enabled' => true,
@@ -147,7 +161,8 @@ class Restart_Registry_Affiliate_Converter {
         return apply_filters('restart_registry_affiliate_configs', $defaults);
     }
 
-    public function convert_url($url) {
+    public function convert_url($url)
+    {
         $parsed_url = parse_url($url);
         if (!$parsed_url || !isset($parsed_url['host'])) {
             return array(
@@ -161,7 +176,8 @@ class Restart_Registry_Affiliate_Converter {
         $host = preg_replace('/^www\./', '', $host);
 
         foreach ($this->affiliate_configs as $retailer => $config) {
-            if (!$config['enabled']) continue;
+            if (!$config['enabled']) { continue;
+            }
             
             if (isset($config['domains'])) {
                 foreach ($config['domains'] as $domain) {
@@ -184,29 +200,31 @@ class Restart_Registry_Affiliate_Converter {
         );
     }
 
-    private function generate_affiliate_url($retailer, $url, $config) {
+    private function generate_affiliate_url($retailer, $url, $config)
+    {
         if (isset($config['url_template'])) {
             return $this->generate_custom_affiliate($url, $config);
         }
         switch ($retailer) {
-            case 'amazon':
-                return $this->generate_amazon_affiliate($url, $config);
-            case 'target':
-                return $this->generate_target_affiliate($url, $config);
-            case 'walmart':
-                return $this->generate_walmart_affiliate($url, $config);
-            case 'etsy':
-                return $this->generate_etsy_affiliate($url, $config);
-            case 'ebay':
-                return $this->generate_ebay_affiliate($url, $config);
-            case 'bestbuy':
-                return $this->generate_bestbuy_affiliate($url, $config);
-            default:
-                return $url;
+        case 'amazon':
+            return $this->generate_amazon_affiliate($url, $config);
+        case 'target':
+            return $this->generate_target_affiliate($url, $config);
+        case 'walmart':
+            return $this->generate_walmart_affiliate($url, $config);
+        case 'etsy':
+            return $this->generate_etsy_affiliate($url, $config);
+        case 'ebay':
+            return $this->generate_ebay_affiliate($url, $config);
+        case 'bestbuy':
+            return $this->generate_bestbuy_affiliate($url, $config);
+        default:
+            return $url;
         }
     }
 
-    private function generate_custom_affiliate($url, $config) {
+    private function generate_custom_affiliate($url, $config)
+    {
         $template     = $config['url_template'] ?? '';
         $affiliate_id = $config['affiliate_id'] ?? '';
         $merchant_id  = $config['merchant_id'] ?? '';
@@ -222,7 +240,8 @@ class Restart_Registry_Affiliate_Converter {
         );
     }
 
-    private function generate_amazon_affiliate($url, $config) {
+    private function generate_amazon_affiliate($url, $config)
+    {
         if (empty($config['tag'])) {
             return $url;
         }
@@ -254,9 +273,11 @@ class Restart_Registry_Affiliate_Converter {
         return $affiliate_url;
     }
 
-    private function resolve_url(string $url): string {
+    private function resolve_url(string $url): string
+    {
         $ch = curl_init();
-        curl_setopt_array($ch, [
+        curl_setopt_array(
+            $ch, [
             CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => false,
             CURLOPT_NOBODY         => true,
@@ -265,14 +286,16 @@ class Restart_Registry_Affiliate_Converter {
             CURLOPT_TIMEOUT        => 10,
             CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
             CURLOPT_SSL_VERIFYPEER => true,
-        ]);
+            ]
+        );
         curl_exec($ch);
         $final = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         curl_close($ch);
         return (is_string($final) && $final !== '') ? $final : $url;
     }
 
-    private function generate_target_affiliate($url, $config) {
+    private function generate_target_affiliate($url, $config)
+    {
         if (empty($config['affiliate_id'])) {
             return $url;
         }
@@ -297,7 +320,8 @@ class Restart_Registry_Affiliate_Converter {
         return $affiliate_url;
     }
 
-    private function generate_walmart_affiliate($url, $config) {
+    private function generate_walmart_affiliate($url, $config)
+    {
         if (empty($config['affiliate_id'])) {
             return $url;
         }
@@ -322,7 +346,8 @@ class Restart_Registry_Affiliate_Converter {
         return $affiliate_url;
     }
 
-    private function generate_etsy_affiliate($url, $config) {
+    private function generate_etsy_affiliate($url, $config)
+    {
         if (empty($config['affiliate_id'])) {
             return $url;
         }
@@ -347,7 +372,8 @@ class Restart_Registry_Affiliate_Converter {
         return $affiliate_url;
     }
 
-    private function generate_ebay_affiliate($url, $config) {
+    private function generate_ebay_affiliate($url, $config)
+    {
         if (empty($config['campaign_id'])) {
             return $url;
         }
@@ -356,7 +382,8 @@ class Restart_Registry_Affiliate_Converter {
         return $rover_url;
     }
 
-    private function generate_bestbuy_affiliate($url, $config) {
+    private function generate_bestbuy_affiliate($url, $config)
+    {
         if (empty($config['affiliate_id'])) {
             return $url;
         }
@@ -381,7 +408,8 @@ class Restart_Registry_Affiliate_Converter {
         return $affiliate_url;
     }
 
-    private function extract_retailer_name($host) {
+    private function extract_retailer_name($host)
+    {
         $parts = explode('.', $host);
         if (count($parts) >= 2) {
             return ucfirst($parts[count($parts) - 2]);
@@ -389,7 +417,8 @@ class Restart_Registry_Affiliate_Converter {
         return ucfirst($host);
     }
 
-    public function get_supported_retailers() {
+    public function get_supported_retailers()
+    {
         $retailers = array();
         foreach ($this->affiliate_configs as $key => $config) {
             if (isset($config['domains'])) {
@@ -403,7 +432,8 @@ class Restart_Registry_Affiliate_Converter {
         return $retailers;
     }
 
-    public function is_affiliate_link($url) {
+    public function is_affiliate_link($url)
+    {
         $result = $this->convert_url($url);
         return $result['is_affiliate'];
     }
