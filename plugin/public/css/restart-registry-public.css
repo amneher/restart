@@ -1362,6 +1362,84 @@ body.rr-modal-open { overflow: hidden; }
     margin-top: 20px;
 }
 
+/* ── Shipping address block (invitee view) ───────────────────────────────── */
+.rr-shipping-address {
+    background: var(--rr-light, #f8f9fa);
+    border: 1px solid var(--rr-border, #e2e8f0);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 28px 0;
+}
+
+.rr-shipping-address__heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--rr-dark);
+    margin: 0 0 12px;
+}
+
+.rr-shipping-address__body {
+    font-style: normal;
+    line-height: 1.6;
+    color: var(--rr-dark);
+    margin: 0 0 14px;
+}
+
+.rr-copy-address {
+    font-size: 0.85rem;
+}
+
+/* ── Settings modal: sections and address form ───────────────────────────── */
+.rr-settings-section {
+    margin-bottom: 4px;
+}
+
+.rr-settings-section__title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--rr-dark);
+    margin: 0 0 4px;
+}
+
+.rr-settings-section__hint {
+    font-size: 0.82rem;
+    color: var(--rr-muted, #718096);
+    margin: 0 0 14px;
+    line-height: 1.5;
+}
+
+/* ── Purchase modal: address copy row ────────────────────────────────────── */
+.rr-purchase-modal__address {
+    background: var(--rr-light, #f8f9fa);
+    border: 1px solid var(--rr-border, #e2e8f0);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+.rr-purchase-modal__address-hint {
+    font-size: 0.82rem;
+    color: var(--rr-muted, #718096);
+    margin: 0 0 8px;
+}
+
+.rr-purchase-modal__address-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.rr-purchase-modal__address-text {
+    font-family: inherit;
+    font-size: 0.88rem;
+    color: var(--rr-dark);
+    background: none;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
     .rr-article-item {

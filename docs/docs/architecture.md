@@ -131,6 +131,12 @@ Each registry is one `restart-registry` post:
 | `wp_postmeta` | `restart_invitees` | JSON array of usernames or emails |
 | `wp_postmeta` | `restart_event_type` | e.g. `divorce`, `relocation`, `getting-out` |
 | `wp_postmeta` | `restart_event_date` | ISO date for the registry occasion |
+| `wp_postmeta` | `restart_shipping_address` | JSON object — `name`, `address_1`, `address_2`, `city`, `state`, `postal_code`, `country`. Optional. **Visibility: registry owner and invitees only — never rendered on the public/unauthenticated view.** |
+| `wp_postmeta` | `restart_purchase_messages` | JSON array of purchase message records |
+| `wp_postmeta` | `restart_is_for_self` | `'1'`/`'0'` — whether the registry is for the creator |
+| `wp_postmeta` | `restart_recipient_name` | Name of the recipient (when `is_for_self = 0`) |
+| `wp_postmeta` | `restart_recipient_relationship` | Relationship between creator and recipient |
+| `wp_postmeta` | `restart_recipient_email` | Optional email for the recipient |
 
 The plugin's controller (`Restart_Registry_Controller::post_to_registry`)
 flattens these into a uniform array — `id`, `user_id`, `title`, `description`,

@@ -643,6 +643,42 @@ class Restart_Registry_Controller {
     }
 
     // =========================================================================
+    // Shipping address
+    // =========================================================================
+
+    public function save_shipping_address(int $registry_id, array $address): bool {
+        $post = get_post($registry_id);
+        if (!$post || $post->post_type !== 'restart-registry') {
+            return false;
+        }
+        $clean = [
+            'name'        => sanitize_text_field($address['name']        ?? ''),
+            'address_1'   => sanitize_text_field($address['address_1']   ?? ''),
+            'address_2'   => sanitize_text_field($address['address_2']   ?? ''),
+            'city'        => sanitize_text_field($address['city']        ?? ''),
+            'state'       => sanitize_text_field($address['state']       ?? ''),
+            'postal_code' => sanitize_text_field($address['postal_code'] ?? ''),
+            'country'     => sanitize_text_field($address['country']     ?? ''),
+        ];
+        if (empty($clean['address_1']) || empty($clean['city'])) {
+            return false;
+        }
+        update_post_meta($registry_id, 'restart_shipping_address', json_encode($clean));
+        return true;
+    }
+
+    public function get_shipping_address(int $registry_id): ?array {
+        $raw = get_post_meta($registry_id, 'restart_shipping_address', true);
+        if (!$raw) return null;
+        $address = json_decode($raw, true);
+        return is_array($address) ? $address : null;
+    }
+
+    public function delete_shipping_address(int $registry_id): bool {
+        return (bool) delete_post_meta($registry_id, 'restart_shipping_address');
+    }
+
+    // =========================================================================
     // Access control
     // =========================================================================
 

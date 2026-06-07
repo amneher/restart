@@ -401,6 +401,99 @@ describe('body class management', () => {
     });
 });
 
+// ── Shipping address ──────────────────────────────────────────────────────────
+
+describe('shipping address', () => {
+    function addAddressForm() {
+        document.body.innerHTML += `
+            <div class="rr-manage-registry" data-registry-id="1">
+                <form id="rr-address-form">
+                    <input name="shipping_name" value="Alex Rivera">
+                    <input name="address_1" value="123 Main St">
+                    <input name="address_2" value="Apt 4B">
+                    <input name="city" value="Portland">
+                    <input name="state" value="OR">
+                    <input name="postal_code" value="97205">
+                    <input name="country" value="US">
+                    <div class="rr-form-actions">
+                        <button type="submit" id="rr-save-address-btn">Save Address</button>
+                    </div>
+                </form>
+                <div id="rr-shipping-address-block" data-address="Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US">
+                    <button class="rr-copy-address">Copy address</button>
+                </div>
+            </div>
+        `;
+    }
+
+    beforeEach(() => {
+        addAddressForm();
+    });
+
+    it('submits correct payload to restart_registry_save_shipping_address', async () => {
+        fetch.mockResolvedValueOnce({
+            json: async () => ({ success: true, data: { message: 'Address saved.' } }),
+        });
+
+        document.getElementById('rr-address-form').dispatchEvent(
+            new Event('submit', { bubbles: true })
+        );
+        await flushPromises();
+
+        const body = new URLSearchParams(fetch.mock.calls[0][1].body);
+        expect(body.get('action')).toBe('restart_registry_save_shipping_address');
+        expect(body.get('city')).toBe('Portland');
+        expect(body.get('postal_code')).toBe('97205');
+    });
+
+    it('sends restart_registry_delete_shipping_address and removes Remove button on success', async () => {
+        // Add a Remove button to the DOM
+        document.querySelector('#rr-address-form .rr-form-actions').insertAdjacentHTML(
+            'beforeend',
+            '<button type="button" id="rr-remove-address">Remove</button>'
+        );
+
+        fetch.mockResolvedValueOnce({
+            json: async () => ({ success: true, data: { message: 'Address removed.' } }),
+        });
+
+        document.getElementById('rr-remove-address').click();
+        await flushPromises();
+
+        const body = new URLSearchParams(fetch.mock.calls[0][1].body);
+        expect(body.get('action')).toBe('restart_registry_delete_shipping_address');
+        expect(document.getElementById('rr-remove-address')).toBeNull();
+    });
+
+    it('writes the address to clipboard and shows Copied! feedback', async () => {
+        navigator.clipboard.writeText.mockClear();
+
+        document.querySelector('.rr-copy-address').click();
+        await flushPromises();
+
+        expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+            'Alex Rivera, 123 Main St, Apt 4B, Portland, OR, 97205, US'
+        );
+        expect(document.querySelector('.rr-copy-address').textContent).toBe('Copied!');
+    });
+
+    it('does not write to clipboard when no address block is present', async () => {
+        navigator.clipboard.writeText.mockClear();
+        // A copy button exists but the data block does not — simulates the
+        // purchase modal copy button rendered while the page-level block is absent.
+        document.getElementById('rr-shipping-address-block').remove();
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<button class="rr-copy-address rr-orphan-copy">Copy</button>'
+        );
+
+        document.querySelector('.rr-orphan-copy').click();
+        await flushPromises();
+
+        expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    });
+});
+
 // ── Edge cases ────────────────────────────────────────────────────────────────
 
 describe('edge cases', () => {
