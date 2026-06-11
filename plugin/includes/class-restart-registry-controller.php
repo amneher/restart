@@ -459,44 +459,155 @@ class Restart_Registry_Controller {
 
         $result = $this->lambda->update_item($item_id, ['quantity_purchased' => $current + $quantity]);
 
+        $message_meta = null;
         if (trim($purchaser_note) !== '') {
-            $this->persist_purchase_message($item, $is_anonymous ? '' : $purchaser_name, $purchaser_note);
+            $stored = $this->persist_purchase_message($item, $is_anonymous ? '' : $purchaser_name, $purchaser_note);
+            if (!empty($stored)) {
+                $message_meta = [
+                    'id'          => $stored['id'],
+                    'edit_token'  => $stored['edit_token'],
+                    'edit_expires' => $stored['edit_token_expires'],
+                ];
+            }
         }
 
-        if (!is_wp_error($result)) {
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        if ($message_meta) {
+            $registry_id = (int) ($item['registry_id'] ?? 0);
+            wp_schedule_single_event(
+                time() + 5 * MINUTE_IN_SECONDS,
+                'restart_registry_send_purchase_notification',
+                [ $registry_id, $message_meta['id'] ]
+            );
+        } else {
             $this->send_purchase_notification($item, $purchaser_name, $purchaser_note);
         }
 
-        return $result;
+        return ['item' => $result, 'message' => $message_meta];
     }
 
     /**
      * Append a purchase message record to the registry's message board.
      * Only called when the gift-giver left a non-empty note.
+     * Returns the stored record (including edit_token for the AJAX response).
      */
-    private function persist_purchase_message(array $item, string $purchaser_name, string $purchaser_note): void {
+    private function persist_purchase_message(array $item, string $purchaser_name, string $purchaser_note): array {
         $registry_id = (int) ($item['registry_id'] ?? 0);
-        if (!$registry_id) return;
+        if (!$registry_id) return [];
 
-        $messages   = json_decode(get_post_meta($registry_id, 'restart_purchase_messages', true) ?: '[]', true) ?: [];
-        $messages[] = [
-            'item_id'          => (int) ($item['id'] ?? 0),
-            'item_name'        => $item['name'] ?? '',
-            'item_image_url'   => $item['image_url'] ?? '',
-            'item_description' => $item['description'] ?? '',
-            'purchaser_name'   => $purchaser_name,
-            'purchaser_note'   => $purchaser_note,
-            'timestamp'        => time(),
+        $message_id = uniqid('msg_', true);
+        $edit_token = wp_generate_password(32, false);
+        $expires    = time() + 5 * MINUTE_IN_SECONDS;
+
+        $messages = json_decode(get_post_meta($registry_id, 'restart_purchase_messages', true) ?: '[]', true) ?: [];
+        $record   = [
+            'id'                 => $message_id,
+            'item_id'            => (int) ($item['id'] ?? 0),
+            'item_name'          => $item['name'] ?? '',
+            'item_image_url'     => $item['image_url'] ?? '',
+            'item_description'   => $item['description'] ?? '',
+            'purchaser_name'     => $purchaser_name,
+            'purchaser_note'     => $purchaser_note,
+            'timestamp'          => time(),
+            'edit_token'         => $edit_token,
+            'edit_token_expires' => $expires,
+            'email_status'       => 'scheduled',
         ];
-        update_post_meta($registry_id, 'restart_purchase_messages', json_encode($messages));
+        $messages[] = $record;
+        update_post_meta($registry_id, 'restart_purchase_messages', json_encode($messages, JSON_UNESCAPED_UNICODE));
+        return $record;
     }
 
     /**
      * Return stored purchase messages for a registry, newest first.
+     * Strips internal fields (edit_token, edit_token_expires) from output.
      */
     public function get_purchase_messages(int $registry_id): array {
         $messages = json_decode(get_post_meta($registry_id, 'restart_purchase_messages', true) ?: '[]', true) ?: [];
-        return array_reverse($messages);
+        $messages = array_reverse($messages);
+        return array_map(function (array $msg): array {
+            unset($msg['edit_token'], $msg['edit_token_expires']);
+            return $msg;
+        }, $messages);
+    }
+
+    /**
+     * Update the note on an existing purchase message.
+     * Auth: either a valid edit_token (purchaser) or no token (owner — caller must verify ownership).
+     * Returns true on success, false if message not found / token invalid / token expired.
+     */
+    public function update_purchase_message(int $registry_id, string $message_id, string $new_note, ?string $token = null): bool {
+        if (!$registry_id || $message_id === '') return false;
+
+        $raw      = get_post_meta($registry_id, 'restart_purchase_messages', true) ?: '[]';
+        $messages = json_decode($raw, true) ?: [];
+
+        $found = false;
+        foreach ($messages as &$msg) {
+            if (($msg['id'] ?? '') !== $message_id) continue;
+
+            if ($token !== null) {
+                if (($msg['edit_token'] ?? '') !== $token) return false;
+                if (($msg['edit_token_expires'] ?? 0) < time()) return false;
+            }
+
+            $msg['purchaser_note'] = sanitize_textarea_field($new_note);
+
+            if (($msg['email_status'] ?? '') === 'scheduled') {
+                wp_clear_scheduled_hook('restart_registry_send_purchase_notification', [ $registry_id, $message_id ]);
+                $new_expires = time() + 5 * MINUTE_IN_SECONDS;
+                wp_schedule_single_event(
+                    $new_expires,
+                    'restart_registry_send_purchase_notification',
+                    [ $registry_id, $message_id ]
+                );
+                $msg['edit_token_expires'] = $new_expires;
+            }
+
+            $found = true;
+            break;
+        }
+        unset($msg);
+
+        if (!$found) return false;
+
+        update_post_meta($registry_id, 'restart_purchase_messages', json_encode($messages, JSON_UNESCAPED_UNICODE));
+        return true;
+    }
+
+    /**
+     * WP Cron callback: send the purchase notification email for a specific message.
+     * Marks the message as sent so duplicate fires are no-ops.
+     */
+    public function send_scheduled_purchase_notification(int $registry_id, string $message_id): void {
+        $raw      = get_post_meta($registry_id, 'restart_purchase_messages', true) ?: '[]';
+        $messages = json_decode($raw, true) ?: [];
+
+        $updated = false;
+        foreach ($messages as &$msg) {
+            if (($msg['id'] ?? '') !== $message_id) continue;
+            if (($msg['email_status'] ?? '') !== 'scheduled') break;
+
+            $item = [
+                'id'          => $msg['item_id'],
+                'name'        => $msg['item_name'],
+                'image_url'   => $msg['item_image_url'],
+                'description' => $msg['item_description'],
+                'registry_id' => $registry_id,
+            ];
+            $this->send_purchase_notification($item, $msg['purchaser_name'], $msg['purchaser_note']);
+            $msg['email_status'] = 'sent';
+            $updated = true;
+            break;
+        }
+        unset($msg);
+
+        if ($updated) {
+            update_post_meta($registry_id, 'restart_purchase_messages', json_encode($messages, JSON_UNESCAPED_UNICODE));
+        }
     }
 
     // =========================================================================

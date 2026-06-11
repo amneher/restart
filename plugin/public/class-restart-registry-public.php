@@ -76,6 +76,8 @@ class Restart_Registry_Public
         add_action('wp_ajax_nopriv_restart_registry_quick_add', [$this, 'ajax_quick_add']);
         add_action('wp_ajax_restart_registry_save_shipping_address',   [$this, 'ajax_save_shipping_address']);
         add_action('wp_ajax_restart_registry_delete_shipping_address', [$this, 'ajax_delete_shipping_address']);
+        add_action('wp_ajax_restart_registry_update_purchase_message',        [$this, 'ajax_update_purchase_message']);
+        add_action('wp_ajax_nopriv_restart_registry_update_purchase_message', [$this, 'ajax_update_purchase_message']);
     }
 
     // =========================================================================
@@ -458,7 +460,9 @@ class Restart_Registry_Public
                     <h2 class="rr-message-board__title"><?php _e('Messages', 'restart-registry'); ?></h2>
                     <ul class="rr-message-board__list">
                         <?php foreach ($purchase_messages as $msg): ?>
-                            <li class="rr-message-card">
+                            <li class="rr-message-card"
+                                data-message-id="<?php echo esc_attr($msg['id'] ?? ''); ?>"
+                                data-registry-id="<?php echo esc_attr($registry['id']); ?>">
                                 <?php if (!empty($msg['item_image_url'])): ?>
                                     <div class="rr-message-card__thumb">
                                         <img src="<?php echo esc_url($msg['item_image_url']); ?>"
@@ -480,6 +484,24 @@ class Restart_Registry_Public
                                             <?php echo esc_html(date_i18n(get_option('date_format'), $msg['timestamp'])); ?>
                                         </span>
                                     </p>
+                                    <?php if (!empty($msg['id'])): ?>
+                                    <div class="rr-message-card__edit-area">
+                                        <button type="button" class="rr-btn rr-btn--ghost rr-message-card__edit-btn"
+                                            data-message-id="<?php echo esc_attr($msg['id']); ?>"
+                                            aria-expanded="false">
+                                            <?php _e('Edit note', 'restart-registry'); ?>
+                                        </button>
+                                        <form class="rr-message-card__edit-form" hidden>
+                                            <textarea class="rr-message-card__edit-textarea" rows="3"
+                                                spellcheck="true"><?php echo esc_textarea($msg['purchaser_note']); ?></textarea>
+                                            <div class="rr-message-card__edit-actions">
+                                                <button type="submit" class="rr-btn rr-btn--primary rr-btn--sm"><?php _e('Save', 'restart-registry'); ?></button>
+                                                <button type="button" class="rr-btn rr-btn--ghost rr-btn--sm rr-message-card__edit-cancel"><?php _e('Cancel', 'restart-registry'); ?></button>
+                                            </div>
+                                            <p class="rr-notice rr-message-card__edit-notice" hidden></p>
+                                        </form>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </li>
                         <?php endforeach; ?>
@@ -867,7 +889,7 @@ class Restart_Registry_Public
                             </div>
                             <div class="rr-form-group">
                                 <label for="rr-purchaser-note"><?php _e('Note', 'restart-registry'); ?> <span class="rr-optional"><?php _e('(optional)', 'restart-registry'); ?></span></label>
-                                <textarea id="rr-purchaser-note" name="purchaser_note" rows="3"
+                                <textarea id="rr-purchaser-note" name="purchaser_note" rows="3" spellcheck="true"
                                     placeholder="<?php esc_attr_e('Any notes about this purchase…', 'restart-registry'); ?>"></textarea>
                             </div>
                             <div class="rr-form-actions">
@@ -1182,7 +1204,7 @@ class Restart_Registry_Public
                             </div>
                             <div class="rr-form-group">
                                 <label for="rr-purchaser-note"><?php _e('Leave a message', 'restart-registry'); ?> <span class="rr-optional"><?php _e('(optional)', 'restart-registry'); ?></span></label>
-                                <textarea id="rr-purchaser-note" name="purchaser_note" rows="3"
+                                <textarea id="rr-purchaser-note" name="purchaser_note" rows="3" spellcheck="true"
                                     placeholder="<?php esc_attr_e('A note for the registry owner…', 'restart-registry'); ?>"></textarea>
                             </div>
                             <div class="rr-form-actions">
@@ -1471,7 +1493,48 @@ class Restart_Registry_Public
             wp_send_json_error(['message' => $result->get_error_message()]);
         }
 
-        wp_send_json_success(['message' => __('Thank you for purchasing this gift!', 'restart-registry')]);
+        $response = ['message' => __('Thank you for purchasing this gift!', 'restart-registry')];
+        if (!empty($result['message'])) {
+            $response['message_id']   = $result['message']['id'];
+            $response['edit_token']   = $result['message']['edit_token'];
+            $response['edit_expires'] = $result['message']['edit_expires'];
+        }
+
+        wp_send_json_success($response);
+    }
+
+    public function ajax_update_purchase_message(): void
+    {
+        check_ajax_referer('restart_registry_nonce', 'nonce');
+
+        $registry_id = (int) ($_POST['registry_id'] ?? 0);
+        $message_id  = sanitize_text_field($_POST['message_id'] ?? '');
+        $new_note    = sanitize_textarea_field($_POST['purchaser_note'] ?? '');
+        $token       = isset($_POST['edit_token']) ? sanitize_text_field($_POST['edit_token']) : null;
+
+        if (!$registry_id || $message_id === '') {
+            wp_send_json_error(['message' => __('Invalid request.', 'restart-registry')]);
+        }
+
+        // Owner path: logged-in user who owns the registry.
+        $use_owner_auth = is_user_logged_in() && $this->controller->can_edit_registry($registry_id, get_current_user_id());
+
+        if (!$use_owner_auth && $token === null) {
+            wp_send_json_error(['message' => __('You do not have permission to edit this message.', 'restart-registry')]);
+        }
+
+        $ok = $this->controller->update_purchase_message(
+            $registry_id,
+            $message_id,
+            $new_note,
+            $use_owner_auth ? null : $token
+        );
+
+        if (!$ok) {
+            wp_send_json_error(['message' => __('Could not update message. The edit window may have expired.', 'restart-registry')]);
+        }
+
+        wp_send_json_success(['message' => __('Note updated.', 'restart-registry'), 'note' => $new_note]);
     }
 
     public function ajax_send_invite(): void

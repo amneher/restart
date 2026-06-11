@@ -796,8 +796,21 @@
             }).then(function(response) {
                 if (response.success) {
                     closeModal('#rr-purchase-modal');
-                    showNotice(response.data.message, 'success');
-                    setTimeout(function() { window.location.reload(); }, 1500);
+                    if (response.data.message_id && response.data.edit_token) {
+                        sessionStorage.setItem('rr_edit_message', JSON.stringify({
+                            message_id:   response.data.message_id,
+                            edit_token:   response.data.edit_token,
+                            edit_expires: response.data.edit_expires,
+                            registry_id:  document.getElementById('rr-purchase-item-id').closest('[data-registry-id]')
+                                          ? document.getElementById('rr-purchase-item-id').closest('[data-registry-id]').dataset.registryId
+                                          : registryId,
+                            note:         buyerNote,
+                        }));
+                        startPurchaseEditWindow(buyerNote);
+                    } else {
+                        showNotice(response.data.message, 'success');
+                        setTimeout(function() { window.location.reload(); }, 1500);
+                    }
                 } else {
                     alert(response.data.message || restartRegistry.strings.error);
                     btn.disabled = false;
@@ -1064,4 +1077,190 @@
         });
     });
 
-}());
+    // ── Post-purchase edit window (purchaser, token-based) ────────────────────
+
+    var purchaseEditBanner = null;
+    var purchaseEditTimer  = null;
+
+    function startPurchaseEditWindow(initialNote) {
+        var meta = null;
+        try { meta = JSON.parse(sessionStorage.getItem('rr_edit_message')); } catch(e) {}
+        if (!meta) {
+            showNotice('Thank you for purchasing this gift!', 'success');
+            setTimeout(function() { window.location.reload(); }, 1500);
+            return;
+        }
+
+        var secondsLeft = Math.max(0, meta.edit_expires - Math.floor(Date.now() / 1000));
+        if (secondsLeft <= 0) {
+            sessionStorage.removeItem('rr_edit_message');
+            showNotice('Thank you for purchasing this gift!', 'success');
+            setTimeout(function() { window.location.reload(); }, 1500);
+            return;
+        }
+
+        var banner = document.createElement('div');
+        banner.className = 'rr-purchase-edit-banner';
+        banner.innerHTML =
+            '<div class="rr-purchase-edit-banner__inner">' +
+                '<p class="rr-purchase-edit-banner__msg">' +
+                    'Your note will be sent in <strong class="rr-purchase-edit-timer"></strong>. ' +
+                    'You can edit it before it sends.' +
+                '</p>' +
+                '<form class="rr-purchase-edit-banner__form">' +
+                    '<textarea class="rr-purchase-edit-banner__textarea" rows="3" spellcheck="true">' +
+                        escHtml(initialNote || meta.note || '') +
+                    '</textarea>' +
+                    '<div class="rr-purchase-edit-banner__actions">' +
+                        '<button type="submit" class="rr-btn rr-btn--primary rr-btn--sm">Save changes</button>' +
+                        '<button type="button" class="rr-btn rr-btn--ghost rr-btn--sm rr-purchase-edit-banner__skip">Done</button>' +
+                    '</div>' +
+                    '<p class="rr-notice rr-purchase-edit-banner__notice" hidden></p>' +
+                '</form>' +
+            '</div>';
+
+        var timerEl = banner.querySelector('.rr-purchase-edit-timer');
+        container.insertBefore(banner, container.firstChild);
+        purchaseEditBanner = banner;
+
+        function tick() {
+            var now  = Math.floor(Date.now() / 1000);
+            var secs = Math.max(0, meta.edit_expires - now);
+            var m = Math.floor(secs / 60);
+            var s = secs % 60;
+            timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+            if (secs <= 0) {
+                clearInterval(purchaseEditTimer);
+                finishEditWindow(banner);
+            }
+        }
+        tick();
+        purchaseEditTimer = setInterval(tick, 1000);
+
+        banner.querySelector('.rr-purchase-edit-banner__skip').addEventListener('click', function() {
+            clearInterval(purchaseEditTimer);
+            sessionStorage.removeItem('rr_edit_message');
+            banner.remove();
+            window.location.reload();
+        });
+
+        banner.querySelector('.rr-purchase-edit-banner__form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var newNote  = banner.querySelector('.rr-purchase-edit-banner__textarea').value.trim();
+            var notice   = banner.querySelector('.rr-purchase-edit-banner__notice');
+            var submitBtn = banner.querySelector('[type="submit"]');
+            submitBtn.disabled = true;
+
+            post(restartRegistry.ajaxUrl, {
+                action:         'restart_registry_update_purchase_message',
+                nonce:          restartRegistry.nonce,
+                registry_id:    meta.registry_id,
+                message_id:     meta.message_id,
+                edit_token:     meta.edit_token,
+                purchaser_note: newNote,
+            }).then(function(response) {
+                notice.hidden = false;
+                if (response.success) {
+                    meta.note = newNote;
+                    notice.textContent = 'Note updated!';
+                    notice.className   = 'rr-notice rr-notice--success rr-purchase-edit-banner__notice';
+                    setTimeout(function() { notice.hidden = true; }, 2000);
+                } else {
+                    notice.textContent = response.data.message || 'Could not save.';
+                    notice.className   = 'rr-notice rr-notice--error rr-purchase-edit-banner__notice';
+                }
+                submitBtn.disabled = false;
+            }).catch(function() {
+                notice.textContent = 'Could not save.';
+                notice.className   = 'rr-notice rr-notice--error rr-purchase-edit-banner__notice';
+                notice.hidden = false;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+
+    function finishEditWindow(banner) {
+        sessionStorage.removeItem('rr_edit_message');
+        var form = banner.querySelector('.rr-purchase-edit-banner__form');
+        if (form) {
+            form.querySelectorAll('button, textarea').forEach(function(el) { el.disabled = true; });
+        }
+        var msg = banner.querySelector('.rr-purchase-edit-banner__msg');
+        if (msg) msg.textContent = 'Your note has been sent to the registry owner.';
+        setTimeout(function() { banner.remove(); window.location.reload(); }, 2000);
+    }
+
+    // ── Owner message board inline edit ───────────────────────────────────────
+
+    document.addEventListener('click', function(e) {
+        var editBtn = e.target.closest('.rr-message-card__edit-btn');
+        if (!editBtn) return;
+        var card = editBtn.closest('.rr-message-card');
+        if (!card) return;
+        var form = card.querySelector('.rr-message-card__edit-form');
+        var expanded = editBtn.getAttribute('aria-expanded') === 'true';
+        editBtn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        form.hidden = expanded;
+        if (!expanded) {
+            form.querySelector('.rr-message-card__edit-textarea').focus();
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        var cancelBtn = e.target.closest('.rr-message-card__edit-cancel');
+        if (!cancelBtn) return;
+        var form    = cancelBtn.closest('.rr-message-card__edit-form');
+        var editBtn = form.closest('.rr-message-card__edit-area').querySelector('.rr-message-card__edit-btn');
+        form.hidden = true;
+        editBtn.setAttribute('aria-expanded', 'false');
+        var notice = form.querySelector('.rr-message-card__edit-notice');
+        if (notice) { notice.hidden = true; notice.textContent = ''; }
+    });
+
+    document.addEventListener('submit', function(e) {
+        var form = e.target.closest('.rr-message-card__edit-form');
+        if (!form) return;
+        e.preventDefault();
+
+        var card       = form.closest('.rr-message-card');
+        var messageId  = card.dataset.messageId;
+        var cardRegId  = card.dataset.registryId;
+        var newNote    = form.querySelector('.rr-message-card__edit-textarea').value.trim();
+        var notice     = form.querySelector('.rr-message-card__edit-notice');
+        var submitBtn  = form.querySelector('[type="submit"]');
+
+        submitBtn.disabled = true;
+
+        post(restartRegistry.ajaxUrl, {
+            action:         'restart_registry_update_purchase_message',
+            nonce:          restartRegistry.nonce,
+            registry_id:    cardRegId || registryId,
+            message_id:     messageId,
+            purchaser_note: newNote,
+        }).then(function(response) {
+            notice.hidden = false;
+            if (response.success) {
+                var blockquote = card.querySelector('.rr-message-card__note');
+                if (blockquote) blockquote.textContent = newNote;
+                notice.textContent = 'Note updated.';
+                notice.className   = 'rr-notice rr-notice--success rr-message-card__edit-notice';
+                setTimeout(function() {
+                    form.hidden = true;
+                    card.querySelector('.rr-message-card__edit-btn').setAttribute('aria-expanded', 'false');
+                    notice.hidden = true;
+                    notice.textContent = '';
+                }, 1500);
+            } else {
+                notice.textContent = response.data.message || 'Could not save.';
+                notice.className   = 'rr-notice rr-notice--error rr-message-card__edit-notice';
+                submitBtn.disabled = false;
+            }
+        }).catch(function() {
+            notice.textContent = 'Could not save.';
+            notice.className   = 'rr-notice rr-notice--error rr-message-card__edit-notice';
+            notice.hidden = false;
+            submitBtn.disabled = false;
+        });
+    });
+
+})();

@@ -1045,6 +1045,33 @@ body.rr-modal-open { overflow: hidden; }
 .rr-message-card__from { font-weight: 600; color: var(--rr-mid); }
 .rr-message-card__date::before { content: "· "; }
 
+/* Message card edit area (owner manage view) */
+.rr-message-card__edit-area { margin-top: 8px; }
+.rr-message-card__edit-btn { font-size: 0.8rem; padding: 2px 8px; }
+.rr-message-card__edit-form { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.rr-message-card__edit-textarea {
+    width: 100%; padding: 8px; border: 1px solid var(--rr-border, #ddd);
+    border-radius: 4px; font-size: 0.9rem; resize: vertical; font-family: inherit;
+}
+.rr-message-card__edit-actions { display: flex; gap: 8px; }
+.rr-message-card__edit-notice { margin: 0; font-size: 0.85rem; }
+
+/* Post-purchase edit banner (purchaser token-based edit window) */
+.rr-purchase-edit-banner {
+    background: var(--rr-bg-alt, #f7f7f7); border: 1px solid var(--rr-border, #ddd);
+    border-radius: 6px; padding: 16px 20px; margin-bottom: 24px;
+}
+.rr-purchase-edit-banner__inner { max-width: 560px; }
+.rr-purchase-edit-banner__msg { margin: 0 0 10px; font-size: 0.95rem; }
+.rr-purchase-edit-banner__form { display: flex; flex-direction: column; gap: 10px; }
+.rr-purchase-edit-banner__textarea {
+    width: 100%; padding: 8px; border: 1px solid var(--rr-border, #ddd);
+    border-radius: 4px; font-size: 0.9rem; resize: vertical; font-family: inherit;
+}
+.rr-purchase-edit-banner__actions { display: flex; gap: 8px; }
+.rr-purchase-edit-banner__notice { margin: 0; font-size: 0.85rem; }
+.rr-purchase-edit-timer { color: var(--rr-primary, #1a73e8); font-variant-numeric: tabular-nums; }
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
     .rr-registry-top--with-hero {
