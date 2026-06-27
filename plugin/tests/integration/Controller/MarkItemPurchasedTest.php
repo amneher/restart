@@ -31,6 +31,9 @@ class MarkItemPurchasedTest extends TestCase {
         Functions\when('get_user_meta')->justReturn('');
         Functions\when('get_post_meta')->justReturn('[]');
         Functions\when('update_post_meta')->justReturn(true);
+        Functions\when('wp_generate_password')->justReturn('test_token_32_chars_padding_xxxx');
+        Functions\when('wp_clear_scheduled_hook')->justReturn(true);
+        Functions\when('sanitize_textarea_field')->returnArg(1);
 
         $owner               = new WP_User();
         $owner->ID           = 10;
@@ -130,8 +133,30 @@ class MarkItemPurchasedTest extends TestCase {
         $this->assertStringContainsString('Someone', $captured);
     }
 
-    public function test_email_body_includes_purchaser_note(): void {
+    public function test_note_present_schedules_cron_instead_of_direct_email(): void {
         $this->fake->setItem(1, $this->fixture());
+        Functions\expect('wp_schedule_single_event')->once()->andReturn(true);
+        Functions\expect('wp_mail')->never();
+
+        $this->controller->mark_item_purchased(1, 1, 'Jordan', '', 'Thinking of you!');
+    }
+
+    public function test_cron_callback_sends_email_with_note(): void {
+        $message_id = 'msg_test123';
+        $stored = json_encode([[
+            'id'                 => $message_id,
+            'item_id'            => 1,
+            'item_name'          => 'Coffee Maker',
+            'item_image_url'     => '',
+            'item_description'   => '',
+            'purchaser_name'     => 'Jordan',
+            'purchaser_note'     => 'Thinking of you!',
+            'timestamp'          => 1715000000,
+            'edit_token'         => 'token',
+            'edit_token_expires' => 9999999999,
+            'email_status'       => 'scheduled',
+        ]]);
+        Functions\when('get_post_meta')->alias(fn($id, $key) => $key === 'restart_purchase_messages' ? $stored : '');
         $captured = '';
         Functions\expect('wp_mail')->once()->andReturnUsing(
             function ($to, $subject, $body, $headers) use (&$captured) {
@@ -140,9 +165,26 @@ class MarkItemPurchasedTest extends TestCase {
             }
         );
 
-        $this->controller->mark_item_purchased(1, 1, 'Jordan', '', 'Thinking of you!');
+        $this->controller->send_scheduled_purchase_notification(42, $message_id);
 
         $this->assertStringContainsString('Thinking of you!', $captured);
+    }
+
+    public function test_cron_callback_no_op_when_already_sent(): void {
+        $message_id = 'msg_test456';
+        $stored = json_encode([[
+            'id'           => $message_id,
+            'item_id'      => 1,
+            'item_name'    => 'Coffee Maker',
+            'purchaser_name' => 'Jordan',
+            'purchaser_note' => 'Thinking of you!',
+            'timestamp'    => 1715000000,
+            'email_status' => 'sent',
+        ]]);
+        Functions\when('get_post_meta')->alias(fn($id, $key) => $key === 'restart_purchase_messages' ? $stored : '');
+        Functions\expect('wp_mail')->never();
+
+        $this->controller->send_scheduled_purchase_notification(42, $message_id);
     }
 
     public function test_notification_skipped_when_opted_out(): void {
@@ -160,7 +202,7 @@ class MarkItemPurchasedTest extends TestCase {
     public function test_purchase_message_stored_when_note_provided(): void {
         $item = $this->fixture(['name' => 'Coffee Maker', 'image_url' => 'https://img.example.com/coffee.jpg', 'description' => 'Great coffee']);
         $this->fake->setItem(1, $item);
-        Functions\when('wp_mail')->justReturn(true);
+        Functions\when('wp_schedule_single_event')->justReturn(true);
 
         $stored = null;
         Functions\when('update_post_meta')->alias(function($id, $key, $val) use (&$stored) {
@@ -170,7 +212,7 @@ class MarkItemPurchasedTest extends TestCase {
             return true;
         });
 
-        $this->controller->mark_item_purchased(1, 1, 'Jordan', '', 'Thinking of you!');
+        $result = $this->controller->mark_item_purchased(1, 1, 'Jordan', '', 'Thinking of you!');
 
         $this->assertNotNull($stored, 'restart_purchase_messages should have been saved');
         $this->assertCount(1, $stored);
@@ -179,6 +221,15 @@ class MarkItemPurchasedTest extends TestCase {
         $this->assertSame('Coffee Maker', $stored[0]['item_name']);
         $this->assertSame(1, $stored[0]['item_id']);
         $this->assertArrayHasKey('timestamp', $stored[0]);
+        $this->assertArrayHasKey('id', $stored[0]);
+        $this->assertArrayHasKey('edit_token', $stored[0]);
+        $this->assertArrayHasKey('edit_token_expires', $stored[0]);
+        $this->assertSame('scheduled', $stored[0]['email_status']);
+        // Return value carries message metadata for the AJAX response
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('message', $result);
+        $this->assertSame($stored[0]['id'], $result['message']['id']);
+        $this->assertSame($stored[0]['edit_token'], $result['message']['edit_token']);
     }
 
     public function test_purchase_message_not_stored_when_note_empty(): void {
@@ -200,7 +251,7 @@ class MarkItemPurchasedTest extends TestCase {
 
     public function test_purchase_message_anonymous_suppresses_name(): void {
         $this->fake->setItem(1, $this->fixture());
-        Functions\when('wp_mail')->justReturn(true);
+        Functions\when('wp_schedule_single_event')->justReturn(true);
 
         $stored = null;
         Functions\when('update_post_meta')->alias(function($id, $key, $val) use (&$stored) {

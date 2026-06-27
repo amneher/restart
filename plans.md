@@ -774,3 +774,118 @@ The scraper is called server-side. The `fetch-url` AJAX path in the public JS is
 - [x] `class-restart-registry-admin.php` — register `restart_registry_anthropic_api_key` setting + add field to API Keys section
 - [x] `tests/unit/LLMExtractorTest.php` — 18 unit tests; 259/259 pass
 - [ ] Manual QA: test key-not-set path (regex fallback), test key-set path (LLM), test API failure path (fallback)
+
+---
+
+# Plan: Purchase note edit (GH #63)
+
+## What
+Four features to improve the purchase note experience:
+1. Allow editing a purchase message after posting (within the 5-minute window before the email is sent)
+2. Set a 5-minute send delay on email notifications so the poster can edit before delivery
+3. Add spell-check to the note textarea
+4. Ensure punctuation and special characters are preserved correctly through the full round-trip
+
+## Data model changes
+
+Add four fields to each stored message object:
+
+```json
+{
+  "id":                 "abc123def456",
+  "item_id":            42,
+  "item_name":          "Chef's Knife",
+  "item_image_url":     "https://...",
+  "item_description":   "High-carbon stainless steel...",
+  "purchaser_name":     "Aunt Carol",
+  "purchaser_note":     "Hope this helps with the new kitchen!",
+  "timestamp":          1715000000,
+  "edit_token":         "<32-char random string>",
+  "edit_token_expires": 1715000300,
+  "email_status":       "scheduled"
+}
+```
+
+- `id` — `uniqid('msg_', true)` — stable key for targeting updates
+- `edit_token` — `wp_generate_password(32, false)` — returned to the poster; validated on edit requests
+- `edit_token_expires` — `time() + 5 * MINUTE_IN_SECONDS` — server-side expiry guard
+- `email_status` — `'scheduled'` → `'sent'` (or `'cancelled'` if cron fires but message was edited)
+
+## Email delay (WP Cron)
+
+Replace the direct `send_purchase_notification()` call in `mark_item_purchased()` with a single-event scheduled 5 minutes out:
+
+```php
+wp_schedule_single_event(
+    time() + 5 * MINUTE_IN_SECONDS,
+    'restart_registry_send_purchase_notification',
+    [ $registry_id, $message_id ]
+);
+```
+
+Register the hook in `Restart_Registry::run()`. The cron callback:
+1. Loads the message by `$message_id`
+2. If `email_status` is still `'scheduled'`, calls `send_purchase_notification()` and sets `email_status = 'sent'`
+3. If `email_status` is `'cancelled'` (poster edited and chose not to resend), skips silently
+
+On edit: cancel the existing scheduled event with `wp_clear_scheduled_hook()`, update the note, reschedule if still within the original 5-minute window (i.e. `edit_token_expires > time()`).
+
+## Edit flow
+
+**Purchaser (unauthenticated) path:**
+- After successful purchase AJAX, the response includes `message_id` + `edit_token`
+- JS stores both in `sessionStorage` and shows an inline edit form (pre-populated textarea + countdown timer)
+- On submit: AJAX to `restart_registry_update_purchase_message` with token
+- Server validates token + expiry → updates note + reschedules email
+- After timer reaches 0: form is disabled, "Your message has been sent" shown
+
+**Registry owner (authenticated) path:**
+- Edit button on each message card in the manage-view message board
+- Owner can edit any note (no time restriction — email may have already been sent but owner can still correct the stored note)
+- AJAX to same endpoint; auth checked via `is_user_logged_in()` + owner check instead of token
+
+## Spell check
+
+Add `spellcheck="true"` to the `<textarea id="rr-purchaser-note">` in both:
+- Public purchase modal (`render_registry_view_html()`)
+- Owner manage-view purchase modal (`render_manage_registry()`)
+
+HTML5 native; no library required.
+
+## Special character handling
+
+- Change `json_encode()` in `persist_purchase_message()` and wherever messages are encoded to use `JSON_UNESCAPED_UNICODE` — prevents non-ASCII chars (accented letters, emoji) from being mangled to `\uXXXX` sequences in storage
+- Verify all display paths use `esc_html()` (they do — confirmed by exploration)
+- Verify email output uses `nl2br()` or equivalent if the note contains newlines (currently plain text, fine as-is)
+
+## Scope
+
+### Files touched
+- `plugin/includes/class-restart-registry-controller.php` — add `id/edit_token/edit_token_expires/email_status` to `persist_purchase_message()`; add `update_purchase_message()`; add cron callback; update `json_encode()` flag
+- `plugin/includes/class-restart-registry.php` — register cron hook in `run()`
+- `plugin/public/class-restart-registry-public.php` — add `ajax_update_purchase_message()`; return `message_id`+`edit_token` in `ajax_mark_purchased()` response; add edit button + modal to message board; add `spellcheck="true"` to both note textareas
+- `plugin/public/js/restart-registry-public.js` — store token in sessionStorage; render countdown timer + edit form; wire edit AJAX
+- `plugin/public/css/restart-registry-public.css` — edit button, edit form, timer styles
+
+### Out of scope
+- Purchaser delete (not requested)
+- Owner delete of messages (not requested)
+- HTML email format change (email stays plain text)
+- Pagination or filtering of the message board
+
+## Todo
+- [x] Branch: `feat/63-purchase-note-edit`
+- [x] Controller: add `id`, `edit_token`, `edit_token_expires`, `email_status` fields in `persist_purchase_message()`; switch to `JSON_UNESCAPED_UNICODE`
+- [x] Controller: add `update_purchase_message(int $registry_id, string $message_id, string $note, ?string $token = null): bool`
+- [x] Controller: add `send_scheduled_purchase_notification(int $registry_id, string $message_id)` cron callback
+- [x] Main class: register `restart_registry_send_purchase_notification` action hook
+- [x] Public class: update `ajax_mark_purchased()` — schedule email via cron instead of direct call; return `message_id` + `edit_token` in success response
+- [x] Public class: add `ajax_update_purchase_message()` AJAX handler
+- [x] Public class: add `spellcheck="true"` to both purchaser-note textareas
+- [x] Public class: add edit button + inline edit form to message board cards (owner view only)
+- [x] JS: on purchase success — store `message_id`+`edit_token` in sessionStorage; render edit form + countdown timer
+- [x] JS: wire edit form submit → AJAX update; handle timer expiry (disable form)
+- [x] JS: wire owner message board edit button → inline edit form
+- [x] CSS: edit button, edit form, timer, disabled/sent states
+- [x] Tests: new fields persisted correctly; `update_purchase_message()` with valid token; token expiry rejection; owner edit without token; cron callback sends email + marks sent; cron skips if cancelled
+- [ ] Close GH #63

@@ -31,6 +31,7 @@ class Restart_Registry {
         $this->define_affiliate_hooks();
         $this->define_role_hooks();
         $this->define_api_hooks();
+        $this->define_cron_hooks();
     }
 
     private function load_dependencies() {
@@ -148,6 +149,13 @@ class Restart_Registry {
                 'permission_callback' => '__return_true',
             ]);
         });
+    }
+
+    private function define_cron_hooks(): void {
+        add_action('restart_registry_send_purchase_notification', function (int $registry_id, string $message_id): void {
+            $controller = new Restart_Registry_Controller();
+            $controller->send_scheduled_purchase_notification($registry_id, $message_id);
+        }, 10, 2);
     }
 
     public function run() {
