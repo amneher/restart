@@ -21,7 +21,6 @@ class AffiliateConverterDecoratorTest extends TestCase {
 
     protected function tearDown(): void {
         $ref = new ReflectionProperty(Restart_Registry_Affiliate_Converter::class, 'instance');
-        $ref->setAccessible(true);
         $ref->setValue(null, null);
         Monkey\tearDown();
         parent::tearDown();

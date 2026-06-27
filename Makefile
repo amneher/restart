@@ -81,7 +81,7 @@ test: plugin-test lambda-test theme-test
 plugin-test: plugin-test-php plugin-test-js
 
 plugin-test-php:
-	cd plugin && ./vendor/bin/phpunit
+	cd plugin && ./vendor/bin/phpunit --display-all-issues
 
 plugin-test-js:
 	cd plugin && npm test
