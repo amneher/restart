@@ -18,7 +18,7 @@
         <div class="wp-block-group">
 
             <!-- wp:html -->
-            <a href="/" class="site-footer__brand" aria-label="the ReStart home">
+            <a href="/" class="site-footer__brand" aria-label="the reStart home">
                 <span class="site-footer__logo" aria-hidden="true"></span>
             </a>
             <!-- /wp:html -->
@@ -86,7 +86,7 @@
     <div class="wp-block-group">
 
         <!-- wp:paragraph {"style":{"typography":{"fontSize":"12px","fontFamily":"var(--wp--preset--font-family--montserrat)"},"color":{"text":"#8a9ea0"}}} -->
-        <p class="has-text-color" style="color:#8a9ea0;font-family:var(--wp--preset--font-family--montserrat);font-size:12px">© <?php echo esc_html( date( 'Y' ) ); ?> ReStart Group, LLC</p>
+        <p class="has-text-color" style="color:#8a9ea0;font-family:var(--wp--preset--font-family--montserrat);font-size:12px">© <?php echo esc_html( date( 'Y' ) ); ?> reStart Group, LLC</p>
         <!-- /wp:paragraph -->
 
         <!-- wp:paragraph {"style":{"typography":{"fontSize":"12px","fontFamily":"var(--wp--preset--font-family--montserrat)"},"color":{"text":"#8a9ea0"}}} -->

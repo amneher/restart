@@ -82,9 +82,9 @@ Absolutely. You can add, remove, and reorder items at any time. Changes are refl
 ---
 
 **How do I delete my account?**
-You can request account deletion by emailing us at [hello@the-restart.co](mailto:hello@the-restart.co). We'll remove your account and all associated data as quickly as possible (within 30 days) and you'll receive one final email from us as confirmation.
+You can request account deletion by emailing us at [hello@the-reStart.com](mailto:hello@the-reStart.com). We'll remove your account and all associated data as quickly as possible (within 30 days) and you'll receive one final email from us as confirmation.
 
 ---
 
 **I have a question that isn't answered here.**
-Reach out to us at [hello@the-restart.co](mailto:hello@the-restart.co) — we're happy to help.
+Reach out to us at [hello@the-reStart.com](mailto:hello@the-reStart.com) — we're happy to help.

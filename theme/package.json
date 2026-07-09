@@ -6,8 +6,11 @@
         "test:watch": "jest --watch"
     },
     "devDependencies": {
-        "jest": "^30.4.1",
+        "jest": "^30.4.2",
         "jest-environment-jsdom": "^30.4.1",
         "jquery": "^4.0.0"
+    },
+    "allowScripts": {
+        "unrs-resolver@1.12.2": true
     }
 }
