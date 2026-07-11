@@ -846,6 +846,25 @@ function restart_handle_contact_submit() {
 add_action('wp_ajax_restart_contact_submit',        'restart_handle_contact_submit');
 add_action('wp_ajax_nopriv_restart_contact_submit', 'restart_handle_contact_submit');
 
+add_filter('manage_posts_columns', function (array $columns): array {
+    return ['cb' => $columns['cb'], 'post_id' => 'ID'] + $columns;
+});
+
+add_action('manage_posts_custom_column', function (string $column, int $post_id): void {
+    if ($column === 'post_id') {
+        echo esc_html($post_id);
+    }
+}, 10, 2);
+
+add_filter('manage_edit-post_sortable_columns', function (array $columns): array {
+    $columns['post_id'] = 'ID';
+    return $columns;
+});
+
+add_action('admin_head-edit.php', function (): void {
+    echo '<style>.column-post_id { width: 3.5rem; text-align: right; } .column-post_id + th, .column-post_id + td { padding-left: 1rem; }</style>';
+});
+
 // Inject category-specific single templates into the block theme hierarchy.
 // WP doesn't natively support single-category-{slug}.html, so we add them here.
 add_filter('block_template_hierarchy', function (array $templates): array {
@@ -869,6 +888,59 @@ add_filter('block_template_hierarchy', function (array $templates): array {
     }
 
     return $templates;
+});
+
+add_action('init', function () {
+    register_post_meta('post', 'internal_link_ids', [
+        'show_in_rest' => [
+            'schema' => [
+                'type'  => 'array',
+                'items' => ['type' => 'integer'],
+            ],
+        ],
+        'single'  => true,
+        'type'    => 'array',
+        'default' => [],
+    ]);
+});
+
+add_shortcode('internal_links', function () {
+    $ids = get_post_meta(get_the_ID(), 'internal_link_ids', true);
+    if (empty($ids)) {
+        return '';
+    }
+
+    $cards = '';
+    foreach ($ids as $post_id) {
+        $linked = get_post($post_id);
+        if (!$linked || $linked->post_status !== 'publish') {
+            continue;
+        }
+        $title   = get_the_title($linked);
+        $excerpt = get_the_excerpt($linked);
+        $url     = get_permalink($linked);
+
+        $excerpt_html = $excerpt
+            ? '<p style="color:#4d6a72;font-family:var(--wp--preset--font-family--libre-caslon-text);font-size:15px;line-height:1.6;margin-bottom:1.25rem">' . esc_html($excerpt) . '</p>'
+            : '';
+
+        $cards .= '<div style="flex:1;min-width:240px;background-color:#ffffff;border-radius:8px;border:1px solid #c8e8d4;box-shadow:0 2px 12px rgba(25,53,64,0.07);padding:2rem">'
+            . '<h3 style="color:#193540;font-family:var(--wp--preset--font-family--montserrat);font-size:24px;font-weight:700;margin-top:0;margin-bottom:0.75rem">' . esc_html($title) . '</h3>'
+            . $excerpt_html
+            . '<a href="' . esc_url($url) . '" style="display:inline-block;background-color:#193540;color:#ffffff;border-radius:4px;padding:0.6em 1.2em;font-family:var(--wp--preset--font-family--montserrat);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;text-decoration:none">Read more →</a>'
+            . '</div>';
+    }
+
+    if (!$cards) {
+        return '';
+    }
+
+    return '<hr style="background-color:#9fd4b3;color:#9fd4b3;margin-top:var(--wp--preset--spacing--large);margin-bottom:var(--wp--preset--spacing--large);border:none;height:1px"/>'
+        . '<div style="background-color:#ffffff;padding-top:var(--wp--preset--spacing--large);padding-bottom:var(--wp--preset--spacing--large)">'
+        . '<h2 style="color:#47b4b0;font-family:var(--wp--preset--font-family--montserrat);font-size:13px;font-weight:700;letter-spacing:0.08em;margin-bottom:0.5rem;text-align:center;text-transform:uppercase">Dive into helpful resources.</h2>'
+        . '<h3 style="color:#193540;font-family:var(--wp--preset--font-family--montserrat);font-size:clamp(28px,4vw,42px);font-weight:700;margin-top:0;margin-bottom:var(--wp--preset--spacing--small);text-align:center">Everything you need to move forward.</h3>'
+        . '<div style="display:flex;flex-wrap:wrap;gap:2rem">' . $cards . '</div>'
+        . '</div>';
 });
 
 // Fix: WP strips inherit:true from query block context (it equals the default), so
