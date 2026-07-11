@@ -847,12 +847,22 @@ add_action('wp_ajax_restart_contact_submit',        'restart_handle_contact_subm
 add_action('wp_ajax_nopriv_restart_contact_submit', 'restart_handle_contact_submit');
 
 add_filter('manage_posts_columns', function (array $columns): array {
-    return ['cb' => $columns['cb'], 'post_id' => 'ID'] + $columns;
+    $columns = ['cb' => $columns['cb'], 'post_id' => 'ID'] + $columns;
+    $columns['internal_link_ids'] = 'Related Posts';
+    return $columns;
 });
 
 add_action('manage_posts_custom_column', function (string $column, int $post_id): void {
     if ($column === 'post_id') {
         echo esc_html($post_id);
+    }
+    if ($column === 'internal_link_ids') {
+        $ids = get_post_meta($post_id, 'internal_link_ids', true);
+        if (is_array($ids) && !empty($ids)) {
+            echo esc_html(implode(', ', $ids));
+        } else {
+            echo '<span style="color:#999">—</span>';
+        }
     }
 }, 10, 2);
 
@@ -863,6 +873,133 @@ add_filter('manage_edit-post_sortable_columns', function (array $columns): array
 
 add_action('admin_head-edit.php', function (): void {
     echo '<style>.column-post_id { width: 3.5rem; text-align: right; } .column-post_id + th, .column-post_id + td { padding-left: 1rem; }</style>';
+});
+
+add_action('add_meta_boxes', function (): void {
+    add_meta_box(
+        'internal-link-ids',
+        'Related Posts',
+        function (WP_Post $post): void {
+            $ids = get_post_meta($post->ID, 'internal_link_ids', true);
+            $ids = is_array($ids) ? array_map('intval', $ids) : [];
+
+            wp_nonce_field('internal_link_ids_save', 'internal_link_ids_nonce');
+            ?>
+            <ul id="rr-ilids-list" style="margin:0 0 10px;padding:0;list-style:none">
+                <?php foreach ($ids as $id) :
+                    $linked = get_post($id);
+                    if (!$linked) continue;
+                ?>
+                <li data-id="<?php echo esc_attr($id); ?>" style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f0f0f0">
+                    <span style="flex:1"><?php echo esc_html($linked->post_title); ?> <span style="color:#999">(ID: <?php echo esc_html($id); ?>)</span></span>
+                    <button type="button" class="rr-ilids-remove button-link" style="color:#b32d2e">Remove</button>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+            <input type="hidden" id="rr-ilids-value" name="internal_link_ids" value="<?php echo esc_attr(wp_json_encode($ids)); ?>">
+            <input type="text" id="rr-ilids-search" placeholder="Search posts to link…" class="widefat" autocomplete="off">
+            <ul id="rr-ilids-results" style="border:1px solid #ddd;display:none;list-style:none;margin:0;padding:0;max-height:200px;overflow-y:auto;background:#fff;position:absolute;z-index:100;width:calc(100% - 28px)"></ul>
+            <script>
+            (function () {
+                const search  = document.getElementById('rr-ilids-search');
+                const results = document.getElementById('rr-ilids-results');
+                const list    = document.getElementById('rr-ilids-list');
+                const hidden  = document.getElementById('rr-ilids-value');
+                const nonce   = <?php echo wp_json_encode(wp_create_nonce('wp_rest')); ?>;
+                const apiRoot = <?php echo wp_json_encode(rest_url('wp/v2/posts')); ?>;
+                const exclude = <?php echo (int) $post->ID; ?>;
+
+                const getIds = () => JSON.parse(hidden.value || '[]');
+                const setIds = ids => {
+                    hidden.value = JSON.stringify(ids);
+                    // Meta boxes run in a hidden iframe; dispatch into the
+                    // parent frame's Gutenberg store so the REST API save
+                    // picks up our changes instead of overwriting them.
+                    const parentWp = window.parent && window.parent.wp;
+                    const store = parentWp && parentWp.data && parentWp.data.dispatch('core');
+                    if (store) {
+                        store.editEntityRecord('postType', 'post', <?php echo (int) $post->ID; ?>, {
+                            meta: { internal_link_ids: ids }
+                        });
+                    }
+                };
+
+                function addPost(id, title) {
+                    const ids = getIds();
+                    if (ids.includes(id)) return;
+                    setIds([...ids, id]);
+                    const li = document.createElement('li');
+                    li.dataset.id = id;
+                    li.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f0f0f0';
+                    li.innerHTML = `<span style="flex:1">${title} <span style="color:#999">(ID: ${id})</span></span><button type="button" class="rr-ilids-remove button-link" style="color:#b32d2e">Remove</button>`;
+                    list.appendChild(li);
+                }
+
+                list.addEventListener('click', e => {
+                    const btn = e.target.closest('.rr-ilids-remove');
+                    if (!btn) return;
+                    const li = btn.closest('li');
+                    setIds(getIds().filter(i => i !== parseInt(li.dataset.id)));
+                    li.remove();
+                });
+
+                let timer;
+                search.addEventListener('input', function () {
+                    clearTimeout(timer);
+                    const q = this.value.trim();
+                    if (!q) { results.style.display = 'none'; return; }
+                    timer = setTimeout(() => {
+                        fetch(`${apiRoot}?search=${encodeURIComponent(q)}&per_page=10&status=publish&exclude=${exclude}&_fields=id,title`, {
+                            headers: { 'X-WP-Nonce': nonce }
+                        })
+                        .then(r => r.json())
+                        .then(posts => {
+                            results.innerHTML = '';
+                            if (!posts.length) { results.style.display = 'none'; return; }
+                            posts.forEach(p => {
+                                const li = document.createElement('li');
+                                li.style.cssText = 'padding:6px 10px;cursor:pointer';
+                                li.textContent = `${p.title.rendered} (ID: ${p.id})`;
+                                li.onmouseenter = () => li.style.background = '#f0f0f0';
+                                li.onmouseleave = () => li.style.background = '';
+                                li.addEventListener('click', () => {
+                                    addPost(p.id, p.title.rendered);
+                                    search.value = '';
+                                    results.style.display = 'none';
+                                });
+                                results.appendChild(li);
+                            });
+                            results.style.display = 'block';
+                        });
+                    }, 300);
+                });
+
+                document.addEventListener('click', e => {
+                    if (!results.contains(e.target) && e.target !== search) {
+                        results.style.display = 'none';
+                    }
+                });
+            })();
+            </script>
+            <?php
+        },
+        'post',
+        'normal',
+        'default'
+    );
+});
+
+add_action('save_post', function (int $post_id): void {
+    if (!isset($_POST['internal_link_ids_nonce'])) return;
+    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['internal_link_ids_nonce'])), 'internal_link_ids_save')) return;
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (!current_user_can('edit_post', $post_id)) return;
+
+    $raw = sanitize_text_field(wp_unslash($_POST['internal_link_ids'] ?? '[]'));
+    $ids = json_decode($raw, true);
+    $ids = array_values(array_map('intval', array_filter((array) $ids)));
+
+    update_post_meta($post_id, 'internal_link_ids', $ids);
 });
 
 // Inject category-specific single templates into the block theme hierarchy.
@@ -910,7 +1047,9 @@ add_shortcode('internal_links', function () {
         return '';
     }
 
-    $cards = '';
+    $cards      = [];
+    $per_page   = 3;
+
     foreach ($ids as $post_id) {
         $linked = get_post($post_id);
         if (!$linked || $linked->post_status !== 'publish') {
@@ -921,10 +1060,10 @@ add_shortcode('internal_links', function () {
         $url     = get_permalink($linked);
 
         $excerpt_html = $excerpt
-            ? '<p style="color:#4d6a72;font-family:var(--wp--preset--font-family--libre-caslon-text);font-size:15px;line-height:1.6;margin-bottom:1.25rem">' . esc_html($excerpt) . '</p>'
+            ? '<p style="color:#4d6a72;font-family:var(--wp--preset--font-family--libre-caslon-text);font-size:15px;line-height:1.6;margin-bottom:1.25rem">' . esc_html(wp_trim_words($excerpt, 30)) . '</p>'
             : '';
 
-        $cards .= '<div style="flex:1;min-width:240px;background-color:#ffffff;border-radius:8px;border:1px solid #c8e8d4;box-shadow:0 2px 12px rgba(25,53,64,0.07);padding:2rem">'
+        $cards[] = '<div class="rr-il-card" style="background-color:#ffffff;border-radius:8px;border:1px solid #c8e8d4;box-shadow:0 2px 12px rgba(25,53,64,0.07);padding:2rem">'
             . '<h3 style="color:#193540;font-family:var(--wp--preset--font-family--montserrat);font-size:24px;font-weight:700;margin-top:0;margin-bottom:0.75rem">' . esc_html($title) . '</h3>'
             . $excerpt_html
             . '<a href="' . esc_url($url) . '" style="display:inline-block;background-color:#193540;color:#ffffff;border-radius:4px;padding:0.6em 1.2em;font-family:var(--wp--preset--font-family--montserrat);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;text-decoration:none">Read more →</a>'
@@ -935,11 +1074,35 @@ add_shortcode('internal_links', function () {
         return '';
     }
 
+    $total      = count($cards);
+    $pages      = (int) ceil($total / $per_page);
+    $cards_html = implode('', $cards);
+
+    $btn_style  = 'background-color:#193540;color:#ffffff;border:none;border-radius:4px;padding:0.6em 1.2em;font-family:var(--wp--preset--font-family--montserrat);font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer';
+
+    $pagination = $pages > 1
+        ? '<div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;margin-top:2rem">'
+            . '<button id="rr-il-prev" type="button" style="' . $btn_style . '" disabled>← Prev</button>'
+            . '<span id="rr-il-page" style="color:#193540;font-family:var(--wp--preset--font-family--montserrat);font-size:13px;font-weight:700">1 / ' . $pages . '</span>'
+            . '<button id="rr-il-next" type="button" style="' . $btn_style . '">Next →</button>'
+            . '</div>'
+            . '<script>(function(){'
+            . 'var cards=document.querySelectorAll(".rr-il-card"),prev=document.getElementById("rr-il-prev"),next=document.getElementById("rr-il-next"),indicator=document.getElementById("rr-il-page"),n=' . $per_page . ',pages=' . $pages . ',p=0;'
+            . 'function show(){cards.forEach(function(c,i){c.style.display=(i>=p*n&&i<(p+1)*n)?"":"none";});prev.disabled=p===0;prev.style.opacity=p===0?"0.4":"1";next.disabled=p===pages-1;next.style.opacity=p===pages-1?"0.4":"1";indicator.textContent=(p+1)+" / "+pages;}'
+            . 'prev.addEventListener("click",function(){if(p>0){p--;show();}});'
+            . 'next.addEventListener("click",function(){if(p<pages-1){p++;show();}});'
+            . 'show();'
+            . '})();</script>'
+        : '';
+
     return '<hr style="background-color:#9fd4b3;color:#9fd4b3;margin-top:var(--wp--preset--spacing--large);margin-bottom:var(--wp--preset--spacing--large);border:none;height:1px"/>'
         . '<div style="background-color:#ffffff;padding-top:var(--wp--preset--spacing--large);padding-bottom:var(--wp--preset--spacing--large)">'
-        . '<h2 style="color:#47b4b0;font-family:var(--wp--preset--font-family--montserrat);font-size:13px;font-weight:700;letter-spacing:0.08em;margin-bottom:0.5rem;text-align:center;text-transform:uppercase">Dive into helpful resources.</h2>'
-        . '<h3 style="color:#193540;font-family:var(--wp--preset--font-family--montserrat);font-size:clamp(28px,4vw,42px);font-weight:700;margin-top:0;margin-bottom:var(--wp--preset--spacing--small);text-align:center">Everything you need to move forward.</h3>'
-        . '<div style="display:flex;flex-wrap:wrap;gap:2rem">' . $cards . '</div>'
+        . '<div style="max-width:80%;margin-left:auto;margin-right:auto">'
+        . '<h2 style="color:#47b4b0;font-family:var(--wp--preset--font-family--montserrat);font-size:13px;font-weight:700;letter-spacing:0.08em;margin-bottom:0.5rem;text-align:center;text-transform:uppercase">What other mountains lie ahead?</h2>'
+        . '<h3 style="color:#193540;font-family:var(--wp--preset--font-family--montserrat);font-size:clamp(28px,4vw,42px);font-weight:700;margin-top:0;margin-bottom:var(--wp--preset--spacing--small);text-align:center">You might also find these articles interesting:</h3>'
+        . '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem">' . $cards_html . '</div>'
+        . $pagination
+        . '</div>'
         . '</div>';
 });
 
