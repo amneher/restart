@@ -1002,6 +1002,24 @@ add_action('save_post', function (int $post_id): void {
     update_post_meta($post_id, 'internal_link_ids', $ids);
 });
 
+// When a cover block uses useFeaturedImage but the post has none, fall back to
+// image 162 so the hero always has a background.
+add_filter('render_block_data', function (array $block): array {
+    if ($block['blockName'] !== 'core/cover' || empty($block['attrs']['useFeaturedImage'])) {
+        return $block;
+    }
+    if (get_the_post_thumbnail_url()) {
+        return $block;
+    }
+    $fallback_url = wp_get_attachment_image_url(162, 'full');
+    if ($fallback_url) {
+        $block['attrs']['useFeaturedImage'] = false;
+        $block['attrs']['id']               = 162;
+        $block['attrs']['url']              = $fallback_url;
+    }
+    return $block;
+});
+
 // Inject category-specific single templates into the block theme hierarchy.
 // WP doesn't natively support single-category-{slug}.html, so we add them here.
 add_filter('block_template_hierarchy', function (array $templates): array {
