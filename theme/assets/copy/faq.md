@@ -81,6 +81,26 @@ Absolutely. You can add, remove, and reorder items at any time. Changes are refl
 
 ---
 
+**Why is budgeting harder after divorce?**
+Because the math changes — and so does the emotional load. You’re adjusting to new expenses, new income, and a new life all at once.
+
+---
+
+**How soon should I create a post‑divorce budget?**
+As soon as possible. Early clarity prevents debt and panic.
+
+---
+
+**What if my income isn’t stable yet?**
+Use conservative estimates and adjust monthly. Your budget can evolve as your life stabilizes.
+
+---
+
+**Do I need a financial advisor?**
+If you have complex assets, retirement questions, or major income changes, a financial advisor can help you rebuild with confidence.
+
+---
+
 **How do I delete my account?**
 You can request account deletion by emailing us at [hello@the-reStart.com](mailto:hello@the-reStart.com). We'll remove your account and all associated data as quickly as possible (within 30 days) and you'll receive one final email from us as confirmation.
 
