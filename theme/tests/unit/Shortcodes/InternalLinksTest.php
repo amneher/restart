@@ -149,7 +149,11 @@ final class InternalLinksTest extends ThemeTestCase
         Functions\when('get_post_meta')->justReturn([10]);
         $this->stubPosts([10]);
 
-        $this->assertStringContainsString('grid-template-columns:repeat(3,1fr)', $this->invokeShortcode('internal_links'));
+        $output = $this->invokeShortcode('internal_links');
+        $this->assertStringContainsString('rr-il-grid', $output);
+        $this->assertStringContainsString('grid-template-columns:repeat(3,1fr)', $output);
+        $this->assertStringContainsString('grid-template-columns:repeat(2,1fr)', $output);
+        $this->assertStringContainsString('grid-template-columns:1fr', $output);
     }
 
     public function test_renders_a_card_for_each_linked_post(): void
