@@ -48,6 +48,7 @@ abstract class ThemeTestCase extends TestCase
         Functions\when('esc_url')->returnArg(1);
         Functions\when('esc_html')->returnArg(1);
         Functions\when('esc_attr')->returnArg(1);
+        Functions\when('wp_add_inline_style')->justReturn(true);
 
         include THEME_DIR . '/functions.php';
     }
