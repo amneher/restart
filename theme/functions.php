@@ -5,6 +5,11 @@ $fonts_url = 'https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&fami
 add_action('wp_enqueue_scripts', function () use ($fonts_url) {
     wp_enqueue_style('therestart-fonts', $fonts_url, [], null);
     wp_enqueue_style('therestart-style', get_stylesheet_uri(), ['therestart-fonts'], wp_get_theme()->get('Version'));
+    wp_add_inline_style('therestart-style', 'html,body{overflow-x:hidden}'
+        . '@media(min-width:600px) and (max-width:1023px){'
+        . '.wp-block-navigation__responsive-container-open:not(.always-shown){display:flex!important}'
+        . '.wp-block-navigation__responsive-container:not(.is-menu-open){display:none!important}'
+        . '}');
     wp_enqueue_script(
         'therestart-header-current-nav',
         get_stylesheet_directory_uri() . '/assets/js/header-current-nav.js',
@@ -949,7 +954,7 @@ add_action('add_meta_boxes', function (): void {
                     const q = this.value.trim();
                     if (!q) { results.style.display = 'none'; return; }
                     timer = setTimeout(() => {
-                        fetch(`${apiRoot}?search=${encodeURIComponent(q)}&per_page=10&status=publish&exclude=${exclude}&_fields=id,title`, {
+                        fetch(`${apiRoot}?search=${encodeURIComponent(q)}&per_page=10&exclude=${exclude}&_fields=id,title`, {
                             headers: { 'X-WP-Nonce': nonce }
                         })
                         .then(r => r.json())
@@ -1113,12 +1118,13 @@ add_shortcode('internal_links', function () {
             . '})();</script>'
         : '';
 
-    return '<hr style="background-color:#9fd4b3;color:#9fd4b3;margin-top:var(--wp--preset--spacing--large);margin-bottom:var(--wp--preset--spacing--large);border:none;height:1px"/>'
+    return '<style>.rr-il-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}@media(max-width:899px){.rr-il-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:599px){.rr-il-grid{grid-template-columns:1fr}}</style>'
+        . '<hr style="background-color:#9fd4b3;color:#9fd4b3;margin-top:var(--wp--preset--spacing--large);margin-bottom:var(--wp--preset--spacing--large);border:none;height:1px"/>'
         . '<div style="background-color:#ffffff;padding-top:var(--wp--preset--spacing--large);padding-bottom:var(--wp--preset--spacing--large)">'
         . '<div style="max-width:80%;margin-left:auto;margin-right:auto">'
         . '<h2 style="color:#47b4b0;font-family:var(--wp--preset--font-family--montserrat);font-size:13px;font-weight:700;letter-spacing:0.08em;margin-bottom:0.5rem;text-align:center;text-transform:uppercase">What other mountains lie ahead?</h2>'
         . '<h3 style="color:#193540;font-family:var(--wp--preset--font-family--montserrat);font-size:clamp(28px,4vw,42px);font-weight:700;margin-top:0;margin-bottom:var(--wp--preset--spacing--small);text-align:center">You might also find these articles interesting:</h3>'
-        . '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem">' . $cards_html . '</div>'
+        . '<div class="rr-il-grid">' . $cards_html . '</div>'
         . $pagination
         . '</div>'
         . '</div>';
