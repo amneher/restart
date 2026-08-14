@@ -85,6 +85,7 @@ class TinyMCEInserterTest extends TestCase {
         $result = $this->admin()->mce_buttons([]);
 
         $this->assertContains('restart_item', $result);
+        $this->assertContains('restart_favorites_row', $result);
     }
 
     public function test_button_added_on_page_screen(): void {
@@ -93,6 +94,7 @@ class TinyMCEInserterTest extends TestCase {
         $result = $this->admin()->mce_buttons([]);
 
         $this->assertContains('restart_item', $result);
+        $this->assertContains('restart_favorites_row', $result);
     }
 
     public function test_button_not_added_on_other_screens(): void {
@@ -102,6 +104,7 @@ class TinyMCEInserterTest extends TestCase {
             $result = $this->admin()->mce_buttons([]);
 
             $this->assertNotContains('restart_item', $result, "Should not add button on '$base' screen");
+            $this->assertNotContains('restart_favorites_row', $result, "Should not add button on '$base' screen");
         }
     }
 
@@ -111,6 +114,7 @@ class TinyMCEInserterTest extends TestCase {
         $result = $this->admin()->mce_buttons([]);
 
         $this->assertNotContains('restart_item', $result);
+        $this->assertNotContains('restart_favorites_row', $result);
     }
 
     public function test_existing_buttons_are_preserved(): void {
@@ -122,5 +126,6 @@ class TinyMCEInserterTest extends TestCase {
         $this->assertContains('bold', $result);
         $this->assertContains('italic', $result);
         $this->assertContains('restart_item', $result);
+        $this->assertContains('restart_favorites_row', $result);
     }
 }

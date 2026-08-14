@@ -40,6 +40,7 @@ class Restart_Registry_Public
         add_shortcode('restart_registry_view',   [$this, 'registry_view_shortcode']);
         add_shortcode('restart_registry_create', [$this, 'registry_create_shortcode']);
         add_shortcode('restart_item',            [$this, 'item_shortcode']);
+        add_shortcode('restart_favorites_row',   [$this, 'favorites_row_shortcode']);
 
         // Process [restart_item] before WordPress's make_clickable filter (priority 9)
         // and strip any HTML tags that Gutenberg or make_clickable may have injected
@@ -1715,12 +1716,19 @@ class Restart_Registry_Public
     /** @var bool Whether the quick-add modals have already been appended this request. */
     private static bool $quick_add_modals_printed = false;
 
+    /** Valid values for the `tier` attribute — used by [restart_favorites_row]. */
+    private const FAVORITES_TIERS = ['good', 'better', 'best'];
+
     /**
      * [restart_item title="…" price="…" image="…" images="url1,url2" url="…"
-     *               description="…" retailer="…" notes="…" quantity="1"]
+     *               description="…" retailer="…" notes="…" quantity="1" tier="good|better|best"]
      *
      * Renders a product card with image(s), details, a shop link, and an
      * "Add to My Registry" button. Multiple images render as a simple carousel.
+     *
+     * `tier` is optional. When set to good/better/best (used inside
+     * [restart_favorites_row]), the card renders as a compact column variant
+     * with a tier badge, sized for a 3-up grid.
      */
     public function item_shortcode(array $atts): string
     {
@@ -1734,11 +1742,14 @@ class Restart_Registry_Public
             'retailer'    => '',
             'notes'       => '',
             'quantity'    => '1',
+            'tier'        => '',
         ], $atts, 'restart_item');
 
         if (empty($a['title'])) {
             return '';
         }
+
+        $tier = in_array($a['tier'], self::FAVORITES_TIERS, true) ? $a['tier'] : '';
 
         // Normalise image list: `images` wins over `image`.
         $raw    = !empty($a['images']) ? $a['images'] : $a['image'];
@@ -1812,8 +1823,15 @@ class Restart_Registry_Public
         $disc_html = !empty($this->disclosure)
             ? '<p class="rr-affiliate-note"><small>' . esc_html($this->disclosure) . '</small></p>'
             : '';
-        
-        $html = '<div class="rr-article-item">'
+
+        $tier_badge_html = $tier !== ''
+            ? '<span class="rr-article-item__tier-badge rr-article-item__tier-badge--' . esc_attr($tier) . '">' . esc_html(ucfirst($tier)) . '</span>'
+            : '';
+
+        $card_class = 'rr-article-item' . ($tier !== '' ? ' rr-article-item--tier' : '');
+
+        $html = '<div class="' . esc_attr($card_class) . '">'
+            . $tier_badge_html
             . $media_html
             . '<div class="rr-article-item__body">'
             . '<div class="rr-article-item__header">'
@@ -1836,6 +1854,38 @@ class Restart_Registry_Public
         }
 
         return $html;
+    }
+
+    /**
+     * [restart_favorites_row title="Sofa"]
+     *   [restart_item tier="good" ...]
+     *   [restart_item tier="better" ...]
+     *   [restart_item tier="best" ...]
+     * [/restart_favorites_row]
+     *
+     * Wraps a general item's Good/Better/Best product cards in a labeled,
+     * 3-column row for the Our Favorites guide.
+     */
+    public function favorites_row_shortcode(array $atts, ?string $content = null): string
+    {
+        $a = shortcode_atts([
+            'title' => '',
+        ], $atts, 'restart_favorites_row');
+
+        if (empty($a['title'])) {
+            return '';
+        }
+
+        // Nested [restart_item] shortcodes are usually already rendered by the
+        // the_content pre-filter (priority 8) by the time WordPress reaches this
+        // enclosing shortcode. do_shortcode() here is a no-op in that case and
+        // only matters when favorites_row_shortcode() is invoked directly.
+        $inner = do_shortcode((string) $content);
+
+        return '<div class="rr-favorites-row">'
+            . '<h4 class="rr-favorites-row__title">' . esc_html($a['title']) . '</h4>'
+            . '<div class="rr-favorites-row__cards">' . $inner . '</div>'
+            . '</div>';
     }
 
     /**

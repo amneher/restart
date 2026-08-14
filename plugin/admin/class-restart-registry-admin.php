@@ -45,6 +45,7 @@ class Restart_Registry_Admin {
             return $buttons;
         }
         $buttons[] = 'restart_item';
+        $buttons[] = 'restart_favorites_row';
         return $buttons;
     }
 
@@ -65,8 +66,12 @@ class Restart_Registry_Admin {
     public function enqueue_scripts($hook) {
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/restart-registry-admin.js', array(), $this->version, true);
         wp_localize_script($this->plugin_name, 'rrAdmin', array(
-            'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce'   => wp_create_nonce('restart_registry_admin_nonce'),
+            'ajaxurl'     => admin_url('admin-ajax.php'),
+            'nonce'       => wp_create_nonce('restart_registry_admin_nonce'),
+            // Used by the [restart_favorites_row] TinyMCE modal to call the
+            // existing restart_registry_fetch_url AJAX action (same nonce
+            // action the public registry-builder JS uses for that endpoint).
+            'fetchNonce'  => wp_create_nonce('restart_registry_nonce'),
         ));
 
         if (isset($_GET['page']) && $_GET['page'] === 'restart-registry-edit') {

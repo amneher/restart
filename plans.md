@@ -930,17 +930,20 @@ New WordPress Page (title "Our Favorites", `page.html` template) authored with H
 - Migrating or changing the existing `/category/guides/favorites/` blog archive
 - Per-category images/icons on the new page (plain H2 headings for v1)
 
+## Deviation from original plan
+`ajax_scrape_url` was not built as a new endpoint — discovered `ajax_fetch_url()` / `wp_ajax_restart_registry_fetch_url` already does exactly this (scraper + affiliate convert, JSON response), reused as-is. Only addition: `fetchNonce` added to the `rrAdmin` localized object so the admin-side TinyMCE JS can call it.
+
 ## Todo
-- [ ] Branch: `feat/favorites-good-better-best`
-- [ ] `class-restart-registry-public.php`: add `tier` attribute + column-card variant to `item_shortcode()`
-- [ ] `class-restart-registry-public.php`: add `restart_favorites_row` enclosing shortcode
-- [ ] `class-restart-registry-public.php`: add `ajax_scrape_url()` handler + `wp_ajax_restart_registry_scrape_url` hook
-- [ ] `restart-registry-tinymce.js`: "Insert Favorites Row" button + modal (3x URL/Fetch + fields) + shortcode builder
-- [ ] `restart-registry-public.css`: `.rr-favorites-row` grid + tier badge styles
-- [ ] WP: create "Our Favorites" page at `/our-favorites/`, author category sections (content work, not code)
-- [ ] `theme/templates/front-page.html`: update Favorites card link to `/our-favorites/`
-- [ ] Nav: update primary menu link if it points to the old category URL
-- [ ] Tests: PHP unit for `tier` rendering + `restart_favorites_row` nesting; PHP unit for `ajax_scrape_url` (capability check, scraper call, JSON shape); JS tests for new TinyMCE modal + shortcode builder
-- [ ] `make theme-test` and `make plugin-test-php` green
+- [x] Branch: `feat/favorites-good-better-best`
+- [x] `class-restart-registry-public.php`: add `tier` attribute + column-card variant to `item_shortcode()`
+- [x] `class-restart-registry-public.php`: add `restart_favorites_row` enclosing shortcode
+- [x] Reuse existing `ajax_fetch_url()` / `wp_ajax_restart_registry_fetch_url` instead of a new endpoint (see deviation note); added `fetchNonce` to `rrAdmin` localize array in `class-restart-registry-admin.php`
+- [x] `restart-registry-tinymce.js`: "Insert Favorites Row" button + modal (3x URL/Fetch + fields) + shortcode builder
+- [x] `restart-registry-public.css`: `.rr-favorites-row` grid + tier badge styles
+- [ ] WP: create "Our Favorites" page at `/our-favorites/`, author category sections (content work, not code — needs wp-admin access, not done by Claude)
+- [x] `theme/templates/front-page.html`: update Favorites card link to `/our-favorites/`
+- [x] Nav: updated `theme/parts/header.html`, `theme/parts/footer.html`, `theme/patterns/footer-default.php` (all pointed to the old category URL)
+- [x] Tests: `tests/unit/FavoritesRowShortcodeTest.php` (9 cases: tier badge rendering, row wrapping/escaping); `tests/unit/TinyMCEInserterTest.php` extended for the new button; `tests/js/restart-registry-tinymce.test.js` extended (17 new cases: modal fields, shortcode builder, fetch button wiring/success/failure)
+- [x] `make theme-test` green (45 PHP / 87 JS) and `make plugin-test` green (290 PHP / 99 JS)
 - [ ] Manual QA: insert a favorites row via TinyMCE, fetch a real product URL, verify card renders correctly on `/our-favorites/`, verify affiliate link and "Add to My Registry" both work
 - [ ] Close out (link issue/PR once opened)
