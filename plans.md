@@ -889,3 +889,69 @@ HTML5 native; no library required.
 - [x] CSS: edit button, edit form, timer, disabled/sent states
 - [x] Tests: new fields persisted correctly; `update_purchase_message()` with valid token; token expiry rejection; owner edit without token; cron callback sends email + marks sent; cron skips if cancelled
 - [ ] Close GH #63
+
+---
+
+# Plan: Our Favorites — Good/Better/Best product guide
+
+## What
+A new "Our Favorites" page organized by room/category (Living Room, Bathroom, etc.). Within each category, editors list general items (e.g. "Sofa", "Towel Set"); each general item shows three concrete product options — Good / Better / Best — as shoppable cards.
+
+## What already exists (reused, not rebuilt)
+- `[restart_item]` shortcode (`class-restart-registry-public.php:1712`) — already renders a full product card: image/carousel, price, retailer badge, description, "Shop Now" (affiliate link), "+ Add to My Registry". Explicitly built for "favorites / gift-guide articles."
+- TinyMCE "Insert Item" toolbar button (`restart-registry-tinymce.js`) — form modal that builds a `[restart_item]` shortcode from typed fields. No URL-autofill yet (that's an open roadmap item this plan implements).
+- `Restart_Registry_Product_Scraper` — scrapes name/price/image/description from a retailer URL.
+- `Restart_Registry_Affiliate_Converter::instance()->convert_url()` — converts a URL to an affiliate link when a known retailer.
+
+No new custom post types or taxonomies. This is authored as normal page content (headings + shortcodes) in the block/classic editor, consistent with how `[restart_start_registry]` and other theme shortcodes already work.
+
+## Architecture
+
+### 1. `[restart_item]` — add optional `tier` attribute
+When `tier="good"|"better"|"best"` is present, render a compact "column" card variant (sized for a 3-up grid) with a tier badge instead of/alongside the retailer badge. Falls back to the existing full-width article-item styling when `tier` is absent — no change to current usage.
+
+### 2. New enclosing shortcode `[restart_favorites_row title="Sofa"]...[/restart_favorites_row]`
+Wraps `do_shortcode($content)` output of its three nested `[restart_item tier="good|better|best" ...]` cards in `<div class="rr-favorites-row">` with an `<h4>` general-item title above a `<div class="rr-favorites-row__cards">` 3-col grid (stacks on mobile).
+
+### 3. Scrape-preview AJAX endpoint
+New `wp_ajax_restart_registry_scrape_url` handler (capability-gated to `edit_posts`): calls the existing scraper + affiliate converter, returns `{name, price, image_url, description, retailer}` as JSON. Read-only preview — does not write to Lambda or touch registries. Implements the "Fetch-from-URL auto-populate" roadmap item.
+
+### 4. TinyMCE: new "Insert Favorites Row" toolbar button
+Modal with: General Item Title, then three sections (Good / Better / Best), each with a Product URL field + "Fetch" button (calls the new AJAX endpoint, fills title/price/image/retailer/description) plus editable fields. Builds the full `[restart_favorites_row]` block with three nested `[restart_item tier=...]` shortcodes and inserts at cursor.
+
+### 5. New page: `/our-favorites/`
+New WordPress Page (title "Our Favorites", `page.html` template) authored with H2 per category (Living Room, Bathroom, ...) followed by one `[restart_favorites_row]` per general item. Homepage "Favorites" card (`front-page.html`) and primary nav updated to point here instead of `/category/guides/favorites/`. The existing category archive/blog templates are left untouched (out of scope — separate "favorites articles" content type, not this guide).
+
+### 6. CSS
+`.rr-favorites-row`, `.rr-favorites-row__cards` (3-col grid, stacks on mobile), tier badge styles (`.rr-article-item__tier--good/better/best`) using existing site palette (teal `#47b4b0`, dark `#193540`, yellow `#ebd060`). Exact shades are my call, easy to tweak after.
+
+## What's NOT in scope
+- New CPTs/taxonomies for categories or items (decided against — would duplicate the shortcode/scraper system above)
+- Migrating or changing the existing `/category/guides/favorites/` blog archive
+- Per-category images/icons on the new page (plain H2 headings for v1)
+
+## Deviation from original plan
+`ajax_scrape_url` was not built as a new endpoint — discovered `ajax_fetch_url()` / `wp_ajax_restart_registry_fetch_url` already does exactly this (scraper + affiliate convert, JSON response), reused as-is. Only addition: `fetchNonce` added to the `rrAdmin` localized object so the admin-side TinyMCE JS can call it.
+
+Tier vocabulary later changed from good/better/best to **save/spend/splurge** per user request — renamed throughout (shortcode `tier` attribute values, CSS badge classes, TinyMCE modal fields/labels, both test suites). Branch name (`feat/favorites-good-better-best`) and this plan's earlier prose still say good/better/best in places; not worth a mass rewrite, the code and tests are the source of truth.
+
+## Todo
+- [x] Branch: `feat/favorites-good-better-best`
+- [x] `class-restart-registry-public.php`: add `tier` attribute + column-card variant to `item_shortcode()`
+- [x] `class-restart-registry-public.php`: add `restart_favorites_row` enclosing shortcode
+- [x] Reuse existing `ajax_fetch_url()` / `wp_ajax_restart_registry_fetch_url` instead of a new endpoint (see deviation note); added `fetchNonce` to `rrAdmin` localize array in `class-restart-registry-admin.php`
+- [x] `restart-registry-tinymce.js`: "Insert Favorites Row" button + modal (3x URL/Fetch + fields) + shortcode builder
+- [x] `restart-registry-public.css`: `.rr-favorites-row` grid + tier badge styles
+- [ ] WP: create "Our Favorites" page at `/our-favorites/`, author category sections (content work, not code — needs wp-admin access, not done by Claude)
+- [x] `theme/templates/front-page.html`: update Favorites card link to `/our-favorites/`
+- [x] Nav: updated `theme/parts/header.html`, `theme/parts/footer.html`, `theme/patterns/footer-default.php` (all pointed to the old category URL)
+- [x] Tests: `tests/unit/FavoritesRowShortcodeTest.php` (9 cases: tier badge rendering, row wrapping/escaping); `tests/unit/TinyMCEInserterTest.php` extended for the new button; `tests/js/restart-registry-tinymce.test.js` extended (17 new cases: modal fields, shortcode builder, fetch button wiring/success/failure)
+- [x] `make theme-test` green (45 PHP / 87 JS) and `make plugin-test` green (290 PHP / 99 JS)
+- [x] Manual QA on local Docker stack (`make up`, localhost:8083): found and fixed two real bugs (see below); verified final render via screenshot at desktop (1280px, 3-col grid) and mobile (390px, stacks to 1-col) with Shop Now / Add to Registry buttons, tier badges, price, retailer all correct; console clean
+- [ ] Close out (link issue/PR once opened)
+
+## Bugs found during manual QA (fixed)
+
+1. **Page template**: the "our-favorites" page the user created in wp-admin had the `category-favorites` template assigned (a query-loop archive template with `inherit:true`), not the default `page.html` template. Result: the page rendered itself as a single-item query-loop card instead of showing editor content — `[restart_favorites_row]` never even had a chance to run. Fixed locally via `wp post meta update 52 _wp_page_template ''` + retitled to "Our Favorites" (was lowercase "our-favorites"). This is a one-time content-setup fix per environment, not a code change — flagging here so the same mistake isn't repeated when the real production page is created.
+
+2. **wpautop corrupting the row's grid** (real code bug, fixed in `class-restart-registry-public.php`): the pre-existing `the_content` filter (priority 8) early-expands `[restart_item]` into raw `<div>` HTML to dodge `make_clickable`. Priority 8 runs before `wpautop` (10), so when 3 `[restart_item]` tags sit back-to-back inside `[restart_favorites_row]`, wpautop saw a run of adjacent divs with no blank-line separation and inserted stray `<p>` tags between them — ballooning `.rr-favorites-row__cards` from 3 children to 9 and breaking the 3-column grid (confirmed via `document.querySelector('.rr-favorites-row__cards').children.length` before/after, and screenshots). Fix: the filter now skips `[restart_item]` occurrences nested inside `[restart_favorites_row]...[/restart_favorites_row]` (left as literal text so `wpautop`'s `shortcode_unautop()` treats the whole row as one standalone shortcode); they're expanded normally at priority 11 instead. New regression test: `tests/unit/FavoritesRowContentFilterTest.php` (5 cases, captures the real registered closure via Brain Monkey and asserts nested items are left untouched while standalone ones still expand).

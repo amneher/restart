@@ -50,7 +50,7 @@
                 <!-- wp:navigation-link {"label":"Find a Registry","url":"/registry/","kind":"custom","isTopLevelLink":true} /-->
                 <!-- wp:navigation-link {"label":"Articles","url":"/category/articles/","kind":"custom","isTopLevelLink":true} /-->
                 <!-- wp:navigation-link {"label":"Gift Guides","url":"/category/guides/gifts/","kind":"custom","isTopLevelLink":true} /-->
-                <!-- wp:navigation-link {"label":"Our Favorites","url":"/category/guides/favorites/","kind":"custom","isTopLevelLink":true} /-->
+                <!-- wp:navigation-link {"label":"Our Favorites","url":"/our-favorites/","kind":"custom","isTopLevelLink":true} /-->
                 <!-- wp:navigation-link {"label":"About Us","url":"/about-us/","kind":"custom","isTopLevelLink":true} /-->
                 <!-- wp:navigation-link {"label":"FAQ","url":"/faq/","kind":"custom","isTopLevelLink":true} /-->
             <!-- /wp:navigation -->
