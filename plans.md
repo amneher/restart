@@ -933,6 +933,8 @@ New WordPress Page (title "Our Favorites", `page.html` template) authored with H
 ## Deviation from original plan
 `ajax_scrape_url` was not built as a new endpoint — discovered `ajax_fetch_url()` / `wp_ajax_restart_registry_fetch_url` already does exactly this (scraper + affiliate convert, JSON response), reused as-is. Only addition: `fetchNonce` added to the `rrAdmin` localized object so the admin-side TinyMCE JS can call it.
 
+Tier vocabulary later changed from good/better/best to **save/spend/splurge** per user request — renamed throughout (shortcode `tier` attribute values, CSS badge classes, TinyMCE modal fields/labels, both test suites). Branch name (`feat/favorites-good-better-best`) and this plan's earlier prose still say good/better/best in places; not worth a mass rewrite, the code and tests are the source of truth.
+
 ## Todo
 - [x] Branch: `feat/favorites-good-better-best`
 - [x] `class-restart-registry-public.php`: add `tier` attribute + column-card variant to `item_shortcode()`
