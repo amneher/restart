@@ -955,3 +955,79 @@ Tier vocabulary later changed from good/better/best to **save/spend/splurge** pe
 1. **Page template**: the "our-favorites" page the user created in wp-admin had the `category-favorites` template assigned (a query-loop archive template with `inherit:true`), not the default `page.html` template. Result: the page rendered itself as a single-item query-loop card instead of showing editor content — `[restart_favorites_row]` never even had a chance to run. Fixed locally via `wp post meta update 52 _wp_page_template ''` + retitled to "Our Favorites" (was lowercase "our-favorites"). This is a one-time content-setup fix per environment, not a code change — flagging here so the same mistake isn't repeated when the real production page is created.
 
 2. **wpautop corrupting the row's grid** (real code bug, fixed in `class-restart-registry-public.php`): the pre-existing `the_content` filter (priority 8) early-expands `[restart_item]` into raw `<div>` HTML to dodge `make_clickable`. Priority 8 runs before `wpautop` (10), so when 3 `[restart_item]` tags sit back-to-back inside `[restart_favorites_row]`, wpautop saw a run of adjacent divs with no blank-line separation and inserted stray `<p>` tags between them — ballooning `.rr-favorites-row__cards` from 3 children to 9 and breaking the 3-column grid (confirmed via `document.querySelector('.rr-favorites-row__cards').children.length` before/after, and screenshots). Fix: the filter now skips `[restart_item]` occurrences nested inside `[restart_favorites_row]...[/restart_favorites_row]` (left as literal text so `wpautop`'s `shortcode_unautop()` treats the whole row as one standalone shortcode); they're expanded normally at priority 11 instead. New regression test: `tests/unit/FavoritesRowContentFilterTest.php` (5 cases, captures the real registered closure via Brain Monkey and asserts nested items are left untouched while standalone ones still expand).
+
+---
+
+# Plan: Room/tier filters + bulk-add for the Our Favorites page
+
+## What
+Add pill-button filters (by room, by tier) to the `/our-favorites/` page, and a "Add all Save/Spend/Splurge items in this room" bulk-add button per room.
+
+## Architecture
+
+### 1. New enclosing shortcode `[restart_favorites_room title="Living Room"]...[/restart_favorites_room]`
+Replaces the plain `<h2>Living Room</h2>` heading editors currently type by hand. Wraps a run of `[restart_favorites_row]` blocks and renders:
+```html
+<section class="rr-favorites-room" data-room="Living Room">
+  <div class="rr-favorites-room__header">
+    <h2 class="rr-favorites-room__title">Living Room</h2>
+    <div class="rr-favorites-room__bulk-actions">
+      <button class="rr-bulk-add" data-tier="save">Add all Save items</button>
+      <button class="rr-bulk-add" data-tier="spend">Add all Spend items</button>
+      <button class="rr-bulk-add" data-tier="splurge">Add all Splurge items</button>
+    </div>
+  </div>
+  <div class="rr-favorites-room__rows">...do_shortcode($content)...</div>
+</section>
+```
+Gives filtering a real DOM boundary (`data-room`) and gives the bulk-add buttons a natural, room-scoped home. Follows the same `the_content` priority-8 protection pattern already built for `[restart_favorites_row]` (nested `[restart_item]`/`[restart_favorites_row]` must stay literal text through that filter — extend the existing preg_split protection to also match `[restart_favorites_room]...[/restart_favorites_room]`).
+
+### 2. `item_shortcode()` — add `data-tier` to the quick-add button
+One-line addition: `data-tier="<?php echo esc_attr($tier); ?>"` on the existing `.rr-quick-add` button, so the bulk-add handler can select "all quick-add buttons in this room with data-tier=save" without touching unrelated markup.
+
+### 3. Filter bar (new shortcode `[restart_favorites_filters]`, placed once at the top of the page content by the editor)
+Renders empty containers (`<div class="rr-favorites-filters" data-room-pills data-tier-pills>`); JS populates the room pills at runtime by scanning `.rr-favorites-room[data-room]` on the page (so the pill list always matches whatever rooms are actually authored — no hardcoded room list to keep in sync). Tier pills are static (Save/Spend/Splurge, always the same three).
+
+Behavior: pill buttons, multi-select, all-on by default.
+- Deselecting a room pill hides that `.rr-favorites-room` section entirely.
+- Deselecting a tier pill hides `.rr-article-item--tier[data-tier=X]` cards across all visible rooms (row title stays even if some/all of its cards are hidden — acceptable empty state, no extra handling needed for v1).
+- Pure client-side (`display:none` toggling), no page reload, no server round-trip.
+
+### 4. Bulk-add JS
+Refactor the existing single-item AJAX call (inline in the `.rr-quick-add` click handler in `restart-registry-public.js`) into a named function `addItemToRegistry(data)` returning a Promise, so both the single button and the new bulk handler share one code path — no duplicated AJAX/error logic.
+
+New click handler for `.rr-bulk-add`:
+1. Not logged in → open the existing `rr-qa-auth-modal` (same one the single button uses), stop.
+2. Logged in, no registry → open the existing `rr-qa-no-registry-modal`, stop.
+3. Logged in with a registry → collect all `.rr-quick-add[data-tier="<tier>"]` buttons within the closest `.rr-favorites-room`, call `addItemToRegistry()` for each (sequential, small stagger to avoid hammering the endpoint), track success/failure, update button text to a summary ("Added 3 items" / "Added 2 of 3 — 1 failed") matching the existing visual feedback pattern (temporary text swap + `--added` class, revert after ~2.5s).
+
+### 5. TinyMCE
+New "Insert Favorites Room" button: inserts an empty `[restart_favorites_room title="..."][/restart_favorites_room]` shell (title prompted via a small modal, same pattern as other buttons) that the editor then fills in by using the existing "Insert Favorites Row" button between the tags. New "Insert Favorites Filters" button: inserts the bare `[restart_favorites_filters]` shortcode (no modal needed, self-closing, no attributes).
+
+### 6. CSS
+`.rr-favorites-room` header layout (title + bulk-action buttons, wraps on mobile), `.rr-bulk-add` button style (secondary, consistent with existing `.rr-button-secondary`), `.rr-favorites-filters` pill-button bar (room pills row + tier pills row, active/inactive states using the existing teal/dark palette).
+
+## What's NOT in scope
+- Persisting filter state (URL params, localStorage) — resets on page reload, v1 is session-only
+- Server-side filtering/pagination — page is expected to stay small enough for a pure client-side approach
+- Undo for bulk-add (matches existing single-add behavior, which also has no undo)
+- Migrating the room shortcode's existing behavior to also affect `/category/guides/favorites/` (unrelated, untouched)
+
+## Manual re-authoring required
+The one sample room already on the local `/our-favorites/` page (`Living Room` / `Sofa`) needs to be rewritten to use `[restart_favorites_room]` instead of the plain `<h2>` — will do this as part of manual QA, same as last time.
+
+## Todo
+- [ ] Branch: `feat/favorites-filters-bulk-add`
+- [ ] `class-restart-registry-public.php`: add `restart_favorites_room` enclosing shortcode
+- [ ] `class-restart-registry-public.php`: add `restart_favorites_filters` shortcode (static container markup)
+- [ ] `class-restart-registry-public.php`: add `data-tier` attribute to the `.rr-quick-add` button in `item_shortcode()`
+- [ ] `class-restart-registry-public.php`: extend the `the_content` priority-8 protection regex to also cover `[restart_favorites_room]...[/restart_favorites_room]`
+- [ ] `restart-registry-public.js`: extract `addItemToRegistry(data)` helper from the existing `.rr-quick-add` handler
+- [ ] `restart-registry-public.js`: `.rr-bulk-add` click handler (auth/no-registry guard, sequential add loop, summary feedback)
+- [ ] `restart-registry-public.js`: filter bar — populate room pills from DOM, wire tier pills (static), toggle visibility on click
+- [ ] `restart-registry-tinymce.js`: "Insert Favorites Room" button (title-prompt modal, inserts shell) + "Insert Favorites Filters" button (no modal, inserts bare shortcode)
+- [ ] `restart-registry-public.css`: room header layout, bulk-add button style, filter pill bar
+- [ ] Tests: PHP unit for `restart_favorites_room` rendering + nesting protection regex; PHP unit for `data-tier` attribute presence; JS tests for filter pill toggling, bulk-add auth guards, bulk-add success/partial-failure summary, `addItemToRegistry()` extraction (single-button behavior unchanged)
+- [ ] `make theme-test` and `make plugin-test` green
+- [ ] Manual QA on local Docker stack: re-author the sample room with `[restart_favorites_room]`, add a second room, verify room/tier pill filtering, verify bulk-add (logged out → modal, logged in → items added) via screenshots
+- [ ] Close out (link issue/PR once opened)
