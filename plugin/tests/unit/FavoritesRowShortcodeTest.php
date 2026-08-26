@@ -116,4 +116,82 @@ class FavoritesRowShortcodeTest extends TestCase {
 
         $this->assertStringContainsString('rr-favorites-row__cards"></div>', $html);
     }
+
+    public function test_tier_card_has_data_tier_attribute(): void {
+        $html = $this->public_class()->item_shortcode(['title' => 'Item', 'tier' => 'spend']);
+
+        $this->assertMatchesRegularExpression('/class="rr-article-item rr-article-item--tier" data-tier="spend"/', $html);
+    }
+
+    public function test_no_data_tier_attribute_when_tier_absent(): void {
+        $html = $this->public_class()->item_shortcode(['title' => 'Item']);
+
+        $this->assertStringNotContainsString('data-tier', $html);
+    }
+
+    // ── [restart_favorites_room] ────────────────────────────────────────────
+
+    public function test_room_returns_empty_string_when_title_missing(): void {
+        $html = $this->public_class()->favorites_room_shortcode([], '<div>rows</div>');
+
+        $this->assertSame('', $html);
+    }
+
+    public function test_room_wraps_content_with_data_room_and_title(): void {
+        $html = $this->public_class()->favorites_room_shortcode(['title' => 'Living Room'], '<div>rows</div>');
+
+        $this->assertStringContainsString('rr-favorites-room', $html);
+        $this->assertStringContainsString('data-room="Living Room"', $html);
+        $this->assertStringContainsString('rr-favorites-room__title', $html);
+        $this->assertStringContainsString('Living Room', $html);
+        $this->assertStringContainsString('rr-favorites-room__rows', $html);
+        $this->assertStringContainsString('<div>rows</div>', $html);
+    }
+
+    public function test_room_renders_one_bulk_add_button_per_tier(): void {
+        $html = $this->public_class()->favorites_room_shortcode(['title' => 'Living Room'], '');
+
+        foreach (['save', 'spend', 'splurge'] as $tier) {
+            $this->assertStringContainsString('rr-bulk-add', $html);
+            $this->assertStringContainsString('data-tier="' . $tier . '"', $html);
+            $this->assertStringContainsString('Add all ' . ucfirst($tier) . ' items', $html);
+        }
+    }
+
+    public function test_room_escapes_title(): void {
+        $html = $this->public_class()->favorites_room_shortcode(['title' => '<script>x</script>'], '');
+
+        $this->assertStringNotContainsString('<script>x</script>', $html);
+    }
+
+    public function test_room_null_content_does_not_error(): void {
+        $html = $this->public_class()->favorites_room_shortcode(['title' => 'Living Room'], null);
+
+        $this->assertStringContainsString('rr-favorites-room__rows"></div>', $html);
+    }
+
+    // ── [restart_favorites_filters] ─────────────────────────────────────────
+
+    public function test_filters_renders_room_pill_container_and_tier_pills(): void {
+        $html = $this->public_class()->favorites_filters_shortcode();
+
+        $this->assertStringContainsString('rr-favorites-filters', $html);
+        $this->assertStringContainsString('data-room-pills', $html);
+        foreach (['save', 'spend', 'splurge'] as $tier) {
+            $this->assertStringContainsString('data-tier-pill="' . $tier . '"', $html);
+            $this->assertStringContainsString('>' . ucfirst($tier) . '<', $html);
+        }
+    }
+
+    public function test_filters_tier_pills_start_active(): void {
+        $html = $this->public_class()->favorites_filters_shortcode();
+
+        $this->assertSame(3, substr_count($html, 'rr-favorites-filters__pill is-active'));
+    }
+
+    public function test_filters_room_pill_container_starts_empty(): void {
+        $html = $this->public_class()->favorites_filters_shortcode();
+
+        $this->assertMatchesRegularExpression('/data-room-pills><\/div>/', $html);
+    }
 }

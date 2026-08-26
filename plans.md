@@ -1016,18 +1016,22 @@ New "Insert Favorites Room" button: inserts an empty `[restart_favorites_room ti
 ## Manual re-authoring required
 The one sample room already on the local `/our-favorites/` page (`Living Room` / `Sofa`) needs to be rewritten to use `[restart_favorites_room]` instead of the plain `<h2>` — will do this as part of manual QA, same as last time.
 
+## Deviation from original plan
+The `the_content` priority-8 protection regex did **not** need extending for `[restart_favorites_room]`. It already matches `[restart_favorites_row]...[/restart_favorites_row]` anywhere in the content string regardless of what wraps it, so nested `[restart_item]` tags stay protected transitively through any depth of `[restart_favorites_room]` nesting. Confirmed via live QA (`.rr-favorites-row__cards` children count == 5, matching the known-correct 3-cards + 2-modals shape, no stray `<p>` corruption) — no code change was needed there.
+
 ## Todo
-- [ ] Branch: `feat/favorites-filters-bulk-add`
-- [ ] `class-restart-registry-public.php`: add `restart_favorites_room` enclosing shortcode
-- [ ] `class-restart-registry-public.php`: add `restart_favorites_filters` shortcode (static container markup)
-- [ ] `class-restart-registry-public.php`: add `data-tier` attribute to the `.rr-quick-add` button in `item_shortcode()`
-- [ ] `class-restart-registry-public.php`: extend the `the_content` priority-8 protection regex to also cover `[restart_favorites_room]...[/restart_favorites_room]`
-- [ ] `restart-registry-public.js`: extract `addItemToRegistry(data)` helper from the existing `.rr-quick-add` handler
-- [ ] `restart-registry-public.js`: `.rr-bulk-add` click handler (auth/no-registry guard, sequential add loop, summary feedback)
-- [ ] `restart-registry-public.js`: filter bar — populate room pills from DOM, wire tier pills (static), toggle visibility on click
-- [ ] `restart-registry-tinymce.js`: "Insert Favorites Room" button (title-prompt modal, inserts shell) + "Insert Favorites Filters" button (no modal, inserts bare shortcode)
-- [ ] `restart-registry-public.css`: room header layout, bulk-add button style, filter pill bar
-- [ ] Tests: PHP unit for `restart_favorites_room` rendering + nesting protection regex; PHP unit for `data-tier` attribute presence; JS tests for filter pill toggling, bulk-add auth guards, bulk-add success/partial-failure summary, `addItemToRegistry()` extraction (single-button behavior unchanged)
-- [ ] `make theme-test` and `make plugin-test` green
-- [ ] Manual QA on local Docker stack: re-author the sample room with `[restart_favorites_room]`, add a second room, verify room/tier pill filtering, verify bulk-add (logged out → modal, logged in → items added) via screenshots
+- [x] Branch: `feat/favorites-filters-bulk-add`
+- [x] `class-restart-registry-public.php`: add `restart_favorites_room` enclosing shortcode
+- [x] `class-restart-registry-public.php`: add `restart_favorites_filters` shortcode (static container markup)
+- [x] `class-restart-registry-public.php`: add `data-tier` attribute to the `.rr-quick-add` button and the `.rr-article-item--tier` card wrapper in `item_shortcode()` (card wrapper needed too, for the tier-pill filter to hide whole cards)
+- [x] `class-restart-registry-public.php`: confirmed existing `the_content` priority-8 protection regex already covers nesting inside `[restart_favorites_room]` — no change needed (see deviation note)
+- [x] `restart-registry-public.js`: extract `addItemToRegistry(data)` helper from the existing `.rr-quick-add` handler
+- [x] `restart-registry-public.js`: `.rr-bulk-add` click handler (auth/no-registry guard, sequential add loop, summary feedback)
+- [x] `restart-registry-public.js`: filter bar — populate room pills from DOM, wire tier pills (static), toggle visibility on click
+- [x] `restart-registry-tinymce.js`: "Insert Favorites Room" button (title-prompt modal, inserts shell) + "Insert Favorites Filters" button (no modal, inserts bare shortcode)
+- [x] `restart-registry-public.css`: room header layout, bulk-add button style, filter pill bar
+- [x] Tests: `FavoritesRowShortcodeTest.php` extended (19 total: tier `data-tier`, room shortcode, filters shortcode); `TinyMCEInserterTest.php` extended for the two new buttons; `restart-registry-tinymce.test.js` extended (33 total: room/filters button tests); new `restart-registry-favorites-public.test.js` (18 tests: filter pill toggling scoped correctly across rooms, bulk-add auth/no-registry guards, bulk-add success/partial-failure summary + room-scoping + already-added skip, single quick-add regression checks)
+- [x] `make theme-test` and `make plugin-test` green (305 PHP / 124 JS plugin; 45 PHP / 87 JS theme)
+- [x] Manual QA on local Docker stack: re-authored the sample content with two rooms (Living Room, Bathroom) using `[restart_favorites_room]` + `[restart_favorites_filters]`; verified room-pill filtering (hides section), tier-pill filtering (hides matching cards across all rooms), and bulk-add end-to-end logged out (auth modal with correct item count) and logged in with a real registry (items actually added via the live AJAX endpoint, confirmed via button state + screenshots) at desktop and mobile widths
+- [ ] Close out (link issue/PR once opened)
 - [ ] Close out (link issue/PR once opened)

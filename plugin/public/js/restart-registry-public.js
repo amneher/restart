@@ -1005,7 +1005,32 @@
         if (open) closeQAModal(open.id);
     });
 
-    // ── Add-to-registry click handler ─────────────────────────────────────
+    // ── Add-to-registry: shared AJAX call ───────────────────────────────────
+    // Used by both the single .rr-quick-add button and the .rr-bulk-add
+    // "Add all <tier> items" handler below, so there's one code path for the
+    // actual network call.
+
+    function addItemToRegistry(data) {
+        return fetch(restartRegistry.ajaxUrl, {
+            method: 'POST',
+            body: new URLSearchParams(Object.assign({
+                action: 'restart_registry_quick_add',
+                nonce:  restartRegistry.nonce,
+            }, data)),
+        }).then(function (r) { return r.json(); });
+    }
+
+    function openAuthModal(itemLabel) {
+        var nameEl = document.querySelector('#rr-qa-auth-modal .rr-qa-modal__item-name');
+        if (nameEl) nameEl.textContent = itemLabel;
+        var loginLink    = document.getElementById('rr-qa-login-link');
+        var registerLink = document.getElementById('rr-qa-register-link');
+        if (loginLink)    loginLink.href    = restartRegistry.loginUrl;
+        if (registerLink) registerLink.href = restartRegistry.createRegistryUrl;
+        openQAModal('rr-qa-auth-modal');
+    }
+
+    // ── Add-to-registry click handler (single item) ─────────────────────────
 
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('.rr-quick-add');
@@ -1015,13 +1040,7 @@
 
         // Not logged in → auth modal
         if (!restartRegistry.isLoggedIn) {
-            var nameEl = document.querySelector('#rr-qa-auth-modal .rr-qa-modal__item-name');
-            if (nameEl) nameEl.textContent = name;
-            var loginLink    = document.getElementById('rr-qa-login-link');
-            var registerLink = document.getElementById('rr-qa-register-link');
-            if (loginLink)    loginLink.href    = restartRegistry.loginUrl;
-            if (registerLink) registerLink.href = restartRegistry.createRegistryUrl;
-            openQAModal('rr-qa-auth-modal');
+            openAuthModal(name);
             return;
         }
 
@@ -1036,21 +1055,15 @@
         btn.disabled    = true;
         btn.textContent = restartRegistry.strings.loading;
 
-        fetch(restartRegistry.ajaxUrl, {
-            method: 'POST',
-            body: new URLSearchParams({
-                action:      'restart_registry_quick_add',
-                nonce:       restartRegistry.nonce,
-                name:        name,
-                url:         btn.dataset.url         || '',
-                price:       btn.dataset.price        || '',
-                image_url:   btn.dataset.imageUrl     || '',
-                description: btn.dataset.description  || '',
-                notes:       btn.dataset.notes        || '',
-                quantity:    btn.dataset.quantity      || '1',
-            }),
+        addItemToRegistry({
+            name:        name,
+            url:         btn.dataset.url         || '',
+            price:       btn.dataset.price        || '',
+            image_url:   btn.dataset.imageUrl     || '',
+            description: btn.dataset.description  || '',
+            notes:       btn.dataset.notes        || '',
+            quantity:    btn.dataset.quantity      || '1',
         })
-        .then(function (r) { return r.json(); })
         .then(function (response) {
             if (response.success) {
                 btn.textContent = restartRegistry.strings.added;
@@ -1076,6 +1089,134 @@
             alert(restartRegistry.strings.error);
         });
     });
+
+    // ── Bulk-add click handler ("Add all <tier> items in this room") ───────
+
+    document.addEventListener('click', function (e) {
+        var bulkBtn = e.target.closest('.rr-bulk-add');
+        if (!bulkBtn || bulkBtn.disabled) return;
+
+        var room = bulkBtn.closest('.rr-favorites-room');
+        var tier = bulkBtn.dataset.tier || '';
+        if (!room || !tier) return;
+
+        var itemBtns = Array.prototype.slice.call(
+            room.querySelectorAll('.rr-quick-add[data-tier="' + tier + '"]:not(.rr-quick-add--added)')
+        );
+        if (!itemBtns.length) return;
+
+        if (!restartRegistry.isLoggedIn) {
+            openAuthModal(itemBtns.length + ' items');
+            return;
+        }
+        if (!restartRegistry.hasRegistry) {
+            openQAModal('rr-qa-no-registry-modal');
+            return;
+        }
+
+        var originalText = bulkBtn.textContent;
+        bulkBtn.disabled    = true;
+        bulkBtn.textContent = restartRegistry.strings.loading;
+
+        var succeeded = 0;
+        var failed    = 0;
+
+        function addOne(btn) {
+            return addItemToRegistry({
+                name:        btn.dataset.name        || '',
+                url:         btn.dataset.url         || '',
+                price:       btn.dataset.price        || '',
+                image_url:   btn.dataset.imageUrl     || '',
+                description: btn.dataset.description  || '',
+                notes:       btn.dataset.notes        || '',
+                quantity:    btn.dataset.quantity      || '1',
+            })
+            .then(function (response) {
+                if (response.success) {
+                    succeeded++;
+                    btn.textContent = restartRegistry.strings.added;
+                    btn.classList.add('rr-quick-add--added');
+                    btn.disabled = true;
+                } else {
+                    failed++;
+                }
+            })
+            .catch(function () {
+                failed++;
+            });
+        }
+
+        itemBtns.reduce(function (chain, btn) {
+            return chain.then(function () { return addOne(btn); });
+        }, Promise.resolve())
+        .then(function () {
+            bulkBtn.textContent = failed === 0
+                ? 'Added ' + succeeded + ' items'
+                : 'Added ' + succeeded + ' of ' + (succeeded + failed) + ' — ' + failed + ' failed';
+            bulkBtn.classList.add('rr-bulk-add--added');
+            setTimeout(function () {
+                bulkBtn.textContent = originalText;
+                bulkBtn.classList.remove('rr-bulk-add--added');
+                bulkBtn.disabled = false;
+            }, 3500);
+        });
+    });
+
+    // ── [restart_favorites_filters] room/tier pill filters ──────────────────
+    // Pure client-side, session-only (resets on reload): pills toggle
+    // display:none on matching sections. Room pills are built at runtime from
+    // whatever [restart_favorites_room] sections are actually on the page.
+
+    (function () {
+        var bar = document.querySelector('.rr-favorites-filters');
+        if (!bar) return;
+
+        var roomPillsEl = bar.querySelector('[data-room-pills]');
+        var tierPillsEl = bar.querySelector('[data-tier-pills]');
+        var rooms       = Array.prototype.slice.call(document.querySelectorAll('.rr-favorites-room[data-room]'));
+
+        if (roomPillsEl) {
+            rooms.forEach(function (room) {
+                var name = room.dataset.room;
+                var pill = document.createElement('button');
+                pill.type = 'button';
+                pill.className = 'rr-favorites-filters__pill is-active';
+                pill.dataset.roomPill = name;
+                pill.textContent = name;
+                roomPillsEl.appendChild(pill);
+            });
+        }
+
+        function applyRoomFilter(pill) {
+            var name   = pill.dataset.roomPill;
+            var active = pill.classList.toggle('is-active');
+            rooms.forEach(function (room) {
+                if (room.dataset.room !== name) return;
+                room.style.display = active ? '' : 'none';
+            });
+        }
+
+        function applyTierFilter(pill) {
+            var tier   = pill.dataset.tierPill;
+            var active = pill.classList.toggle('is-active');
+            var cards  = document.querySelectorAll('.rr-article-item--tier[data-tier="' + tier + '"]');
+            cards.forEach(function (card) {
+                card.style.display = active ? '' : 'none';
+            });
+        }
+
+        bar.addEventListener('click', function (e) {
+            var roomPill = e.target.closest('[data-room-pill]');
+            if (roomPill) {
+                applyRoomFilter(roomPill);
+                return;
+            }
+            var tierPill = e.target.closest('[data-tier-pill]');
+            if (tierPill) {
+                applyTierFilter(tierPill);
+            }
+        });
+    }());
 
     // ── Post-purchase edit window (purchaser, token-based) ────────────────────
 

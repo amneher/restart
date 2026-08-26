@@ -1375,6 +1375,88 @@ body.rr-modal-open { overflow: hidden; }
     border-color: var(--rr-teal);
 }
 
+/* ── [restart_favorites_room] room section ───────────────────────────────── */
+.rr-favorites-room {
+    margin: 56px 0;
+}
+.rr-favorites-room + .rr-favorites-room {
+    padding-top: 40px;
+    border-top: 1px solid var(--rr-border);
+}
+
+.rr-favorites-room__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.rr-favorites-room__title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--rr-dark);
+    font-family: var(--rr-font-ui);
+}
+
+.rr-favorites-room__bulk-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rr-bulk-add--added {
+    background: var(--rr-teal);
+    color: #fff;
+}
+
+/* ── [restart_favorites_filters] room/tier pill bar ──────────────────────── */
+.rr-favorites-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--rr-border);
+}
+
+.rr-favorites-filters__group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rr-favorites-filters__pill {
+    padding: 6px 16px;
+    background: #fff;
+    color: var(--rr-mid);
+    border: 1px solid var(--rr-border);
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: var(--rr-font-ui);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.rr-favorites-filters__pill:hover {
+    border-color: var(--rr-teal);
+}
+
+.rr-favorites-filters__pill.is-active {
+    background: var(--rr-dark);
+    color: #fff;
+    border-color: var(--rr-dark);
+}
+
+.rr-favorites-filters__group--tiers .rr-favorites-filters__pill.is-active {
+    background: var(--rr-teal);
+    border-color: var(--rr-teal);
+}
+
 /* ── [restart_favorites_row] Good/Better/Best row ───────────────────────── */
 .rr-favorites-row {
     margin: 40px 0;
