@@ -48,15 +48,30 @@ class Restart_Registry_Public
         // strip_tags() on the raw shortcode string restores clean attribute values
         // before the shortcode parser sees them, regardless of when the corruption
         // occurred (save-time Gutenberg linkification or render-time make_clickable).
+        //
+        // [restart_item] tags nested inside [restart_favorites_row]...[/restart_favorites_row]
+        // are left untouched here: early-expanding them to raw <div> markup at priority 8 — before
+        // wpautop (priority 10) runs — makes wpautop treat the concatenated card divs as loose HTML
+        // and insert stray <p> tags between them, corrupting the row's CSS grid. Leaving them as plain
+        // "[restart_item ...]" text lets wpautop's shortcode_unautop() recognise and skip the whole
+        // enclosing shortcode untouched; they're then expanded normally by do_shortcode() at priority 11
+        // (favorites_row_shortcode() also runs do_shortcode() on its own content as a second pass).
         add_filter('the_content', function (string $content): string {
             if (!str_contains($content, '[restart_item')) {
                 return $content;
             }
-            return preg_replace_callback(
-                '/\[restart_item\b.*?\]/s',
-                fn($m) => do_shortcode(strip_tags($m[0])),
-                $content
-            );
+            $parts = preg_split('/(\[restart_favorites_row\b.*?\[\/restart_favorites_row\])/s', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
+            foreach ($parts as $i => $part) {
+                if ($i % 2 === 1) {
+                    continue; // odd indices are captured [restart_favorites_row]...[/restart_favorites_row] blocks
+                }
+                $parts[$i] = preg_replace_callback(
+                    '/\[restart_item\b.*?\]/s',
+                    fn($m) => do_shortcode(strip_tags($m[0])),
+                    $part
+                );
+            }
+            return implode('', $parts);
         }, 8);
 
         add_action('wp_ajax_restart_registry_add_item',              [$this, 'ajax_add_item']);
