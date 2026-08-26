@@ -1437,9 +1437,9 @@ body.rr-modal-open { overflow: hidden; }
     text-transform: uppercase;
     color: #fff;
 }
-.rr-article-item__tier-badge--good   { background: var(--rr-teal); }
-.rr-article-item__tier-badge--better { background: var(--rr-dark); }
-.rr-article-item__tier-badge--best   { background: #ebd060; color: var(--rr-dark); }
+.rr-article-item__tier-badge--save    { background: var(--rr-teal); }
+.rr-article-item__tier-badge--spend   { background: var(--rr-dark); }
+.rr-article-item__tier-badge--splurge { background: #ebd060; color: var(--rr-dark); }
 
 /* ── Quick-add modals ────────────────────────────────────────────────────── */
 .rr-qa-modal__item-name {

@@ -1732,16 +1732,16 @@ class Restart_Registry_Public
     private static bool $quick_add_modals_printed = false;
 
     /** Valid values for the `tier` attribute — used by [restart_favorites_row]. */
-    private const FAVORITES_TIERS = ['good', 'better', 'best'];
+    private const FAVORITES_TIERS = ['save', 'spend', 'splurge'];
 
     /**
      * [restart_item title="…" price="…" image="…" images="url1,url2" url="…"
-     *               description="…" retailer="…" notes="…" quantity="1" tier="good|better|best"]
+     *               description="…" retailer="…" notes="…" quantity="1" tier="save|spend|splurge"]
      *
      * Renders a product card with image(s), details, a shop link, and an
      * "Add to My Registry" button. Multiple images render as a simple carousel.
      *
-     * `tier` is optional. When set to good/better/best (used inside
+     * `tier` is optional. When set to save/spend/splurge (used inside
      * [restart_favorites_row]), the card renders as a compact column variant
      * with a tier badge, sized for a 3-up grid.
      */
@@ -1873,12 +1873,12 @@ class Restart_Registry_Public
 
     /**
      * [restart_favorites_row title="Sofa"]
-     *   [restart_item tier="good" ...]
-     *   [restart_item tier="better" ...]
-     *   [restart_item tier="best" ...]
+     *   [restart_item tier="save" ...]
+     *   [restart_item tier="spend" ...]
+     *   [restart_item tier="splurge" ...]
      * [/restart_favorites_row]
      *
-     * Wraps a general item's Good/Better/Best product cards in a labeled,
+     * Wraps a general item's Save/Spend/Splurge product cards in a labeled,
      * 3-column row for the Our Favorites guide.
      */
     public function favorites_row_shortcode(array $atts, ?string $content = null): string

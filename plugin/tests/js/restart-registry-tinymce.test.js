@@ -229,14 +229,14 @@ describe('Insert Favorites Row button', () => {
 
     test('opens windowManager with the favorites row form', () => {
         expect(mockEditor.windowManager.open).toHaveBeenCalled();
-        expect(lastWindowConfig.title).toBe('Insert Favorites Row (Good / Better / Best)');
+        expect(lastWindowConfig.title).toBe('Insert Favorites Row (Save / Spend / Splurge)');
         expect(Array.isArray(lastWindowConfig.body)).toBe(true);
     });
 
-    test('form contains item_title plus good/better/best field sets', () => {
+    test('form contains item_title plus save/spend/splurge field sets', () => {
         const names = lastWindowConfig.body.map((f) => f.name).filter(Boolean);
         expect(names).toContain('item_title');
-        ['good', 'better', 'best'].forEach((tier) => {
+        ['save', 'spend', 'splurge'].forEach((tier) => {
             ['url', 'title', 'price', 'image', 'retailer', 'description'].forEach((field) => {
                 expect(names).toContain(`${tier}_${field}`);
             });
@@ -244,14 +244,14 @@ describe('Insert Favorites Row button', () => {
     });
 
     test('shows alert and does not insert when General Item Title is empty', () => {
-        submit({ item_title: '', good_title: 'Sofa A' });
+        submit({ item_title: '', save_title: 'Sofa A' });
 
         expect(mockEditor.windowManager.alert).toHaveBeenCalled();
         expect(mockEditor.insertContent).not.toHaveBeenCalled();
     });
 
     test('shows alert and does not insert when no tier has a title', () => {
-        submit({ item_title: 'Sofa', good_title: '', better_title: '', best_title: '' });
+        submit({ item_title: 'Sofa', save_title: '', spend_title: '', splurge_title: '' });
 
         expect(mockEditor.windowManager.alert).toHaveBeenCalled();
         expect(mockEditor.insertContent).not.toHaveBeenCalled();
@@ -259,40 +259,40 @@ describe('Insert Favorites Row button', () => {
 
     test('inserts a restart_favorites_row wrapping one restart_item per filled tier', () => {
         submit({
-            item_title:   'Sofa',
-            good_title:   'Budget Sofa',
-            good_price:   '299',
-            good_url:     'https://example.com/budget-sofa',
-            better_title: 'Mid Sofa',
-            better_price: '599',
-            best_title:   'Luxury Sofa',
-            best_price:   '1299',
+            item_title:    'Sofa',
+            save_title:    'Budget Sofa',
+            save_price:    '299',
+            save_url:      'https://example.com/budget-sofa',
+            spend_title:   'Mid Sofa',
+            spend_price:   '599',
+            splurge_title: 'Luxury Sofa',
+            splurge_price: '1299',
         });
 
         expect(lastInserted).toContain('[restart_favorites_row title="Sofa"]');
-        expect(lastInserted).toContain('[restart_item tier="good" title="Budget Sofa" price="299" url="https://example.com/budget-sofa"]');
-        expect(lastInserted).toContain('[restart_item tier="better" title="Mid Sofa" price="599"]');
-        expect(lastInserted).toContain('[restart_item tier="best" title="Luxury Sofa" price="1299"]');
+        expect(lastInserted).toContain('[restart_item tier="save" title="Budget Sofa" price="299" url="https://example.com/budget-sofa"]');
+        expect(lastInserted).toContain('[restart_item tier="spend" title="Mid Sofa" price="599"]');
+        expect(lastInserted).toContain('[restart_item tier="splurge" title="Luxury Sofa" price="1299"]');
         expect(lastInserted).toMatch(/\[\/restart_favorites_row\]$/);
     });
 
     test('omits tiers with no title', () => {
-        submit({ item_title: 'Sofa', good_title: 'Only Good Option' });
+        submit({ item_title: 'Sofa', save_title: 'Only Save Option' });
 
-        expect(lastInserted).toContain('tier="good"');
-        expect(lastInserted).not.toContain('tier="better"');
-        expect(lastInserted).not.toContain('tier="best"');
+        expect(lastInserted).toContain('tier="save"');
+        expect(lastInserted).not.toContain('tier="spend"');
+        expect(lastInserted).not.toContain('tier="splurge"');
     });
 
     test('escapes double-quotes and strips brackets in the row title', () => {
-        submit({ item_title: 'Say "Hi" [now]', good_title: 'Option' });
+        submit({ item_title: 'Say "Hi" [now]', save_title: 'Option' });
 
         expect(lastInserted).toContain('[restart_favorites_row title="Say &quot;Hi&quot; now"]');
     });
 
     describe('Fetch product info button', () => {
         test('shows alert and does not call fetch when URL is empty', () => {
-            const fetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'good_url');
+            const fetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'save_url');
             global.fetch = jest.fn();
 
             fetchBtn.onclick.call(fakeButtonControl());
@@ -302,8 +302,8 @@ describe('Insert Favorites Row button', () => {
         });
 
         test('calls the restart_registry_fetch_url AJAX action with the field URL', () => {
-            const fetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'good_url');
-            lastWin.find('#good_url')[0].value('https://example.com/sofa');
+            const fetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'save_url');
+            lastWin.find('#save_url')[0].value('https://example.com/sofa');
             global.fetch = jest.fn(() => new Promise(() => {})); // never resolves — just inspect the call
 
             fetchBtn.onclick.call(fakeButtonControl());
@@ -318,8 +318,8 @@ describe('Insert Favorites Row button', () => {
         });
 
         test('populates sibling fields on a successful fetch', async () => {
-            const fetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'good_url');
-            lastWin.find('#good_url')[0].value('https://example.com/sofa');
+            const fetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'save_url');
+            lastWin.find('#save_url')[0].value('https://example.com/sofa');
             global.fetch = jest.fn().mockResolvedValue({
                 json: () => Promise.resolve({
                     success: true,
@@ -337,17 +337,17 @@ describe('Insert Favorites Row button', () => {
             fetchBtn.onclick.call(btn);
             await flushPromises();
 
-            expect(lastWin.find('#good_title')[0].value()).toBe('Comfy Sofa');
-            expect(lastWin.find('#good_price')[0].value()).toBe('399.00');
-            expect(lastWin.find('#good_image')[0].value()).toBe('https://example.com/sofa.jpg');
-            expect(lastWin.find('#good_retailer')[0].value()).toBe('Example Shop');
-            expect(lastWin.find('#good_description')[0].value()).toBe('A comfy sofa');
+            expect(lastWin.find('#save_title')[0].value()).toBe('Comfy Sofa');
+            expect(lastWin.find('#save_price')[0].value()).toBe('399.00');
+            expect(lastWin.find('#save_image')[0].value()).toBe('https://example.com/sofa.jpg');
+            expect(lastWin.find('#save_retailer')[0].value()).toBe('Example Shop');
+            expect(lastWin.find('#save_description')[0].value()).toBe('A comfy sofa');
             expect(btn.disabled).toHaveBeenCalledWith(false);
         });
 
         test('shows alert and re-enables the button when the fetch fails', async () => {
-            const fetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'good_url');
-            lastWin.find('#good_url')[0].value('https://example.com/sofa');
+            const fetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'save_url');
+            lastWin.find('#save_url')[0].value('https://example.com/sofa');
             global.fetch = jest.fn().mockRejectedValue(new Error('network'));
 
             const btn = fakeButtonControl();
@@ -359,18 +359,18 @@ describe('Insert Favorites Row button', () => {
         });
 
         test('fetching for one tier does not touch another tier\'s fields', async () => {
-            const goodFetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'good_url');
-            lastWin.find('#good_url')[0].value('https://example.com/sofa');
+            const saveFetchBtn = findFetchButtonAfter(lastWindowConfig.body, 'save_url');
+            lastWin.find('#save_url')[0].value('https://example.com/sofa');
             global.fetch = jest.fn().mockResolvedValue({
-                json: () => Promise.resolve({ success: true, data: { name: 'Good Sofa' } }),
+                json: () => Promise.resolve({ success: true, data: { name: 'Save Sofa' } }),
             });
 
-            goodFetchBtn.onclick.call(fakeButtonControl());
+            saveFetchBtn.onclick.call(fakeButtonControl());
             await flushPromises();
 
-            expect(lastWin.find('#good_title')[0].value()).toBe('Good Sofa');
-            expect(lastWin.find('#better_title')[0].value()).toBe('');
-            expect(lastWin.find('#best_title')[0].value()).toBe('');
+            expect(lastWin.find('#save_title')[0].value()).toBe('Save Sofa');
+            expect(lastWin.find('#spend_title')[0].value()).toBe('');
+            expect(lastWin.find('#splurge_title')[0].value()).toBe('');
         });
     });
 });

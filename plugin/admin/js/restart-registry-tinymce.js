@@ -125,7 +125,7 @@
         editor.addButton('restart_favorites_row', {
             text: 'Insert Favorites Row',
             icon: false,
-            tooltip: 'Insert a Good/Better/Best product row for the Our Favorites page',
+            tooltip: 'Insert a Save/Spend/Splurge product row for the Our Favorites page',
             onclick: function () {
                 var win; // assigned below; referenced by the Fetch button closures, which only run after the modal is open
 
@@ -172,13 +172,13 @@
                 var body = [
                     { type: 'textbox', name: 'item_title', label: 'General Item Title * (e.g. "Sofa")' },
                 ].concat(
-                    tierSection('good', 'GOOD'),
-                    tierSection('better', 'BETTER'),
-                    tierSection('best', 'BEST')
+                    tierSection('save', 'SAVE'),
+                    tierSection('spend', 'SPEND'),
+                    tierSection('splurge', 'SPLURGE')
                 );
 
                 win = editor.windowManager.open({
-                    title: 'Insert Favorites Row (Good / Better / Best)',
+                    title: 'Insert Favorites Row (Save / Spend / Splurge)',
                     minWidth: 520,
                     minHeight: 560,
                     body: body,
@@ -191,7 +191,7 @@
                             return false;
                         }
 
-                        var tiers = ['good', 'better', 'best'];
+                        var tiers = ['save', 'spend', 'splurge'];
                         var cards = '';
                         var any   = false;
 
@@ -214,7 +214,7 @@
                         });
 
                         if (!any) {
-                            editor.windowManager.alert('Add at least one product (Good, Better, or Best).');
+                            editor.windowManager.alert('Add at least one product (Save, Spend, or Splurge).');
                             return false;
                         }
 

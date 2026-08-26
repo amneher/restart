@@ -60,15 +60,15 @@ class FavoritesRowShortcodeTest extends TestCase {
     }
 
     public function test_tier_badge_rendered_for_valid_tier(): void {
-        $html = $this->public_class()->item_shortcode(['title' => 'Budget Sofa', 'tier' => 'good']);
+        $html = $this->public_class()->item_shortcode(['title' => 'Budget Sofa', 'tier' => 'save']);
 
         $this->assertStringContainsString('rr-article-item--tier', $html);
-        $this->assertStringContainsString('rr-article-item__tier-badge--good', $html);
-        $this->assertStringContainsString('Good', $html);
+        $this->assertStringContainsString('rr-article-item__tier-badge--save', $html);
+        $this->assertStringContainsString('Save', $html);
     }
 
     public function test_tier_badge_reflects_each_valid_tier(): void {
-        foreach (['good', 'better', 'best'] as $tier) {
+        foreach (['save', 'spend', 'splurge'] as $tier) {
             $html = $this->public_class()->item_shortcode(['title' => 'Item', 'tier' => $tier]);
             $this->assertStringContainsString('rr-article-item__tier-badge--' . $tier, $html);
         }
@@ -82,7 +82,7 @@ class FavoritesRowShortcodeTest extends TestCase {
     }
 
     public function test_tier_card_still_returns_empty_without_title(): void {
-        $html = $this->public_class()->item_shortcode(['tier' => 'good']);
+        $html = $this->public_class()->item_shortcode(['tier' => 'save']);
 
         $this->assertSame('', $html);
     }
@@ -90,7 +90,7 @@ class FavoritesRowShortcodeTest extends TestCase {
     // ── [restart_favorites_row] ─────────────────────────────────────────────
 
     public function test_returns_empty_string_when_title_missing(): void {
-        $html = $this->public_class()->favorites_row_shortcode([], '[restart_item title="X" tier="good"]');
+        $html = $this->public_class()->favorites_row_shortcode([], '[restart_item title="X" tier="save"]');
 
         $this->assertSame('', $html);
     }

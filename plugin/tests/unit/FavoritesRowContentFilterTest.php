@@ -70,7 +70,7 @@ class FavoritesRowContentFilterTest extends TestCase {
 
     public function test_restart_item_nested_in_favorites_row_is_left_as_literal_text(): void {
         $content = '[restart_favorites_row title="Sofa"]'
-            . '[restart_item tier="good" title="In A"]'
+            . '[restart_item tier="save" title="In A"]'
             . '[restart_item tier="better" title="In B"]'
             . '[/restart_favorites_row]';
 
@@ -82,14 +82,14 @@ class FavoritesRowContentFilterTest extends TestCase {
 
     public function test_standalone_and_nested_items_are_handled_differently_in_the_same_content(): void {
         $content = 'before [restart_item title="Outside"] middle '
-            . '[restart_favorites_row title="Sofa"][restart_item tier="good" title="In A"][/restart_favorites_row]'
+            . '[restart_favorites_row title="Sofa"][restart_item tier="save" title="In A"][/restart_favorites_row]'
             . ' after';
 
         $result = ($this->filter)($content);
 
         $this->assertStringContainsString('{{RENDERED:[restart_item title="Outside"]}}', $result);
-        $this->assertStringContainsString('[restart_favorites_row title="Sofa"][restart_item tier="good" title="In A"][/restart_favorites_row]', $result);
-        $this->assertStringNotContainsString('{{RENDERED:[restart_item tier="good" title="In A"]}}', $result);
+        $this->assertStringContainsString('[restart_favorites_row title="Sofa"][restart_item tier="save" title="In A"][/restart_favorites_row]', $result);
+        $this->assertStringNotContainsString('{{RENDERED:[restart_item tier="save" title="In A"]}}', $result);
     }
 
     public function test_content_without_restart_item_is_unchanged(): void {
@@ -101,8 +101,8 @@ class FavoritesRowContentFilterTest extends TestCase {
     }
 
     public function test_multiple_favorites_rows_both_protected(): void {
-        $content = '[restart_favorites_row title="Sofa"][restart_item tier="good" title="A"][/restart_favorites_row]'
-            . '[restart_favorites_row title="Chair"][restart_item tier="best" title="B"][/restart_favorites_row]';
+        $content = '[restart_favorites_row title="Sofa"][restart_item tier="save" title="A"][/restart_favorites_row]'
+            . '[restart_favorites_row title="Chair"][restart_item tier="splurge" title="B"][/restart_favorites_row]';
 
         $result = ($this->filter)($content);
 
