@@ -1723,6 +1723,36 @@ through API Gateway, <code>Authorization: Basic</code> lets it through the FastA
 <td><code>restart_event_date</code></td>
 <td>ISO date for the registry occasion</td>
 </tr>
+<tr>
+<td><code>wp_postmeta</code></td>
+<td><code>restart_shipping_address</code></td>
+<td>JSON object — <code>name</code>, <code>address_1</code>, <code>address_2</code>, <code>city</code>, <code>state</code>, <code>postal_code</code>, <code>country</code>. Optional. <strong>Visibility: registry owner and invitees only — never rendered on the public/unauthenticated view.</strong></td>
+</tr>
+<tr>
+<td><code>wp_postmeta</code></td>
+<td><code>restart_purchase_messages</code></td>
+<td>JSON array of purchase message records</td>
+</tr>
+<tr>
+<td><code>wp_postmeta</code></td>
+<td><code>restart_is_for_self</code></td>
+<td><code>'1'</code>/<code>'0'</code> — whether the registry is for the creator</td>
+</tr>
+<tr>
+<td><code>wp_postmeta</code></td>
+<td><code>restart_recipient_name</code></td>
+<td>Name of the recipient (when <code>is_for_self = 0</code>)</td>
+</tr>
+<tr>
+<td><code>wp_postmeta</code></td>
+<td><code>restart_recipient_relationship</code></td>
+<td>Relationship between creator and recipient</td>
+</tr>
+<tr>
+<td><code>wp_postmeta</code></td>
+<td><code>restart_recipient_email</code></td>
+<td>Optional email for the recipient</td>
+</tr>
 </tbody>
 </table>
 <p>The plugin's controller (<code>Restart_Registry_Controller::post_to_registry</code>)
