@@ -224,5 +224,38 @@
                 });
             },
         });
+
+        editor.addButton('restart_favorites_room', {
+            text: 'Insert Favorites Room',
+            icon: false,
+            tooltip: 'Insert a [restart_favorites_room] section (e.g. "Living Room") — fill it with Favorites Row blocks',
+            onclick: function () {
+                editor.windowManager.open({
+                    title: 'Insert Favorites Room',
+                    minWidth: 420,
+                    body: [
+                        { type: 'textbox', name: 'room_title', label: 'Room Title * (e.g. "Living Room")' },
+                    ],
+                    onsubmit: function (e) {
+                        var roomTitle = (e.data.room_title || '').trim();
+                        if (!roomTitle) {
+                            editor.windowManager.alert('Room Title is required.');
+                            return false;
+                        }
+                        var attrs = ' title="' + attrValue(roomTitle) + '"';
+                        editor.insertContent('[restart_favorites_room' + attrs + ']\n\n[/restart_favorites_room]');
+                    },
+                });
+            },
+        });
+
+        editor.addButton('restart_favorites_filters', {
+            text: 'Insert Favorites Filters',
+            icon: false,
+            tooltip: 'Insert the [restart_favorites_filters] room/tier filter bar (place once, near the top of the page)',
+            onclick: function () {
+                editor.insertContent('[restart_favorites_filters]');
+            },
+        });
     });
 })();

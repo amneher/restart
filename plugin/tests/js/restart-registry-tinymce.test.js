@@ -109,9 +109,11 @@ afterEach(() => {
 
 // ── Registration ──────────────────────────────────────────────────────────────
 
-test('plugin registers both restart_item and restart_favorites_row buttons', () => {
+test('plugin registers all four buttons', () => {
     expect(typeof buttons.restart_item.onclick).toBe('function');
     expect(typeof buttons.restart_favorites_row.onclick).toBe('function');
+    expect(typeof buttons.restart_favorites_room.onclick).toBe('function');
+    expect(typeof buttons.restart_favorites_filters.onclick).toBe('function');
 });
 
 // ── [restart_item] button (existing behavior, unchanged) ──────────────────────
@@ -372,5 +374,64 @@ describe('Insert Favorites Row button', () => {
             expect(lastWin.find('#spend_title')[0].value()).toBe('');
             expect(lastWin.find('#splurge_title')[0].value()).toBe('');
         });
+    });
+});
+
+// ── [restart_favorites_room] button ────────────────────────────────────────────
+
+describe('Insert Favorites Room button', () => {
+    beforeEach(() => {
+        buttons.restart_favorites_room.onclick();
+    });
+
+    test('opens windowManager with a room title form', () => {
+        expect(mockEditor.windowManager.open).toHaveBeenCalled();
+        expect(lastWindowConfig.title).toBe('Insert Favorites Room');
+        const names = lastWindowConfig.body.map((f) => f.name);
+        expect(names).toEqual(['room_title']);
+    });
+
+    test('shows alert and does not insert when Room Title is empty', () => {
+        submit({ room_title: '' });
+
+        expect(mockEditor.windowManager.alert).toHaveBeenCalled();
+        expect(mockEditor.insertContent).not.toHaveBeenCalled();
+    });
+
+    test('shows alert when Room Title is only whitespace', () => {
+        submit({ room_title: '   ' });
+
+        expect(mockEditor.windowManager.alert).toHaveBeenCalled();
+        expect(mockEditor.insertContent).not.toHaveBeenCalled();
+    });
+
+    test('inserts an empty restart_favorites_room shell with the given title', () => {
+        submit({ room_title: 'Living Room' });
+
+        expect(lastInserted).toContain('[restart_favorites_room title="Living Room"]');
+        expect(lastInserted).toContain('[/restart_favorites_room]');
+    });
+
+    test('escapes double-quotes and strips brackets in the room title', () => {
+        submit({ room_title: 'Say "Hi" [now]' });
+
+        expect(lastInserted).toContain('[restart_favorites_room title="Say &quot;Hi&quot; now"]');
+    });
+
+    test('trims whitespace from the room title', () => {
+        submit({ room_title: '  Living Room  ' });
+
+        expect(lastInserted).toContain('title="Living Room"');
+    });
+});
+
+// ── [restart_favorites_filters] button ─────────────────────────────────────────
+
+describe('Insert Favorites Filters button', () => {
+    test('inserts the bare shortcode with no modal', () => {
+        buttons.restart_favorites_filters.onclick();
+
+        expect(mockEditor.windowManager.open).not.toHaveBeenCalled();
+        expect(lastInserted).toBe('[restart_favorites_filters]');
     });
 });

@@ -46,6 +46,8 @@ class Restart_Registry_Admin {
         }
         $buttons[] = 'restart_item';
         $buttons[] = 'restart_favorites_row';
+        $buttons[] = 'restart_favorites_room';
+        $buttons[] = 'restart_favorites_filters';
         return $buttons;
     }
 

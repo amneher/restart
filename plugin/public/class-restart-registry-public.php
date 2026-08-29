@@ -39,8 +39,10 @@ class Restart_Registry_Public
         add_shortcode('restart_registry',        [$this, 'registry_shortcode']);
         add_shortcode('restart_registry_view',   [$this, 'registry_view_shortcode']);
         add_shortcode('restart_registry_create', [$this, 'registry_create_shortcode']);
-        add_shortcode('restart_item',            [$this, 'item_shortcode']);
-        add_shortcode('restart_favorites_row',   [$this, 'favorites_row_shortcode']);
+        add_shortcode('restart_item',              [$this, 'item_shortcode']);
+        add_shortcode('restart_favorites_row',     [$this, 'favorites_row_shortcode']);
+        add_shortcode('restart_favorites_room',    [$this, 'favorites_room_shortcode']);
+        add_shortcode('restart_favorites_filters', [$this, 'favorites_filters_shortcode']);
 
         // Process [restart_item] before WordPress's make_clickable filter (priority 9)
         // and strip any HTML tags that Gutenberg or make_clickable may have injected
@@ -1819,7 +1821,9 @@ class Restart_Registry_Public
                 . ' data-image-url="' . esc_attr($images[0] ?? '') . '"'
                 . ' data-description="' . esc_attr($a['description']) . '"'
                 . ' data-notes="' . esc_attr($a['notes']) . '"'
-                . ' data-quantity="' . esc_attr($a['quantity']) . '">'
+                . ' data-quantity="' . esc_attr($a['quantity']) . '"'
+                . ($tier !== '' ? ' data-tier="' . esc_attr($tier) . '"' : '')
+                . '>'
                 . esc_html__('+ Add to My Registry', 'restart-registry')
                 . '</button>';
         }
@@ -1843,9 +1847,10 @@ class Restart_Registry_Public
             ? '<span class="rr-article-item__tier-badge rr-article-item__tier-badge--' . esc_attr($tier) . '">' . esc_html(ucfirst($tier)) . '</span>'
             : '';
 
-        $card_class = 'rr-article-item' . ($tier !== '' ? ' rr-article-item--tier' : '');
+        $card_class     = 'rr-article-item' . ($tier !== '' ? ' rr-article-item--tier' : '');
+        $card_tier_attr = $tier !== '' ? ' data-tier="' . esc_attr($tier) . '"' : '';
 
-        $html = '<div class="' . esc_attr($card_class) . '">'
+        $html = '<div class="' . esc_attr($card_class) . '"' . $card_tier_attr . '>'
             . $tier_badge_html
             . $media_html
             . '<div class="rr-article-item__body">'
@@ -1900,6 +1905,72 @@ class Restart_Registry_Public
         return '<div class="rr-favorites-row">'
             . '<h4 class="rr-favorites-row__title">' . esc_html($a['title']) . '</h4>'
             . '<div class="rr-favorites-row__cards">' . $inner . '</div>'
+            . '</div>';
+    }
+
+    /**
+     * [restart_favorites_room title="Living Room"]
+     *   [restart_favorites_row title="Sofa"]...[/restart_favorites_row]
+     *   [restart_favorites_row title="Coffee Table"]...[/restart_favorites_row]
+     * [/restart_favorites_room]
+     *
+     * Wraps a room's [restart_favorites_row] blocks with a heading and
+     * "Add all Save/Spend/Splurge items in this room" bulk-add buttons.
+     * `data-room` is how [restart_favorites_filters] scopes room-pill
+     * filtering at runtime; `.rr-bulk-add[data-tier]` is how the bulk-add
+     * click handler finds every quick-add button of one tier in this room.
+     */
+    public function favorites_room_shortcode(array $atts, ?string $content = null): string
+    {
+        $a = shortcode_atts([
+            'title' => '',
+        ], $atts, 'restart_favorites_room');
+
+        if (empty($a['title'])) {
+            return '';
+        }
+
+        // Same rationale as favorites_row_shortcode(): nested shortcodes are
+        // normally already rendered by the the_content pre-filter (priority 8);
+        // do_shortcode() here only matters when invoked directly (e.g. tests).
+        $inner = do_shortcode((string) $content);
+
+        $bulk_buttons = '';
+        foreach (self::FAVORITES_TIERS as $tier) {
+            $bulk_buttons .= '<button type="button" class="rr-button rr-button-secondary rr-bulk-add" data-tier="' . esc_attr($tier) . '">'
+                . esc_html(sprintf(__('Add all %s items', 'restart-registry'), ucfirst($tier)))
+                . '</button>';
+        }
+
+        return '<section class="rr-favorites-room" data-room="' . esc_attr($a['title']) . '">'
+            . '<div class="rr-favorites-room__header">'
+            . '<h3 class="rr-favorites-room__title">' . esc_html($a['title']) . '</h3>'
+            . '<div class="rr-favorites-room__bulk-actions">' . $bulk_buttons . '</div>'
+            . '</div>'
+            . '<div class="rr-favorites-room__rows">' . $inner . '</div>'
+            . '</section>';
+    }
+
+    /**
+     * [restart_favorites_filters]
+     *
+     * Self-closing. Renders an empty room-pill container plus the static
+     * Save/Spend/Splurge tier pills; JS populates the room pills at runtime
+     * from every [restart_favorites_room data-room] present on the page,
+     * so the pill list always matches whatever rooms are actually authored.
+     */
+    public function favorites_filters_shortcode(): string
+    {
+        $tier_pills = '';
+        foreach (self::FAVORITES_TIERS as $tier) {
+            $tier_pills .= '<button type="button" class="rr-favorites-filters__pill is-active" data-tier-pill="' . esc_attr($tier) . '">'
+                . esc_html(ucfirst($tier))
+                . '</button>';
+        }
+
+        return '<div class="rr-favorites-filters">'
+            . '<div class="rr-favorites-filters__group rr-favorites-filters__group--rooms" data-room-pills></div>'
+            . '<div class="rr-favorites-filters__group rr-favorites-filters__group--tiers" data-tier-pills>' . $tier_pills . '</div>'
             . '</div>';
     }
 
