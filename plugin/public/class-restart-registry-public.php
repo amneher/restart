@@ -1731,9 +1731,6 @@ class Restart_Registry_Public
     // [restart_item] shortcode — product card for favorites / gift-guide articles
     // =========================================================================
 
-    /** @var bool Whether the quick-add modals have already been appended this request. */
-    private static bool $quick_add_modals_printed = false;
-
     public function item_shortcode(array $atts): string
     {
         $a = shortcode_atts([

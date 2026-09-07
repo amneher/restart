@@ -116,17 +116,7 @@ class Restart_Registry_Favorites_Renderer
             . '</div>'
             . '</div>';
 
-        // Check both our own flag and the public class's flag (for test compatibility).
-        $public_printed = false;
-        if (class_exists('Restart_Registry_Public')) {
-            try {
-                $public_printed = (new \ReflectionProperty(Restart_Registry_Public::class, 'quick_add_modals_printed'))->getValue(null);
-            } catch (\ReflectionException $e) {
-                // Property doesn't exist or can't be accessed; ignore.
-            }
-        }
-
-        if (!self::$quick_add_modals_printed && !$public_printed) {
+        if (!self::$quick_add_modals_printed) {
             self::$quick_add_modals_printed = true;
             $html .= self::render_quick_add_modals();
         }
