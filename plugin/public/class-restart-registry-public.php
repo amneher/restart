@@ -33,6 +33,7 @@ class Restart_Registry_Public
 
         require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-restart-registry-controller.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-affiliate-converter.php';
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-restart-registry-favorites-renderer.php';
         $this->controller = new Restart_Registry_Controller();
         Restart_Registry_Affiliate_Converter::instance();
 
@@ -1733,20 +1734,6 @@ class Restart_Registry_Public
     /** @var bool Whether the quick-add modals have already been appended this request. */
     private static bool $quick_add_modals_printed = false;
 
-    /** Valid values for the `tier` attribute — used by [restart_favorites_row]. */
-    private const FAVORITES_TIERS = ['save', 'spend', 'splurge'];
-
-    /**
-     * [restart_item title="…" price="…" image="…" images="url1,url2" url="…"
-     *               description="…" retailer="…" notes="…" quantity="1" tier="save|spend|splurge"]
-     *
-     * Renders a product card with image(s), details, a shop link, and an
-     * "Add to My Registry" button. Multiple images render as a simple carousel.
-     *
-     * `tier` is optional. When set to save/spend/splurge (used inside
-     * [restart_favorites_row]), the card renders as a compact column variant
-     * with a tier badge, sized for a 3-up grid.
-     */
     public function item_shortcode(array $atts): string
     {
         $a = shortcode_atts([
@@ -1762,118 +1749,21 @@ class Restart_Registry_Public
             'tier'        => '',
         ], $atts, 'restart_item');
 
-        if (empty($a['title'])) {
-            return '';
-        }
-
-        $tier = in_array($a['tier'], self::FAVORITES_TIERS, true) ? $a['tier'] : '';
-
         // Normalise image list: `images` wins over `image`.
         $raw    = !empty($a['images']) ? $a['images'] : $a['image'];
         $images = array_values(array_filter(array_map('trim', explode(',', $raw))));
 
-        // ── Image / carousel section ──────────────────────────────────────
-        $media_html = '';
-        if (count($images) === 1) {
-            $media_html = '<div class="rr-article-item__media">'
-                . '<img class="rr-article-item__img" src="' . esc_url($images[0]) . '" alt="' . esc_attr($a['title']) . '" loading="lazy">'
-                . '</div>';
-        } elseif (count($images) > 1) {
-            $slides = '';
-            $dots   = '';
-            foreach ($images as $i => $src) {
-                $active  = $i === 0 ? ' is-active' : '';
-                $slides .= '<img class="rr-article-item__slide' . $active . '" src="' . esc_url($src) . '" alt="' . esc_attr($a['title']) . '" loading="lazy">';
-                $dots   .= '<button type="button" class="rr-article-item__dot' . $active . '" aria-label="' . esc_attr(sprintf(__('Image %d', 'restart-registry'), $i + 1)) . '"></button>';
-            }
-            $media_html = '<div class="rr-article-item__media">'
-                . '<div class="rr-article-item__carousel" data-count="' . count($images) . '">'
-                . '<div class="rr-article-item__slides">' . $slides . '</div>'
-                . '<button type="button" class="rr-article-item__prev" aria-label="' . esc_attr__('Previous image', 'restart-registry') . '">&#8249;</button>'
-                . '<button type="button" class="rr-article-item__next" aria-label="' . esc_attr__('Next image', 'restart-registry') . '">&#8250;</button>'
-                . '<div class="rr-article-item__dots">' . $dots . '</div>'
-                . '</div>'
-                . '</div>';
-        }
-
-        // ── Price ─────────────────────────────────────────────────────────
-        $price_html = '';
-        if (!empty($a['price'])) {
-            $display    = str_starts_with(ltrim($a['price']), '$') ? $a['price'] : '$' . $a['price'];
-            $price_html = '<span class="rr-article-item__price">' . esc_html($display) . '</span>';
-        }
-
-        // ── Action buttons ────────────────────────────────────────────────
-        // TODO: if the URL is an affiliate link, show the retailer's logo instead of a generic "Shop Now" button. This would require normalizing known retailer URLs in the Affiliate_Converter and passing that info through here.
-        // $aff = '';
-        $shop_btn = '';
-        $add_btn  = '';
-        if (!empty($a['url'])) {
-            $aff = Restart_Registry_Affiliate_Converter::instance()->convert_url($a['url']);
-            $shop_btn = '<a href="' . esc_url($aff['affiliate_url']) . '" class="rr-button rr-article-item__shop-btn" target="_blank" rel="noopener sponsored">'
-                . esc_html__('Shop Now', 'restart-registry') . '</a>';
-
-            // TODO: if the URL is an affiliate link, show the retailer's logo instead of a generic "Shop Now" button. This would require normalizing known retailer URLs in the Affiliate_Converter and passing that info through here.
-            $add_btn = '<button type="button" class="rr-button rr-button-secondary rr-quick-add"'
-                . ' data-name="' . esc_attr($a['title']) . '"'
-                . ' data-url="' . esc_attr($aff['affiliate_url']) . '"'
-                . ' data-price="' . esc_attr(preg_replace('/[^0-9.]/', '', $a['price'])) . '"'
-                . ' data-image-url="' . esc_attr($images[0] ?? '') . '"'
-                . ' data-description="' . esc_attr($a['description']) . '"'
-                . ' data-notes="' . esc_attr($a['notes']) . '"'
-                . ' data-quantity="' . esc_attr($a['quantity']) . '"'
-                . ($tier !== '' ? ' data-tier="' . esc_attr($tier) . '"' : '')
-                . '>'
-                . esc_html__('+ Add to My Registry', 'restart-registry')
-                . '</button>';
-        }
-
-
-
-        // ── Full card ─────────────────────────────────────────────────────
-        $retailer_html = !empty($a['retailer'])
-            ? '<span class="rr-article-item__retailer rr-item-retailer">' . esc_html($a['retailer']) . '</span>'
-            : '';
-
-        $desc_html = !empty($a['description'])
-            ? '<p class="rr-article-item__description">' . esc_html($a['description']) . '</p>'
-            : '';
-
-        $disc_html = !empty($this->disclosure)
-            ? '<p class="rr-affiliate-note"><small>' . esc_html($this->disclosure) . '</small></p>'
-            : '';
-
-        $tier_badge_html = $tier !== ''
-            ? '<span class="rr-article-item__tier-badge rr-article-item__tier-badge--' . esc_attr($tier) . '">' . esc_html(ucfirst($tier)) . '</span>'
-            : '';
-
-        $card_class     = 'rr-article-item' . ($tier !== '' ? ' rr-article-item--tier' : '');
-        $card_tier_attr = $tier !== '' ? ' data-tier="' . esc_attr($tier) . '"' : '';
-
-        $html = '<div class="' . esc_attr($card_class) . '"' . $card_tier_attr . '>'
-            . $tier_badge_html
-            . $media_html
-            . '<div class="rr-article-item__body">'
-            . '<div class="rr-article-item__header">'
-            . '<h3 class="rr-article-item__title">' . esc_html($a['title']) . '</h3>'
-            . $retailer_html
-            . '</div>'
-            . $desc_html
-            . '<div class="rr-article-item__footer">'
-            . $price_html
-            . '<div class="rr-article-item__actions">' . $shop_btn . $add_btn . '</div>'
-            . $disc_html
-            . '</div>'
-            . '</div>'
-            . '</div>';
-
-        // Output shared quick-add modals once per page.
-        if (!self::$quick_add_modals_printed) {
-            self::$quick_add_modals_printed = true;
-            $html .= $this->render_quick_add_modals();
-        }
-
-        return $html;
+        return Restart_Registry_Favorites_Renderer::render_item([
+            'title'       => $a['title'],
+            'price'       => $a['price'],
+            'images'      => $images,
+            'description' => $a['description'],
+            'url'         => $a['url'],
+            'retailer'    => $a['retailer'],
+            'notes'       => $a['notes'],
+            'quantity'    => $a['quantity'],
+            'tier'        => $a['tier'],
+        ]);
     }
 
     /**
@@ -1888,24 +1778,13 @@ class Restart_Registry_Public
      */
     public function favorites_row_shortcode(array $atts, ?string $content = null): string
     {
-        $a = shortcode_atts([
-            'title' => '',
-        ], $atts, 'restart_favorites_row');
-
-        if (empty($a['title'])) {
-            return '';
-        }
+        $a = shortcode_atts(['title' => ''], $atts, 'restart_favorites_row');
 
         // Nested [restart_item] shortcodes are usually already rendered by the
         // the_content pre-filter (priority 8) by the time WordPress reaches this
         // enclosing shortcode. do_shortcode() here is a no-op in that case and
         // only matters when favorites_row_shortcode() is invoked directly.
-        $inner = do_shortcode((string) $content);
-
-        return '<div class="rr-favorites-row">'
-            . '<h4 class="rr-favorites-row__title">' . esc_html($a['title']) . '</h4>'
-            . '<div class="rr-favorites-row__cards">' . $inner . '</div>'
-            . '</div>';
+        return Restart_Registry_Favorites_Renderer::render_row($a['title'], do_shortcode((string) $content));
     }
 
     /**
@@ -1922,33 +1801,12 @@ class Restart_Registry_Public
      */
     public function favorites_room_shortcode(array $atts, ?string $content = null): string
     {
-        $a = shortcode_atts([
-            'title' => '',
-        ], $atts, 'restart_favorites_room');
-
-        if (empty($a['title'])) {
-            return '';
-        }
+        $a = shortcode_atts(['title' => ''], $atts, 'restart_favorites_room');
 
         // Same rationale as favorites_row_shortcode(): nested shortcodes are
         // normally already rendered by the the_content pre-filter (priority 8);
         // do_shortcode() here only matters when invoked directly (e.g. tests).
-        $inner = do_shortcode((string) $content);
-
-        $bulk_buttons = '';
-        foreach (self::FAVORITES_TIERS as $tier) {
-            $bulk_buttons .= '<button type="button" class="rr-button rr-button-secondary rr-bulk-add" data-tier="' . esc_attr($tier) . '">'
-                . esc_html(sprintf(__('Add all %s items', 'restart-registry'), ucfirst($tier)))
-                . '</button>';
-        }
-
-        return '<section class="rr-favorites-room" data-room="' . esc_attr($a['title']) . '">'
-            . '<div class="rr-favorites-room__header">'
-            . '<h3 class="rr-favorites-room__title">' . esc_html($a['title']) . '</h3>'
-            . '<div class="rr-favorites-room__bulk-actions">' . $bulk_buttons . '</div>'
-            . '</div>'
-            . '<div class="rr-favorites-room__rows">' . $inner . '</div>'
-            . '</section>';
+        return Restart_Registry_Favorites_Renderer::render_room($a['title'], do_shortcode((string) $content));
     }
 
     /**
@@ -1961,68 +1819,7 @@ class Restart_Registry_Public
      */
     public function favorites_filters_shortcode(): string
     {
-        $tier_pills = '';
-        foreach (self::FAVORITES_TIERS as $tier) {
-            $tier_pills .= '<button type="button" class="rr-favorites-filters__pill is-active" data-tier-pill="' . esc_attr($tier) . '">'
-                . esc_html(ucfirst($tier))
-                . '</button>';
-        }
-
-        return '<div class="rr-favorites-filters">'
-            . '<div class="rr-favorites-filters__group rr-favorites-filters__group--rooms" data-room-pills></div>'
-            . '<div class="rr-favorites-filters__group rr-favorites-filters__group--tiers" data-tier-pills>' . $tier_pills . '</div>'
-            . '</div>';
-    }
-
-    /**
-     * Shared modals for the quick-add flow.
-     * Auth modal: shown to non-logged-in visitors.
-     * No-registry modal: shown to logged-in users who haven't created a registry.
-     */
-    private function render_quick_add_modals(): string
-    {
-        ob_start();
-    ?>
-
-        <!-- Quick-add: auth modal (not logged in) -->
-        <div class="rr-modal rr-quick-add-modal" id="rr-qa-auth-modal" aria-inert="true">
-            <div class="rr-modal__backdrop"></div>
-            <div class="rr-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="rr-qa-auth-title">
-                <div class="rr-modal__header">
-                    <h3 id="rr-qa-auth-title" class="rr-modal__title"><?php esc_html_e('Add to Your Registry', 'restart-registry'); ?></h3>
-                    <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
-                </div>
-                <div class="rr-modal__body">
-                    <p class="rr-qa-modal__item-name"></p>
-                    <p><?php esc_html_e('Sign in or create a free registry to save items you love.', 'restart-registry'); ?></p>
-                    <div class="rr-modal__actions rr-qa-modal__actions">
-                        <a id="rr-qa-login-link" href="<?php echo esc_url(wp_login_url()); ?>" class="rr-button"><?php esc_html_e('Sign In', 'restart-registry'); ?></a>
-                        <a id="rr-qa-register-link" href="<?php echo esc_url(home_url('/start-a-registry/')); ?>" class="rr-button rr-button-secondary"><?php esc_html_e('Create a Registry', 'restart-registry'); ?></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick-add: no-registry modal (logged in, no registry) -->
-        <div class="rr-modal rr-quick-add-modal" id="rr-qa-no-registry-modal" aria-inert="true">
-            <div class="rr-modal__backdrop"></div>
-            <div class="rr-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="rr-qa-nr-title">
-                <div class="rr-modal__header">
-                    <h3 id="rr-qa-nr-title" class="rr-modal__title"><?php esc_html_e('Create a Registry First', 'restart-registry'); ?></h3>
-                    <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
-                </div>
-                <div class="rr-modal__body">
-                    <p><?php esc_html_e("You don't have a registry yet. Start one — it only takes a minute.", 'restart-registry'); ?></p>
-                    <div class="rr-modal__actions rr-qa-modal__actions">
-                        <a href="<?php echo esc_url(home_url('/start-a-registry/')); ?>" class="rr-button"><?php esc_html_e('Create My Registry', 'restart-registry'); ?></a>
-                        <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php esc_html_e('Maybe Later', 'restart-registry'); ?></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-<?php
-        return ob_get_clean();
+        return Restart_Registry_Favorites_Renderer::render_filters();
     }
 
     /**
