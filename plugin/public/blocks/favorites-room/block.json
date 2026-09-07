@@ -1,0 +1,15 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "restart-registry/favorites-room",
+    "title": "Favorites Room",
+    "category": "widgets",
+    "icon": "admin-home",
+    "description": "A room section (e.g. \"Living Room\") of Favorites Rows for the Our Favorites page.",
+    "attributes": {
+        "title": { "type": "string", "default": "" }
+    },
+    "supports": { "html": false },
+    "editorScript": "restart-registry-favorites-blocks",
+    "render": "file:./render.php"
+}
