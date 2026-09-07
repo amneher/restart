@@ -55,11 +55,5 @@ require_once dirname(__DIR__) . '/includes/class-restart-registry-favorites-migr
 require_once dirname(__DIR__) . '/admin/class-restart-registry-admin.php';
 require_once dirname(__DIR__) . '/public/class-restart-registry-public.php';
 
-// Real (unmodified) WordPress core block parser, vendored in for tests that
-// need to round-trip real block-comment markup through parse_blocks() —
-// e.g. FavoritesMigrationCommandTest. Pure PHP, no DB/global dependencies.
-require_once __DIR__ . '/wp-includes/class-wp-block-parser.php';
-require_once __DIR__ . '/wp-includes/parse-blocks.php';
-
 // Test fakes
 require_once __DIR__ . '/Fakes/LambdaClientFake.php';

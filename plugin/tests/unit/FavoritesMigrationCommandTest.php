@@ -110,5 +110,43 @@ function test_capture_room_cb(array $atts, ?string $inner): string {
 }
 
 function parse_blocks_test_helper(string $markup): array {
-    return parse_blocks($markup);
+    $blocks = [];
+    $offset = 0;
+    $len    = strlen($markup);
+
+    while ($offset < $len) {
+        if (preg_match('/\G\s+/', $markup, $m, 0, $offset)) {
+            $offset += strlen($m[0]);
+            continue;
+        }
+        if ($offset >= $len) {
+            break;
+        }
+        if (!preg_match('/\G<!-- wp:([a-z0-9\/-]+)(?: (\{.*?\}))? (\/)?-->/', $markup, $m, 0, $offset)) {
+            break;
+        }
+
+        $name        = $m[1];
+        $attrs       = isset($m[2]) && $m[2] !== '' ? json_decode($m[2], true) : [];
+        $selfClosing = ($m[3] ?? '') === '/';
+        $offset += strlen($m[0]);
+
+        if ($selfClosing) {
+            $blocks[] = ['blockName' => $name, 'attrs' => $attrs, 'innerBlocks' => []];
+            continue;
+        }
+
+        $closeTag = '<!-- /wp:' . $name . ' -->';
+        $closePos = strpos($markup, $closeTag, $offset);
+        $inner    = substr($markup, $offset, $closePos - $offset);
+        $offset   = $closePos + strlen($closeTag);
+
+        $blocks[] = [
+            'blockName'   => $name,
+            'attrs'       => $attrs,
+            'innerBlocks' => parse_blocks_test_helper(trim($inner)),
+        ];
+    }
+
+    return $blocks;
 }
