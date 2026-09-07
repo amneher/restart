@@ -80,3 +80,8 @@ function run_restart_registry() {
 
 }
 run_restart_registry();
+
+if (defined('WP_CLI') && WP_CLI) {
+	require_once plugin_dir_path(__FILE__) . 'includes/class-restart-registry-favorites-migration-command.php';
+	WP_CLI::add_command('restart-registry migrate-favorites-page', 'Restart_Registry_Favorites_Migration_Command');
+}
