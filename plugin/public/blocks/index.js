@@ -87,7 +87,7 @@
         edit: function (props) {
             var attributes      = props.attributes;
             var setAttributes   = props.setAttributes;
-            var innerBlocksProps = useInnerBlocksProps(useBlockProps(), {
+            var innerBlocksProps = useInnerBlocksProps({}, {
                 allowedBlocks: ['restart-registry/favorites-item'],
                 template: [
                     ['restart-registry/favorites-item', { tier: 'save' }],
@@ -98,7 +98,7 @@
 
             return el(
                 'div',
-                {},
+                useBlockProps(),
                 el(TextControl, {
                     label: __('Row Title', 'restart-registry'),
                     value: attributes.title,
@@ -116,7 +116,7 @@
         edit: function (props) {
             var attributes      = props.attributes;
             var setAttributes   = props.setAttributes;
-            var innerBlocksProps = useInnerBlocksProps(useBlockProps(), {
+            var innerBlocksProps = useInnerBlocksProps({}, {
                 allowedBlocks: ['restart-registry/favorites-row'],
                 template: [
                     ['restart-registry/favorites-row', {}],
@@ -125,7 +125,7 @@
 
             return el(
                 'div',
-                {},
+                useBlockProps(),
                 el(TextControl, {
                     label: __('Room Title', 'restart-registry'),
                     value: attributes.title,
