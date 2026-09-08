@@ -6,11 +6,30 @@
  * Converts a page's existing [restart_favorites_room]/[restart_favorites_row]/
  * [restart_item]/[restart_favorites_filters] shortcode text into native
  * restart-registry/favorites-* block markup, in place, on the same post.
+ *
+ * NOTE: this REPLACES the post's entire content with only the converted
+ * favorites markup (plus the filters block, if present). Any other content
+ * on the page — intro text, headings, unrelated blocks — is discarded. A
+ * revision is saved by wp_update_post(), so the prior content is recoverable,
+ * but this command does not attempt to merge or preserve it.
  */
 class Restart_Registry_Favorites_Migration_Command
 {
     /**
+     * Below this many leftover characters (after stripping the favorites
+     * room shortcodes and the optional filters shortcode from the original
+     * content) we assume what remains is just incidental whitespace/markup
+     * and skip the discarded-content warning.
+     */
+    private const DISCARDED_CONTENT_WARNING_THRESHOLD = 40;
+
+    /**
      * Converts a page's nested favorites shortcodes into native blocks.
+     *
+     * Replaces the post's entire content with the converted block markup.
+     * Any content outside the [restart_favorites_room] (and optional
+     * [restart_favorites_filters]) shortcodes is discarded — a WP_CLI
+     * warning is printed when that appears to be substantial.
      *
      * ## OPTIONS
      *
@@ -49,6 +68,8 @@ class Restart_Registry_Favorites_Migration_Command
             $markup = "<!-- wp:restart-registry/favorites-filters /-->\n\n" . $markup;
         }
 
+        self::warn_if_discarding_content($post->post_content);
+
         if (!empty($assoc_args['dry-run'])) {
             WP_CLI::log($markup);
             return;
@@ -56,6 +77,25 @@ class Restart_Registry_Favorites_Migration_Command
 
         wp_update_post(['ID' => $page_id, 'post_content' => $markup]);
         WP_CLI::success("Converted page {$page_id} to native favorites blocks.");
+    }
+
+    /**
+     * Compares the total length of the original content against how much
+     * remains once the favorites room shortcodes (and the optional filters
+     * shortcode) are stripped out. If a substantial amount of other content
+     * remains, warns the user that it will be discarded by this migration.
+     */
+    private static function warn_if_discarding_content(string $original_content): void
+    {
+        preg_match_all('/\[restart_favorites_room\b.*?\[\/restart_favorites_room\]/s', $original_content, $matches);
+
+        $remaining = str_replace($matches[0], '', $original_content);
+        $remaining = str_replace('[restart_favorites_filters]', '', $remaining);
+        $remaining = trim($remaining);
+
+        if (strlen($remaining) > self::DISCARDED_CONTENT_WARNING_THRESHOLD) {
+            WP_CLI::warning('This page has content outside the favorites room shortcodes that will be discarded by this migration. A revision will be saved, but review the change carefully.');
+        }
     }
 
     /**
@@ -87,6 +127,7 @@ class Restart_Registry_Favorites_Migration_Command
             $images = array_values(array_filter(array_map('trim', explode(',', $raw))));
 
             return wp_json_encode([
+                '__rr' => 'item',
                 'tier' => $a['tier'], 'title' => $a['title'], 'price' => $a['price'],
                 'images' => $images, 'retailer' => $a['retailer'],
                 'description' => $a['description'], 'url' => $a['url'],
@@ -96,19 +137,28 @@ class Restart_Registry_Favorites_Migration_Command
 
         add_shortcode('restart_favorites_row', function (array $atts, $inner = null) {
             $a     = shortcode_atts(['title' => ''], $atts, 'restart_favorites_row');
-            $items = self::extract_json_objects(do_shortcode((string) $inner));
-            return wp_json_encode(['title' => $a['title'], 'items' => $items]);
+            $items = array_values(array_filter(
+                self::extract_json_objects(do_shortcode((string) $inner)),
+                static fn (array $item): bool => ($item['__rr'] ?? null) === 'item'
+            ));
+            return wp_json_encode(['__rr' => 'row', 'title' => $a['title'], 'items' => $items]);
         });
 
         add_shortcode('restart_favorites_room', function (array $atts, $inner = null) {
             $a    = shortcode_atts(['title' => ''], $atts, 'restart_favorites_room');
-            $rows = self::extract_json_objects(do_shortcode((string) $inner));
-            return wp_json_encode(['title' => $a['title'], 'rows' => $rows]);
+            $rows = array_values(array_filter(
+                self::extract_json_objects(do_shortcode((string) $inner)),
+                static fn (array $row): bool => ($row['__rr'] ?? null) === 'row'
+            ));
+            return wp_json_encode(['__rr' => 'room', 'title' => $a['title'], 'rows' => $rows]);
         });
 
         $expanded = do_shortcode($content);
 
-        return self::extract_json_objects($expanded);
+        return array_values(array_filter(
+            self::extract_json_objects($expanded),
+            static fn (array $room): bool => ($room['__rr'] ?? null) === 'room'
+        ));
     }
 
     /**
@@ -187,15 +237,34 @@ class Restart_Registry_Favorites_Migration_Command
 
     private static function item_markup(array $item): string
     {
+        unset($item['__rr']);
         return self::block_markup('restart-registry/favorites-item', $item);
     }
 
     private static function block_markup(string $name, array $attrs, string $inner = ''): string
     {
-        $json = $attrs ? ' ' . wp_json_encode($attrs) : '';
+        $json = $attrs ? ' ' . self::escape_block_attributes((string) wp_json_encode($attrs)) : '';
         if ($inner === '') {
             return '<!-- wp:' . $name . $json . ' /-->';
         }
         return '<!-- wp:' . $name . $json . ' -->' . "\n" . $inner . "\n" . '<!-- /wp:' . $name . ' -->';
+    }
+
+    /**
+     * Replicates the escaping WordPress core's serialize_block_attributes()
+     * (wp-includes/blocks.php) applies to the JSON-encoded attributes of a
+     * block comment, so values containing "--", "<", ">" or "&" don't
+     * corrupt the block-comment delimiter syntax or get mangled by KSES on
+     * save. Order matches WP core exactly.
+     */
+    private static function escape_block_attributes(string $json): string
+    {
+        $json = str_replace('--', '\\u002d\\u002d', $json);
+        $json = str_replace('<', '\\u003c', $json);
+        $json = str_replace('>', '\\u003e', $json);
+        $json = str_replace('&', '\\u0026', $json);
+        $json = str_replace('\\"', '\\u0022', $json);
+
+        return $json;
     }
 }

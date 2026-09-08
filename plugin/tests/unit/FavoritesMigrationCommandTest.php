@@ -5,6 +5,29 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
 
+if (!class_exists('WP_CLI')) {
+    class WP_CLI {
+        /** @var array<int, array{level:string, message:string}> */
+        public static array $calls = [];
+
+        public static function error(string $message): void {
+            self::$calls[] = ['level' => 'error', 'message' => $message];
+        }
+
+        public static function warning(string $message): void {
+            self::$calls[] = ['level' => 'warning', 'message' => $message];
+        }
+
+        public static function success(string $message): void {
+            self::$calls[] = ['level' => 'success', 'message' => $message];
+        }
+
+        public static function log(string $message): void {
+            self::$calls[] = ['level' => 'log', 'message' => $message];
+        }
+    }
+}
+
 class FavoritesMigrationCommandTest extends TestCase {
 
     protected function setUp(): void {
@@ -12,6 +35,7 @@ class FavoritesMigrationCommandTest extends TestCase {
         Monkey\setUp();
         Functions\when('wp_json_encode')->alias('json_encode');
         Functions\when('apply_filters')->returnArg(2);
+        WP_CLI::$calls = [];
     }
 
     protected function tearDown(): void {
@@ -48,35 +72,39 @@ class FavoritesMigrationCommandTest extends TestCase {
         $this->assertSame('Budget Sofa', $blocks[0]['innerBlocks'][0]['innerBlocks'][0]['attrs']['title']);
     }
 
-    public function test_capture_tree_parses_nested_shortcode_content(): void {
-        Functions\when('add_shortcode')->justReturn(true);
+    private function stubRealShortcodeCapture(): void {
+        $registeredShortcodes = [];
+
+        Functions\when('add_shortcode')->alias(function (string $tag, callable $callback) use (&$registeredShortcodes) {
+            $registeredShortcodes[$tag] = $callback;
+            return true;
+        });
         Functions\when('remove_shortcode')->justReturn(true);
         Functions\when('shortcode_atts')->alias(function (array $defaults, $atts) {
             return array_merge($defaults, is_array($atts) ? $atts : []);
         });
-        Functions\when('do_shortcode')->alias(function (string $content) {
-            $tags = [
-                'restart_item'           => 'test_capture_item_cb',
-                'restart_favorites_row'  => 'test_capture_row_cb',
-                'restart_favorites_room' => 'test_capture_room_cb',
-            ];
-            foreach ($tags as $tag => $fn) {
+        Functions\when('do_shortcode')->alias(function (string $content) use (&$registeredShortcodes) {
+            foreach ($registeredShortcodes as $tag => $callback) {
                 $content = preg_replace_callback(
                     '/\[' . $tag . '\b([^\]]*)\](.*?\[\/' . $tag . '\]|)/s',
-                    function ($m) use ($tag, $fn) {
+                    function ($m) use ($callback) {
                         preg_match_all('/(\w+)="([^"]*)"/', $m[1], $attrMatches, PREG_SET_ORDER);
                         $atts = [];
                         foreach ($attrMatches as $am) {
                             $atts[$am[1]] = $am[2];
                         }
                         $inner = $m[2] !== '' ? preg_replace('/^\[[^\]]*\]|\[\/[^\]]*\]$/', '', $m[2]) : null;
-                        return call_user_func($fn, $atts, $inner);
+                        return call_user_func($callback, $atts, $inner);
                     },
                     $content
                 );
             }
             return $content;
         });
+    }
+
+    public function test_capture_tree_parses_nested_shortcode_content(): void {
+        $this->stubRealShortcodeCapture();
 
         $content = '[restart_favorites_room title="Living Room"][restart_favorites_row title="Sofa"][restart_item tier="save" title="Budget Sofa" price="299.00" image="https://a.test/1.jpg"][/restart_favorites_row][/restart_favorites_room]';
 
@@ -87,26 +115,90 @@ class FavoritesMigrationCommandTest extends TestCase {
         $this->assertSame('Budget Sofa', $rooms[0]['rows'][0]['items'][0]['title']);
         $this->assertSame(['https://a.test/1.jpg'], $rooms[0]['rows'][0]['items'][0]['images']);
     }
-}
 
-function test_capture_item_cb(array $atts): string {
-    $raw    = !empty($atts['images']) ? $atts['images'] : ($atts['image'] ?? '');
-    $images = array_values(array_filter(array_map('trim', explode(',', $raw))));
-    return json_encode([
-        'tier' => $atts['tier'] ?? '', 'title' => $atts['title'] ?? '', 'price' => $atts['price'] ?? '',
-        'images' => $images, 'retailer' => $atts['retailer'] ?? '', 'description' => $atts['description'] ?? '',
-        'url' => $atts['url'] ?? '', 'notes' => $atts['notes'] ?? '', 'quantity' => $atts['quantity'] ?? '1',
-    ]);
-}
+    public function test_capture_tree_rejects_top_level_row_with_no_enclosing_room(): void {
+        $this->stubRealShortcodeCapture();
 
-function test_capture_row_cb(array $atts, ?string $inner): string {
-    $items = Restart_Registry_Favorites_Migration_Command::extract_json_objects(do_shortcode((string) $inner));
-    return json_encode(['title' => $atts['title'] ?? '', 'items' => $items]);
-}
+        $content = '[restart_favorites_row title="Sofa"][restart_item tier="save" title="Budget Sofa" price="299.00" image="https://a.test/1.jpg"][/restart_favorites_row]';
 
-function test_capture_room_cb(array $atts, ?string $inner): string {
-    $rows = Restart_Registry_Favorites_Migration_Command::extract_json_objects(do_shortcode((string) $inner));
-    return json_encode(['title' => $atts['title'] ?? '', 'rows' => $rows]);
+        $rooms = Restart_Registry_Favorites_Migration_Command::capture_tree($content);
+
+        $this->assertSame([], $rooms);
+    }
+
+    public function test_block_markup_escapes_characters_that_would_corrupt_block_comments(): void {
+        $rooms = [
+            [
+                'title' => 'Living Room',
+                'rows'  => [
+                    [
+                        'title' => 'Sofa',
+                        'items' => [
+                            [
+                                'tier'  => 'save',
+                                'title' => 'Sofa -- <Best> & Cheapest',
+                                'price' => '299.00',
+                                'images' => ['https://a.test/1.jpg'],
+                                'url'   => 'https://a.test/p?tag=x&ref=y',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $markup = Restart_Registry_Favorites_Migration_Command::build_block_markup($rooms);
+
+        // The raw, corrupting characters must not appear unescaped inside the attrs JSON.
+        $this->assertDoesNotMatchRegularExpression('/"title":"[^"]*--[^"]*"/', $markup);
+        $this->assertDoesNotMatchRegularExpression('/"title":"[^"]*<[^"]*"/', $markup);
+        $this->assertDoesNotMatchRegularExpression('/"title":"[^"]*>[^"]*"/', $markup);
+
+        $blocks = parse_blocks_test_helper($markup);
+        $item   = $blocks[0]['innerBlocks'][0]['innerBlocks'][0];
+
+        $this->assertSame('Sofa -- <Best> & Cheapest', $item['attrs']['title']);
+        $this->assertSame('https://a.test/p?tag=x&ref=y', $item['attrs']['url']);
+    }
+
+    public function test_invoke_warns_when_page_has_substantial_content_outside_favorites_shortcodes(): void {
+        $this->stubRealShortcodeCapture();
+
+        $extraContent = str_repeat('This intro paragraph explains the room before the shortcodes begin. ', 3);
+        $post = new WP_Post();
+        $post->ID           = 52;
+        $post->post_content = $extraContent . '[restart_favorites_room title="Living Room"][restart_favorites_row title="Sofa"][restart_item tier="save" title="Budget Sofa" price="299.00" image="https://a.test/1.jpg"][/restart_favorites_row][/restart_favorites_room]';
+
+        Functions\when('get_post')->justReturn($post);
+        Functions\when('wp_update_post')->justReturn(52);
+
+        $command = new Restart_Registry_Favorites_Migration_Command();
+        $command(['52'], []);
+
+        $warnings = array_filter(WP_CLI::$calls, static fn (array $c): bool => $c['level'] === 'warning');
+        $this->assertNotEmpty($warnings, 'Expected a WP_CLI::warning() call about discarded content.');
+        $this->assertStringContainsString('discarded', reset($warnings)['message']);
+
+        $successes = array_filter(WP_CLI::$calls, static fn (array $c): bool => $c['level'] === 'success');
+        $this->assertNotEmpty($successes, 'Migration should still proceed despite the warning.');
+    }
+
+    public function test_invoke_does_not_warn_when_content_is_only_the_favorites_shortcodes(): void {
+        $this->stubRealShortcodeCapture();
+
+        $post = new WP_Post();
+        $post->ID           = 52;
+        $post->post_content = '[restart_favorites_room title="Living Room"][restart_favorites_row title="Sofa"][restart_item tier="save" title="Budget Sofa" price="299.00" image="https://a.test/1.jpg"][/restart_favorites_row][/restart_favorites_room]';
+
+        Functions\when('get_post')->justReturn($post);
+        Functions\when('wp_update_post')->justReturn(52);
+
+        $command = new Restart_Registry_Favorites_Migration_Command();
+        $command(['52'], []);
+
+        $warnings = array_filter(WP_CLI::$calls, static fn (array $c): bool => $c['level'] === 'warning');
+        $this->assertEmpty($warnings, 'Should not warn when there is no substantial content outside the shortcodes.');
+    }
 }
 
 function parse_blocks_test_helper(string $markup): array {
