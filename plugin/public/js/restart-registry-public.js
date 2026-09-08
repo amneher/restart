@@ -1103,7 +1103,17 @@
         var itemBtns = Array.prototype.slice.call(
             room.querySelectorAll('.rr-quick-add[data-tier="' + tier + '"]:not(.rr-quick-add--added)')
         );
-        if (!itemBtns.length) return;
+        if (!itemBtns.length) {
+            // Nothing left to add (already added, or this tier has no items
+            // in this room) — say so instead of silently doing nothing,
+            // which otherwise looks like a dead button.
+            var emptyText = bulkBtn.textContent;
+            bulkBtn.textContent = restartRegistry.strings.allAdded;
+            setTimeout(function () {
+                bulkBtn.textContent = emptyText;
+            }, 2000);
+            return;
+        }
 
         if (!restartRegistry.isLoggedIn) {
             openAuthModal(itemBtns.length + ' items');
