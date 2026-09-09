@@ -20,6 +20,7 @@ global.restartRegistry = {
         loading: 'Loading…',
         added: 'Added!',
         error: 'Something went wrong.',
+        allAdded: 'All items already added',
     },
 };
 
@@ -268,9 +269,30 @@ describe('bulk-add ("Add all <tier> items in this room")', () => {
         expect(fetch).not.toHaveBeenCalled();
     });
 
+    it('shows feedback (not a silent no-op) when every item in the tier is already added', () => {
+        document.body.innerHTML = filterBar()
+            + favoritesRoom('Living Room', quickAddButton({ tier: 'save', name: 'Already Added', price: '10', added: true }))
+            + quickAddModals();
+        loadModule();
+
+        const bulkBtn = document.querySelector('.rr-bulk-add[data-tier="save"]');
+        bulkBtn.click();
+
+        expect(bulkBtn.textContent).toBe('All items already added');
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
     it('does nothing when the tier has no items in that room', () => {
         document.querySelector('.rr-favorites-room[data-room="Bathroom"] .rr-bulk-add[data-tier="spend"]').click();
 
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('shows feedback (not a silent no-op) when the tier has no items in that room at all', () => {
+        const bulkBtn = document.querySelector('.rr-favorites-room[data-room="Bathroom"] .rr-bulk-add[data-tier="spend"]');
+        bulkBtn.click();
+
+        expect(bulkBtn.textContent).toBe('All items already added');
         expect(fetch).not.toHaveBeenCalled();
     });
 });

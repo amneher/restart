@@ -159,6 +159,7 @@ class Restart_Registry_Public
                 'heroPickerCta'   => __('Use this image', 'restart-registry'),
                 'addedToRegistry' => __('Added to your registry!', 'restart-registry'),
                 'added'           => __('✓ Added!', 'restart-registry'),
+                'allAdded'        => __('All items already added', 'restart-registry'),
             ],
         ]);
     }
