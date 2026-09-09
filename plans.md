@@ -1035,3 +1035,1692 @@ The `the_content` priority-8 protection regex did **not** need extending for `[r
 - [x] Manual QA on local Docker stack: re-authored the sample content with two rooms (Living Room, Bathroom) using `[restart_favorites_room]` + `[restart_favorites_filters]`; verified room-pill filtering (hides section), tier-pill filtering (hides matching cards across all rooms), and bulk-add end-to-end logged out (auth modal with correct item count) and logged in with a real registry (items actually added via the live AJAX endpoint, confirmed via button state + screenshots) at desktop and mobile widths
 - [ ] Close out (link issue/PR once opened)
 - [ ] Close out (link issue/PR once opened)
+
+---
+
+# Favorites Guide Builder Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Replace hand-typed nested `[restart_favorites_room]`/`[restart_favorites_row]`/`[restart_item]`/`[restart_favorites_filters]` shortcode text with four native Gutenberg blocks (Room/Row/Item/Filters), so editors build the Our Favorites page structure graphically in the block editor instead of writing bracket syntax by hand.
+
+**Architecture:** Extract the four shortcode callbacks' rendering logic into a new static `Restart_Registry_Favorites_Renderer` class shared by both the legacy shortcodes (kept, as thin wrappers, for backward compat) and four new blocks (`restart-registry/favorites-room` → InnerBlocks → `favorites-row` → InnerBlocks → `favorites-item`, plus standalone `favorites-filters`). Blocks are registered via `block.json` + `render.php` (WP 6.9's native dynamic-block mechanism, no build step) and one hand-written `public/blocks/index.js` (plain JS against the `wp.blocks`/`wp.element`/`wp.blockEditor`/`wp.components` globals WP already loads — no bundler, no React/JSX). A WP-CLI command migrates the existing `/our-favorites` page's shortcode content into native block markup in place.
+
+**Tech Stack:** PHP 8.5 (WordPress 6.9.1, PHPUnit 12 + Brain\Monkey for tests), vanilla JS (Jest/jsdom for tests, no build tooling), WP-CLI.
+
+**Spec:** `docs/superpowers/specs/2026-09-07-favorites-guide-builder-design.md`
+
+## Global Constraints
+
+- No new CPT, no postmeta JSON, no embedding shortcode — content lives directly in the Page's `post_content` as native block markup.
+- The four legacy shortcodes (`restart_item`, `restart_favorites_row`, `restart_favorites_room`, `restart_favorites_filters`) stay registered and functional — never remove `add_shortcode()` calls for them.
+- No Gutenberg build tooling (`@wordpress/scripts`, webpack, JSX) — plain JS only, matching the rest of this codebase.
+- `tier` is constrained to `save`/`spend`/`splurge` everywhere (enum, not free text).
+- `images` is always an array in the new code paths (the old shortcode's comma-split-string convention stays only inside `item_shortcode()`'s own attribute parsing, never in `Restart_Registry_Favorites_Renderer`).
+- Every task must leave `make plugin-test-php` and `make plugin-test-js` green before moving to the next task.
+
+---
+
+### Task 1: Extract `Restart_Registry_Favorites_Renderer`
+
+**Files:**
+- Create: `plugin/includes/class-restart-registry-favorites-renderer.php`
+- Modify: `plugin/public/class-restart-registry-public.php:1738-1975` (the `FAVORITES_TIERS` constant and the four shortcode methods `item_shortcode()`, `favorites_row_shortcode()`, `favorites_room_shortcode()`, `favorites_filters_shortcode()`, plus `render_quick_add_modals()` and the `$quick_add_modals_printed` static property)
+- Modify: `plugin/tests/bootstrap.php` (add a `require_once` for the new renderer class)
+- Test: `plugin/tests/unit/FavoritesRendererTest.php` (new)
+
+**Interfaces:**
+- Produces: `Restart_Registry_Favorites_Renderer::TIERS` (array constant, `['save', 'spend', 'splurge']`), `render_item(array $item): string`, `render_row(string $title, ?string $content): string`, `render_room(string $title, ?string $content): string`, `render_filters(): string` — all `public static`. `$item` array keys: `tier`, `title`, `price`, `images` (array of URL strings), `retailer`, `description`, `url`, `notes`, `quantity`.
+- Consumes: nothing from other tasks (this is the foundation).
+
+- [ ] **Step 1: Write the failing test for `render_item()`**
+
+Create `plugin/tests/unit/FavoritesRendererTest.php`:
+
+```php
+<?php
+declare(strict_types=1);
+
+use Brain\Monkey;
+use Brain\Monkey\Functions;
+use PHPUnit\Framework\TestCase;
+
+class FavoritesRendererTest extends TestCase {
+
+    protected function setUp(): void {
+        parent::setUp();
+        Monkey\setUp();
+
+        Functions\when('get_option')->justReturn('');
+        Functions\when('__')->returnArg(1);
+        Functions\when('esc_html__')->returnArg(1);
+        Functions\when('esc_html')->alias(fn($s) => htmlspecialchars((string) $s, ENT_QUOTES));
+        Functions\when('esc_attr')->alias(fn($s) => htmlspecialchars((string) $s, ENT_QUOTES));
+        Functions\when('esc_attr__')->returnArg(1);
+        Functions\when('esc_url')->returnArg(1);
+
+        (new ReflectionProperty(Restart_Registry_Favorites_Renderer::class, 'quick_add_modals_printed'))->setValue(null, true);
+    }
+
+    protected function tearDown(): void {
+        Monkey\tearDown();
+        parent::tearDown();
+    }
+
+    public function test_render_item_returns_empty_string_without_title(): void {
+        $html = Restart_Registry_Favorites_Renderer::render_item(['tier' => 'save']);
+        $this->assertSame('', $html);
+    }
+
+    public function test_render_item_renders_tier_badge(): void {
+        $html = Restart_Registry_Favorites_Renderer::render_item(['title' => 'Budget Sofa', 'tier' => 'save']);
+
+        $this->assertStringContainsString('rr-article-item--tier', $html);
+        $this->assertStringContainsString('rr-article-item__tier-badge--save', $html);
+    }
+
+    public function test_render_item_ignores_invalid_tier(): void {
+        $html = Restart_Registry_Favorites_Renderer::render_item(['title' => 'Item', 'tier' => 'amazing']);
+
+        $this->assertStringNotContainsString('rr-article-item__tier-badge', $html);
+    }
+
+    public function test_render_item_renders_multiple_images_as_carousel(): void {
+        $html = Restart_Registry_Favorites_Renderer::render_item([
+            'title'  => 'Sofa',
+            'images' => ['https://a.test/1.jpg', 'https://a.test/2.jpg'],
+        ]);
+
+        $this->assertStringContainsString('rr-article-item__carousel', $html);
+        $this->assertStringContainsString('data-count="2"', $html);
+    }
+
+    public function test_render_row_returns_empty_string_without_title(): void {
+        $this->assertSame('', Restart_Registry_Favorites_Renderer::render_row('', '<div>card</div>'));
+    }
+
+    public function test_render_row_wraps_content(): void {
+        $html = Restart_Registry_Favorites_Renderer::render_row('Sofa', '<div>card</div>');
+
+        $this->assertStringContainsString('rr-favorites-row__title', $html);
+        $this->assertStringContainsString('Sofa', $html);
+        $this->assertStringContainsString('<div>card</div>', $html);
+    }
+
+    public function test_render_room_returns_empty_string_without_title(): void {
+        $this->assertSame('', Restart_Registry_Favorites_Renderer::render_room('', '<div>rows</div>'));
+    }
+
+    public function test_render_room_wraps_content_and_has_bulk_buttons(): void {
+        $html = Restart_Registry_Favorites_Renderer::render_room('Living Room', '<div>rows</div>');
+
+        $this->assertStringContainsString('data-room="Living Room"', $html);
+        foreach (Restart_Registry_Favorites_Renderer::TIERS as $tier) {
+            $this->assertStringContainsString('data-tier="' . $tier . '"', $html);
+        }
+    }
+
+    public function test_render_filters_renders_pills(): void {
+        $html = Restart_Registry_Favorites_Renderer::render_filters();
+
+        $this->assertStringContainsString('data-room-pills', $html);
+        foreach (Restart_Registry_Favorites_Renderer::TIERS as $tier) {
+            $this->assertStringContainsString('data-tier-pill="' . $tier . '"', $html);
+        }
+    }
+}
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesRendererTest.php`
+Expected: FAIL with `Class "Restart_Registry_Favorites_Renderer" not found`.
+
+- [ ] **Step 3: Create the renderer class**
+
+Create `plugin/includes/class-restart-registry-favorites-renderer.php`:
+
+```php
+<?php
+
+/**
+ * Pure rendering functions for the Our Favorites room/row/item structure.
+ * Shared by the legacy [restart_favorites_room]/[restart_favorites_row]/
+ * [restart_item]/[restart_favorites_filters] shortcodes (thin wrappers in
+ * Restart_Registry_Public) and the restart-registry/favorites-* blocks'
+ * render.php files. One render path, two entry points.
+ */
+class Restart_Registry_Favorites_Renderer
+{
+    public const TIERS = ['save', 'spend', 'splurge'];
+
+    private static bool $quick_add_modals_printed = false;
+
+    /**
+     * @param array{tier?:string,title?:string,price?:string,images?:array,retailer?:string,description?:string,url?:string,notes?:string,quantity?:string} $item
+     */
+    public static function render_item(array $item): string
+    {
+        if (empty($item['title'])) {
+            return '';
+        }
+
+        $tier = in_array($item['tier'] ?? '', self::TIERS, true) ? $item['tier'] : '';
+
+        $images = array_values(array_filter((array) ($item['images'] ?? [])));
+
+        // ── Image / carousel section ──────────────────────────────────────
+        $media_html = '';
+        if (count($images) === 1) {
+            $media_html = '<div class="rr-article-item__media">'
+                . '<img class="rr-article-item__img" src="' . esc_url($images[0]) . '" alt="' . esc_attr($item['title']) . '" loading="lazy">'
+                . '</div>';
+        } elseif (count($images) > 1) {
+            $slides = '';
+            $dots   = '';
+            foreach ($images as $i => $src) {
+                $active  = $i === 0 ? ' is-active' : '';
+                $slides .= '<img class="rr-article-item__slide' . $active . '" src="' . esc_url($src) . '" alt="' . esc_attr($item['title']) . '" loading="lazy">';
+                $dots   .= '<button type="button" class="rr-article-item__dot' . $active . '" aria-label="' . esc_attr(sprintf(__('Image %d', 'restart-registry'), $i + 1)) . '"></button>';
+            }
+            $media_html = '<div class="rr-article-item__media">'
+                . '<div class="rr-article-item__carousel" data-count="' . count($images) . '">'
+                . '<div class="rr-article-item__slides">' . $slides . '</div>'
+                . '<button type="button" class="rr-article-item__prev" aria-label="' . esc_attr__('Previous image', 'restart-registry') . '">&#8249;</button>'
+                . '<button type="button" class="rr-article-item__next" aria-label="' . esc_attr__('Next image', 'restart-registry') . '">&#8250;</button>'
+                . '<div class="rr-article-item__dots">' . $dots . '</div>'
+                . '</div>'
+                . '</div>';
+        }
+
+        // ── Price ─────────────────────────────────────────────────────────
+        $price_html = '';
+        if (!empty($item['price'])) {
+            $display    = str_starts_with(ltrim((string) $item['price']), '$') ? $item['price'] : '$' . $item['price'];
+            $price_html = '<span class="rr-article-item__price">' . esc_html($display) . '</span>';
+        }
+
+        // ── Action buttons ────────────────────────────────────────────────
+        $shop_btn = '';
+        $add_btn  = '';
+        if (!empty($item['url'])) {
+            $aff = Restart_Registry_Affiliate_Converter::instance()->convert_url($item['url']);
+            $shop_btn = '<a href="' . esc_url($aff['affiliate_url']) . '" class="rr-button rr-article-item__shop-btn" target="_blank" rel="noopener sponsored">'
+                . esc_html__('Shop Now', 'restart-registry') . '</a>';
+
+            $add_btn = '<button type="button" class="rr-button rr-button-secondary rr-quick-add"'
+                . ' data-name="' . esc_attr($item['title']) . '"'
+                . ' data-url="' . esc_attr($aff['affiliate_url']) . '"'
+                . ' data-price="' . esc_attr(preg_replace('/[^0-9.]/', '', (string) ($item['price'] ?? ''))) . '"'
+                . ' data-image-url="' . esc_attr($images[0] ?? '') . '"'
+                . ' data-description="' . esc_attr($item['description'] ?? '') . '"'
+                . ' data-notes="' . esc_attr($item['notes'] ?? '') . '"'
+                . ' data-quantity="' . esc_attr($item['quantity'] ?? '1') . '"'
+                . ($tier !== '' ? ' data-tier="' . esc_attr($tier) . '"' : '')
+                . '>'
+                . esc_html__('+ Add to My Registry', 'restart-registry')
+                . '</button>';
+        }
+
+        $retailer_html = !empty($item['retailer'])
+            ? '<span class="rr-article-item__retailer rr-item-retailer">' . esc_html($item['retailer']) . '</span>'
+            : '';
+
+        $desc_html = !empty($item['description'])
+            ? '<p class="rr-article-item__description">' . esc_html($item['description']) . '</p>'
+            : '';
+
+        $disclosure = get_option('restart_registry_affiliate_disclosure', __('Some links on this registry are affiliate links.', 'restart-registry'));
+        $disc_html  = !empty($disclosure)
+            ? '<p class="rr-affiliate-note"><small>' . esc_html($disclosure) . '</small></p>'
+            : '';
+
+        $tier_badge_html = $tier !== ''
+            ? '<span class="rr-article-item__tier-badge rr-article-item__tier-badge--' . esc_attr($tier) . '">' . esc_html(ucfirst($tier)) . '</span>'
+            : '';
+
+        $card_class     = 'rr-article-item' . ($tier !== '' ? ' rr-article-item--tier' : '');
+        $card_tier_attr = $tier !== '' ? ' data-tier="' . esc_attr($tier) . '"' : '';
+
+        $html = '<div class="' . esc_attr($card_class) . '"' . $card_tier_attr . '>'
+            . $tier_badge_html
+            . $media_html
+            . '<div class="rr-article-item__body">'
+            . '<div class="rr-article-item__header">'
+            . '<h3 class="rr-article-item__title">' . esc_html($item['title']) . '</h3>'
+            . $retailer_html
+            . '</div>'
+            . $desc_html
+            . '<div class="rr-article-item__footer">'
+            . $price_html
+            . '<div class="rr-article-item__actions">' . $shop_btn . $add_btn . '</div>'
+            . $disc_html
+            . '</div>'
+            . '</div>'
+            . '</div>';
+
+        if (!self::$quick_add_modals_printed) {
+            self::$quick_add_modals_printed = true;
+            $html .= self::render_quick_add_modals();
+        }
+
+        return $html;
+    }
+
+    public static function render_row(string $title, ?string $content): string
+    {
+        if (empty($title)) {
+            return '';
+        }
+
+        return '<div class="rr-favorites-row">'
+            . '<h4 class="rr-favorites-row__title">' . esc_html($title) . '</h4>'
+            . '<div class="rr-favorites-row__cards">' . (string) $content . '</div>'
+            . '</div>';
+    }
+
+    public static function render_room(string $title, ?string $content): string
+    {
+        if (empty($title)) {
+            return '';
+        }
+
+        $bulk_buttons = '';
+        foreach (self::TIERS as $tier) {
+            $bulk_buttons .= '<button type="button" class="rr-button rr-button-secondary rr-bulk-add" data-tier="' . esc_attr($tier) . '">'
+                . esc_html(sprintf(__('Add all %s items', 'restart-registry'), ucfirst($tier)))
+                . '</button>';
+        }
+
+        return '<section class="rr-favorites-room" data-room="' . esc_attr($title) . '">'
+            . '<div class="rr-favorites-room__header">'
+            . '<h3 class="rr-favorites-room__title">' . esc_html($title) . '</h3>'
+            . '<div class="rr-favorites-room__bulk-actions">' . $bulk_buttons . '</div>'
+            . '</div>'
+            . '<div class="rr-favorites-room__rows">' . (string) $content . '</div>'
+            . '</section>';
+    }
+
+    public static function render_filters(): string
+    {
+        $tier_pills = '';
+        foreach (self::TIERS as $tier) {
+            $tier_pills .= '<button type="button" class="rr-favorites-filters__pill is-active" data-tier-pill="' . esc_attr($tier) . '">'
+                . esc_html(ucfirst($tier))
+                . '</button>';
+        }
+
+        return '<div class="rr-favorites-filters">'
+            . '<div class="rr-favorites-filters__group rr-favorites-filters__group--rooms" data-room-pills></div>'
+            . '<div class="rr-favorites-filters__group rr-favorites-filters__group--tiers" data-tier-pills>' . $tier_pills . '</div>'
+            . '</div>';
+    }
+
+    /**
+     * Shared modals for the quick-add flow, printed once per page regardless
+     * of whether items are rendered via shortcodes, blocks, or both.
+     */
+    private static function render_quick_add_modals(): string
+    {
+        ob_start();
+?>
+
+        <!-- Quick-add: auth modal (not logged in) -->
+        <div class="rr-modal rr-quick-add-modal" id="rr-qa-auth-modal" aria-inert="true">
+            <div class="rr-modal__backdrop"></div>
+            <div class="rr-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="rr-qa-auth-title">
+                <div class="rr-modal__header">
+                    <h3 id="rr-qa-auth-title" class="rr-modal__title"><?php esc_html_e('Add to Your Registry', 'restart-registry'); ?></h3>
+                    <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                </div>
+                <div class="rr-modal__body">
+                    <p class="rr-qa-modal__item-name"></p>
+                    <p><?php esc_html_e('Sign in or create a free registry to save items you love.', 'restart-registry'); ?></p>
+                    <div class="rr-modal__actions rr-qa-modal__actions">
+                        <a id="rr-qa-login-link" href="<?php echo esc_url(wp_login_url()); ?>" class="rr-button"><?php esc_html_e('Sign In', 'restart-registry'); ?></a>
+                        <a id="rr-qa-register-link" href="<?php echo esc_url(home_url('/start-a-registry/')); ?>" class="rr-button rr-button-secondary"><?php esc_html_e('Create a Registry', 'restart-registry'); ?></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick-add: no-registry modal (logged in, no registry) -->
+        <div class="rr-modal rr-quick-add-modal" id="rr-qa-no-registry-modal" aria-inert="true">
+            <div class="rr-modal__backdrop"></div>
+            <div class="rr-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="rr-qa-nr-title">
+                <div class="rr-modal__header">
+                    <h3 id="rr-qa-nr-title" class="rr-modal__title"><?php esc_html_e('Create a Registry First', 'restart-registry'); ?></h3>
+                    <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                </div>
+                <div class="rr-modal__body">
+                    <p><?php esc_html_e("You don't have a registry yet. Start one — it only takes a minute.", 'restart-registry'); ?></p>
+                    <div class="rr-modal__actions rr-qa-modal__actions">
+                        <a href="<?php echo esc_url(home_url('/start-a-registry/')); ?>" class="rr-button"><?php esc_html_e('Create My Registry', 'restart-registry'); ?></a>
+                        <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php esc_html_e('Maybe Later', 'restart-registry'); ?></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<?php
+        return (string) ob_get_clean();
+    }
+}
+```
+
+- [ ] **Step 4: Point the existing shortcode methods at the renderer**
+
+In `plugin/public/class-restart-registry-public.php`, replace lines 1735-1975 (the `$quick_add_modals_printed` property, `FAVORITES_TIERS` constant, `item_shortcode()`, `favorites_row_shortcode()`, `favorites_room_shortcode()`, `favorites_filters_shortcode()`, and `render_quick_add_modals()`) with:
+
+```php
+    public function item_shortcode(array $atts): string
+    {
+        $a = shortcode_atts([
+            'title'       => '',
+            'price'       => '',
+            'image'       => '',
+            'images'      => '',
+            'description' => '',
+            'url'         => '',
+            'retailer'    => '',
+            'notes'       => '',
+            'quantity'    => '1',
+            'tier'        => '',
+        ], $atts, 'restart_item');
+
+        // Normalise image list: `images` wins over `image`.
+        $raw    = !empty($a['images']) ? $a['images'] : $a['image'];
+        $images = array_values(array_filter(array_map('trim', explode(',', $raw))));
+
+        return Restart_Registry_Favorites_Renderer::render_item([
+            'title'       => $a['title'],
+            'price'       => $a['price'],
+            'images'      => $images,
+            'description' => $a['description'],
+            'url'         => $a['url'],
+            'retailer'    => $a['retailer'],
+            'notes'       => $a['notes'],
+            'quantity'    => $a['quantity'],
+            'tier'        => $a['tier'],
+        ]);
+    }
+
+    /**
+     * [restart_favorites_row title="Sofa"]
+     *   [restart_item tier="save" ...]
+     *   [restart_item tier="spend" ...]
+     *   [restart_item tier="splurge" ...]
+     * [/restart_favorites_row]
+     *
+     * Wraps a general item's Save/Spend/Splurge product cards in a labeled,
+     * 3-column row for the Our Favorites guide.
+     */
+    public function favorites_row_shortcode(array $atts, ?string $content = null): string
+    {
+        $a = shortcode_atts(['title' => ''], $atts, 'restart_favorites_row');
+
+        // Nested [restart_item] shortcodes are usually already rendered by the
+        // the_content pre-filter (priority 8) by the time WordPress reaches this
+        // enclosing shortcode. do_shortcode() here is a no-op in that case and
+        // only matters when favorites_row_shortcode() is invoked directly.
+        return Restart_Registry_Favorites_Renderer::render_row($a['title'], do_shortcode((string) $content));
+    }
+
+    /**
+     * [restart_favorites_room title="Living Room"]
+     *   [restart_favorites_row title="Sofa"]...[/restart_favorites_row]
+     *   [restart_favorites_row title="Coffee Table"]...[/restart_favorites_row]
+     * [/restart_favorites_room]
+     *
+     * Wraps a room's [restart_favorites_row] blocks with a heading and
+     * "Add all Save/Spend/Splurge items in this room" bulk-add buttons.
+     * `data-room` is how [restart_favorites_filters] scopes room-pill
+     * filtering at runtime; `.rr-bulk-add[data-tier]` is how the bulk-add
+     * click handler finds every quick-add button of one tier in this room.
+     */
+    public function favorites_room_shortcode(array $atts, ?string $content = null): string
+    {
+        $a = shortcode_atts(['title' => ''], $atts, 'restart_favorites_room');
+
+        // Same rationale as favorites_row_shortcode(): nested shortcodes are
+        // normally already rendered by the the_content pre-filter (priority 8);
+        // do_shortcode() here only matters when invoked directly (e.g. tests).
+        return Restart_Registry_Favorites_Renderer::render_room($a['title'], do_shortcode((string) $content));
+    }
+
+    /**
+     * [restart_favorites_filters]
+     *
+     * Self-closing. Renders an empty room-pill container plus the static
+     * Save/Spend/Splurge tier pills; JS populates the room pills at runtime
+     * from every [restart_favorites_room data-room] present on the page,
+     * so the pill list always matches whatever rooms are actually authored.
+     */
+    public function favorites_filters_shortcode(): string
+    {
+        return Restart_Registry_Favorites_Renderer::render_filters();
+    }
+```
+
+Then add, near the other `require_once` calls in the constructor (around line 32):
+
+```php
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-restart-registry-favorites-renderer.php';
+```
+
+- [ ] **Step 5: Wire the new class into the test bootstrap**
+
+In `plugin/tests/bootstrap.php`, add after the `class-affiliate-converter.php` require:
+
+```php
+require_once dirname(__DIR__) . '/includes/class-restart-registry-favorites-renderer.php';
+```
+
+- [ ] **Step 6: Run the new test and the full existing suite**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesRendererTest.php`
+Expected: PASS (9 tests).
+
+Run: `make plugin-test-php`
+Expected: PASS, same 305+9 = 314 tests, 0 failures (confirms `FavoritesRowShortcodeTest.php` still passes unmodified against the refactored wrapper methods).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add plugin/includes/class-restart-registry-favorites-renderer.php plugin/public/class-restart-registry-public.php plugin/tests/bootstrap.php plugin/tests/unit/FavoritesRendererTest.php
+git commit -m "refactor: extract Restart_Registry_Favorites_Renderer from shortcode callbacks"
+```
+
+---
+
+### Task 2: `favorites-item` block
+
+**Files:**
+- Create: `plugin/public/blocks/favorites-item/block.json`
+- Create: `plugin/public/blocks/favorites-item/render.php`
+- Test: `plugin/tests/unit/FavoritesItemBlockRenderTest.php`
+
+**Interfaces:**
+- Consumes: `Restart_Registry_Favorites_Renderer::render_item(array $item): string` (Task 1).
+- Produces: block name `restart-registry/favorites-item`, attributes `tier`, `title`, `price`, `images` (array), `retailer`, `description`, `url`, `notes`, `quantity` — later tasks (Row block) reference this block name in their `allowedBlocks`.
+
+- [ ] **Step 1: Write the failing render test**
+
+Create `plugin/tests/unit/FavoritesItemBlockRenderTest.php`:
+
+```php
+<?php
+declare(strict_types=1);
+
+use Brain\Monkey;
+use Brain\Monkey\Functions;
+use PHPUnit\Framework\TestCase;
+
+class FavoritesItemBlockRenderTest extends TestCase {
+
+    protected function setUp(): void {
+        parent::setUp();
+        Monkey\setUp();
+
+        Functions\when('get_option')->justReturn('');
+        Functions\when('__')->returnArg(1);
+        Functions\when('esc_html__')->returnArg(1);
+        Functions\when('esc_html')->alias(fn($s) => htmlspecialchars((string) $s, ENT_QUOTES));
+        Functions\when('esc_attr')->alias(fn($s) => htmlspecialchars((string) $s, ENT_QUOTES));
+        Functions\when('esc_attr__')->returnArg(1);
+        Functions\when('esc_url')->returnArg(1);
+
+        (new ReflectionProperty(Restart_Registry_Favorites_Renderer::class, 'quick_add_modals_printed'))->setValue(null, true);
+    }
+
+    protected function tearDown(): void {
+        Monkey\tearDown();
+        parent::tearDown();
+    }
+
+    public function test_render_php_outputs_item_card(): void {
+        $attributes = [
+            'tier'   => 'spend',
+            'title'  => 'Mid Sofa',
+            'price'  => '599.00',
+            'images' => ['https://a.test/sofa.jpg'],
+        ];
+
+        ob_start();
+        require dirname(__DIR__, 2) . '/public/blocks/favorites-item/render.php';
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('Mid Sofa', $html);
+        $this->assertStringContainsString('rr-article-item__tier-badge--spend', $html);
+    }
+}
+```
+
+- [ ] **Step 2: Run it, verify it fails**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesItemBlockRenderTest.php`
+Expected: FAIL — `render.php` does not exist yet.
+
+- [ ] **Step 3: Create `block.json`**
+
+Create `plugin/public/blocks/favorites-item/block.json`:
+
+```json
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "restart-registry/favorites-item",
+    "title": "Favorites Item",
+    "category": "widgets",
+    "icon": "cart",
+    "description": "A Save/Spend/Splurge product card for the Our Favorites page.",
+    "attributes": {
+        "tier": { "type": "string", "default": "" },
+        "title": { "type": "string", "default": "" },
+        "price": { "type": "string", "default": "" },
+        "images": { "type": "array", "default": [], "items": { "type": "string" } },
+        "retailer": { "type": "string", "default": "" },
+        "description": { "type": "string", "default": "" },
+        "url": { "type": "string", "default": "" },
+        "notes": { "type": "string", "default": "" },
+        "quantity": { "type": "string", "default": "1" }
+    },
+    "supports": { "html": false },
+    "editorScript": "restart-registry-favorites-blocks",
+    "render": "file:./render.php"
+}
+```
+
+- [ ] **Step 4: Create `render.php`**
+
+Create `plugin/public/blocks/favorites-item/render.php`:
+
+```php
+<?php
+/**
+ * Server-side render for restart-registry/favorites-item.
+ *
+ * @var array $attributes Block attributes: tier, title, price, images, retailer, description, url, notes, quantity.
+ */
+
+echo Restart_Registry_Favorites_Renderer::render_item($attributes);
+```
+
+- [ ] **Step 5: Run the test again**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesItemBlockRenderTest.php`
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add plugin/public/blocks/favorites-item plugin/tests/unit/FavoritesItemBlockRenderTest.php
+git commit -m "feat: add restart-registry/favorites-item block (render.php only)"
+```
+
+*(The block isn't registered with WordPress yet — that's Task 6, once all four exist. This task only proves the render path.)*
+
+---
+
+### Task 3: `favorites-row` block
+
+**Files:**
+- Create: `plugin/public/blocks/favorites-row/block.json`
+- Create: `plugin/public/blocks/favorites-row/render.php`
+- Test: `plugin/tests/unit/FavoritesRowBlockRenderTest.php`
+
+**Interfaces:**
+- Consumes: `Restart_Registry_Favorites_Renderer::render_row(string $title, ?string $content): string` (Task 1).
+- Produces: block name `restart-registry/favorites-row` — later tasks (Room block) reference this in `allowedBlocks`; the editor JS (Task 6) will set this block's own `allowedBlocks` to `['restart-registry/favorites-item']`.
+
+- [ ] **Step 1: Write the failing render test**
+
+Create `plugin/tests/unit/FavoritesRowBlockRenderTest.php`:
+
+```php
+<?php
+declare(strict_types=1);
+
+use Brain\Monkey;
+use Brain\Monkey\Functions;
+use PHPUnit\Framework\TestCase;
+
+class FavoritesRowBlockRenderTest extends TestCase {
+
+    protected function setUp(): void {
+        parent::setUp();
+        Monkey\setUp();
+        Functions\when('esc_html')->alias(fn($s) => htmlspecialchars((string) $s, ENT_QUOTES));
+    }
+
+    protected function tearDown(): void {
+        Monkey\tearDown();
+        parent::tearDown();
+    }
+
+    public function test_render_php_wraps_inner_content(): void {
+        $attributes = ['title' => 'Sofa'];
+        $content    = '<div class="rr-article-item">card</div>';
+
+        ob_start();
+        require dirname(__DIR__, 2) . '/public/blocks/favorites-row/render.php';
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('rr-favorites-row__title', $html);
+        $this->assertStringContainsString('Sofa', $html);
+        $this->assertStringContainsString('<div class="rr-article-item">card</div>', $html);
+    }
+}
+```
+
+- [ ] **Step 2: Run it, verify it fails**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesRowBlockRenderTest.php`
+Expected: FAIL — `render.php` does not exist yet.
+
+- [ ] **Step 3: Create `block.json`**
+
+Create `plugin/public/blocks/favorites-row/block.json`:
+
+```json
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "restart-registry/favorites-row",
+    "title": "Favorites Row",
+    "category": "widgets",
+    "icon": "grid-view",
+    "description": "A labeled row of Save/Spend/Splurge items for the Our Favorites page.",
+    "attributes": {
+        "title": { "type": "string", "default": "" }
+    },
+    "supports": { "html": false },
+    "editorScript": "restart-registry-favorites-blocks",
+    "render": "file:./render.php"
+}
+```
+
+- [ ] **Step 4: Create `render.php`**
+
+Create `plugin/public/blocks/favorites-row/render.php`:
+
+```php
+<?php
+/**
+ * Server-side render for restart-registry/favorites-row.
+ *
+ * @var array  $attributes Block attributes: title.
+ * @var string $content    Pre-rendered inner blocks (favorites-item children), provided by WordPress.
+ */
+
+echo Restart_Registry_Favorites_Renderer::render_row((string) ($attributes['title'] ?? ''), $content);
+```
+
+- [ ] **Step 5: Run the test again**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesRowBlockRenderTest.php`
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add plugin/public/blocks/favorites-row plugin/tests/unit/FavoritesRowBlockRenderTest.php
+git commit -m "feat: add restart-registry/favorites-row block (render.php only)"
+```
+
+---
+
+### Task 4: `favorites-room` block
+
+**Files:**
+- Create: `plugin/public/blocks/favorites-room/block.json`
+- Create: `plugin/public/blocks/favorites-room/render.php`
+- Test: `plugin/tests/unit/FavoritesRoomBlockRenderTest.php`
+
+**Interfaces:**
+- Consumes: `Restart_Registry_Favorites_Renderer::render_room(string $title, ?string $content): string` (Task 1).
+- Produces: block name `restart-registry/favorites-room` — the editor JS (Task 6) sets its `allowedBlocks` to `['restart-registry/favorites-row']`.
+
+- [ ] **Step 1: Write the failing render test**
+
+Create `plugin/tests/unit/FavoritesRoomBlockRenderTest.php`:
+
+```php
+<?php
+declare(strict_types=1);
+
+use Brain\Monkey;
+use Brain\Monkey\Functions;
+use PHPUnit\Framework\TestCase;
+
+class FavoritesRoomBlockRenderTest extends TestCase {
+
+    protected function setUp(): void {
+        parent::setUp();
+        Monkey\setUp();
+        Functions\when('esc_html')->alias(fn($s) => htmlspecialchars((string) $s, ENT_QUOTES));
+        Functions\when('esc_attr')->alias(fn($s) => htmlspecialchars((string) $s, ENT_QUOTES));
+        Functions\when('__')->returnArg(1);
+    }
+
+    protected function tearDown(): void {
+        Monkey\tearDown();
+        parent::tearDown();
+    }
+
+    public function test_render_php_wraps_inner_content(): void {
+        $attributes = ['title' => 'Living Room'];
+        $content    = '<div class="rr-favorites-row">row</div>';
+
+        ob_start();
+        require dirname(__DIR__, 2) . '/public/blocks/favorites-room/render.php';
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('data-room="Living Room"', $html);
+        $this->assertStringContainsString('<div class="rr-favorites-row">row</div>', $html);
+        $this->assertStringContainsString('rr-bulk-add', $html);
+    }
+}
+```
+
+- [ ] **Step 2: Run it, verify it fails**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesRoomBlockRenderTest.php`
+Expected: FAIL — `render.php` does not exist yet.
+
+- [ ] **Step 3: Create `block.json`**
+
+Create `plugin/public/blocks/favorites-room/block.json`:
+
+```json
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "restart-registry/favorites-room",
+    "title": "Favorites Room",
+    "category": "widgets",
+    "icon": "admin-home",
+    "description": "A room section (e.g. \"Living Room\") of Favorites Rows for the Our Favorites page.",
+    "attributes": {
+        "title": { "type": "string", "default": "" }
+    },
+    "supports": { "html": false },
+    "editorScript": "restart-registry-favorites-blocks",
+    "render": "file:./render.php"
+}
+```
+
+- [ ] **Step 4: Create `render.php`**
+
+Create `plugin/public/blocks/favorites-room/render.php`:
+
+```php
+<?php
+/**
+ * Server-side render for restart-registry/favorites-room.
+ *
+ * @var array  $attributes Block attributes: title.
+ * @var string $content    Pre-rendered inner blocks (favorites-row children), provided by WordPress.
+ */
+
+echo Restart_Registry_Favorites_Renderer::render_room((string) ($attributes['title'] ?? ''), $content);
+```
+
+- [ ] **Step 5: Run the test again**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesRoomBlockRenderTest.php`
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add plugin/public/blocks/favorites-room plugin/tests/unit/FavoritesRoomBlockRenderTest.php
+git commit -m "feat: add restart-registry/favorites-room block (render.php only)"
+```
+
+---
+
+### Task 5: `favorites-filters` block
+
+**Files:**
+- Create: `plugin/public/blocks/favorites-filters/block.json`
+- Create: `plugin/public/blocks/favorites-filters/render.php`
+- Test: `plugin/tests/unit/FavoritesFiltersBlockRenderTest.php`
+
+**Interfaces:**
+- Consumes: `Restart_Registry_Favorites_Renderer::render_filters(): string` (Task 1).
+- Produces: block name `restart-registry/favorites-filters`.
+
+- [ ] **Step 1: Write the failing render test**
+
+Create `plugin/tests/unit/FavoritesFiltersBlockRenderTest.php`:
+
+```php
+<?php
+declare(strict_types=1);
+
+use Brain\Monkey;
+use Brain\Monkey\Functions;
+use PHPUnit\Framework\TestCase;
+
+class FavoritesFiltersBlockRenderTest extends TestCase {
+
+    protected function setUp(): void {
+        parent::setUp();
+        Monkey\setUp();
+        Functions\when('esc_html')->alias(fn($s) => htmlspecialchars((string) $s, ENT_QUOTES));
+        Functions\when('esc_attr')->alias(fn($s) => htmlspecialchars((string) $s, ENT_QUOTES));
+    }
+
+    protected function tearDown(): void {
+        Monkey\tearDown();
+        parent::tearDown();
+    }
+
+    public function test_render_php_outputs_filter_bar(): void {
+        ob_start();
+        require dirname(__DIR__, 2) . '/public/blocks/favorites-filters/render.php';
+        $html = (string) ob_get_clean();
+
+        $this->assertStringContainsString('data-room-pills', $html);
+        $this->assertStringContainsString('data-tier-pill="save"', $html);
+    }
+}
+```
+
+- [ ] **Step 2: Run it, verify it fails**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesFiltersBlockRenderTest.php`
+Expected: FAIL — `render.php` does not exist yet.
+
+- [ ] **Step 3: Create `block.json`**
+
+Create `plugin/public/blocks/favorites-filters/block.json`:
+
+```json
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "restart-registry/favorites-filters",
+    "title": "Favorites Filters",
+    "category": "widgets",
+    "icon": "filter",
+    "description": "Room/tier filter bar for the Our Favorites page. Place once, near the top.",
+    "supports": { "html": false, "multiple": false },
+    "editorScript": "restart-registry-favorites-blocks",
+    "render": "file:./render.php"
+}
+```
+
+- [ ] **Step 4: Create `render.php`**
+
+Create `plugin/public/blocks/favorites-filters/render.php`:
+
+```php
+<?php
+/**
+ * Server-side render for restart-registry/favorites-filters.
+ */
+
+echo Restart_Registry_Favorites_Renderer::render_filters();
+```
+
+- [ ] **Step 5: Run the test again**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesFiltersBlockRenderTest.php`
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add plugin/public/blocks/favorites-filters plugin/tests/unit/FavoritesFiltersBlockRenderTest.php
+git commit -m "feat: add restart-registry/favorites-filters block (render.php only)"
+```
+
+---
+
+### Task 6: Register the blocks and build the editor JS
+
+**Files:**
+- Create: `plugin/public/blocks/index.js`
+- Create: `plugin/public/class-restart-registry-favorites-blocks.php`
+- Modify: `plugin/includes/class-restart-registry.php` (require the new class, hook it into `init`)
+- Test: `plugin/tests/js/restart-registry-favorites-blocks.test.js`
+
+**Interfaces:**
+- Consumes: block names from Tasks 2-5 (`restart-registry/favorites-item`, `-row`, `-room`, `-filters`).
+- Produces: registered blocks reachable in the block editor inserter; script handle `restart-registry-favorites-blocks`.
+
+- [ ] **Step 1: Write the failing JS test**
+
+Create `plugin/tests/js/restart-registry-favorites-blocks.test.js`:
+
+```js
+'use strict';
+
+describe('favorites blocks registration', () => {
+    let registerBlockType;
+
+    beforeEach(() => {
+        jest.resetModules();
+        registerBlockType = jest.fn();
+
+        global.wp = {
+            blocks: { registerBlockType },
+            element: { createElement: jest.fn(() => ({})) },
+            blockEditor: {
+                useBlockProps: jest.fn(() => ({})),
+                useInnerBlocksProps: jest.fn((props) => props),
+                MediaUpload: function MediaUpload() { return null; },
+                InspectorControls: function InspectorControls() { return null; },
+            },
+            components: {
+                TextControl: function TextControl() { return null; },
+                TextareaControl: function TextareaControl() { return null; },
+                SelectControl: function SelectControl() { return null; },
+                Button: function Button() { return null; },
+                PanelBody: function PanelBody() { return null; },
+            },
+            i18n: { __: (s) => s },
+        };
+
+        require('../../public/blocks/index.js');
+    });
+
+    it('registers all four favorites blocks', () => {
+        const names = registerBlockType.mock.calls.map(([name]) => name);
+        expect(names).toEqual([
+            'restart-registry/favorites-item',
+            'restart-registry/favorites-row',
+            'restart-registry/favorites-room',
+            'restart-registry/favorites-filters',
+        ]);
+    });
+
+    it('every block defines edit() and a save() that returns null (fully server-rendered)', () => {
+        registerBlockType.mock.calls.forEach(([, config]) => {
+            expect(typeof config.edit).toBe('function');
+            expect(config.save()).toBeNull();
+        });
+    });
+
+    it('restricts favorites-row to only contain favorites-item via allowedBlocks', () => {
+        const [, rowConfig] = registerBlockType.mock.calls.find(([name]) => name === 'restart-registry/favorites-row');
+        rowConfig.edit({ attributes: { title: '' }, setAttributes: jest.fn() });
+
+        const [, opts] = global.wp.blockEditor.useInnerBlocksProps.mock.calls[0];
+        expect(opts.allowedBlocks).toEqual(['restart-registry/favorites-item']);
+    });
+
+    it('restricts favorites-room to only contain favorites-row via allowedBlocks', () => {
+        const [, roomConfig] = registerBlockType.mock.calls.find(([name]) => name === 'restart-registry/favorites-room');
+        roomConfig.edit({ attributes: { title: '' }, setAttributes: jest.fn() });
+
+        const calls = global.wp.blockEditor.useInnerBlocksProps.mock.calls;
+        const [, opts] = calls[calls.length - 1];
+        expect(opts.allowedBlocks).toEqual(['restart-registry/favorites-row']);
+    });
+});
+```
+
+- [ ] **Step 2: Run it, verify it fails**
+
+Run: `cd plugin && npx jest restart-registry-favorites-blocks`
+Expected: FAIL — `public/blocks/index.js` does not exist yet.
+
+- [ ] **Step 3: Write `public/blocks/index.js`**
+
+Create `plugin/public/blocks/index.js`:
+
+```js
+'use strict';
+
+(function (blocks, element, blockEditor, components, i18n) {
+    var el = element.createElement;
+    var registerBlockType = blocks.registerBlockType;
+    var useBlockProps = blockEditor.useBlockProps;
+    var useInnerBlocksProps = blockEditor.useInnerBlocksProps;
+    var MediaUpload = blockEditor.MediaUpload;
+    var InspectorControls = blockEditor.InspectorControls;
+    var TextControl = components.TextControl;
+    var TextareaControl = components.TextareaControl;
+    var SelectControl = components.SelectControl;
+    var Button = components.Button;
+    var PanelBody = components.PanelBody;
+    var __ = i18n.__;
+
+    function updateField(setAttributes, key) {
+        return function (value) {
+            var next = {};
+            next[key] = value;
+            setAttributes(next);
+        };
+    }
+
+    registerBlockType('restart-registry/favorites-item', {
+        edit: function (props) {
+            var attributes    = props.attributes;
+            var setAttributes = props.setAttributes;
+            var images        = attributes.images || [];
+
+            return el(
+                'div',
+                useBlockProps(),
+                el(
+                    InspectorControls,
+                    {},
+                    el(
+                        PanelBody,
+                        { title: __('Item Details', 'restart-registry') },
+                        el(SelectControl, {
+                            label: __('Tier', 'restart-registry'),
+                            value: attributes.tier,
+                            options: [
+                                { label: __('None', 'restart-registry'), value: '' },
+                                { label: __('Save', 'restart-registry'), value: 'save' },
+                                { label: __('Spend', 'restart-registry'), value: 'spend' },
+                                { label: __('Splurge', 'restart-registry'), value: 'splurge' },
+                            ],
+                            onChange: updateField(setAttributes, 'tier'),
+                        }),
+                        el(TextControl, { label: __('Retailer', 'restart-registry'), value: attributes.retailer, onChange: updateField(setAttributes, 'retailer') }),
+                        el(TextControl, { label: __('Notes', 'restart-registry'), value: attributes.notes, onChange: updateField(setAttributes, 'notes') }),
+                        el(TextControl, { label: __('Quantity', 'restart-registry'), value: attributes.quantity, onChange: updateField(setAttributes, 'quantity') })
+                    )
+                ),
+                el(TextControl, { label: __('Title', 'restart-registry'), value: attributes.title, onChange: updateField(setAttributes, 'title') }),
+                el(TextControl, { label: __('Price', 'restart-registry'), value: attributes.price, onChange: updateField(setAttributes, 'price') }),
+                el(TextControl, { label: __('Product URL', 'restart-registry'), value: attributes.url, onChange: updateField(setAttributes, 'url') }),
+                el(TextareaControl, { label: __('Description', 'restart-registry'), value: attributes.description, onChange: updateField(setAttributes, 'description') }),
+                el(
+                    'div',
+                    { className: 'rr-block-images' },
+                    images.map(function (url, i) {
+                        return el('img', { key: i, src: url, style: { maxWidth: '80px', marginRight: '4px' } });
+                    }),
+                    el(MediaUpload, {
+                        multiple: true,
+                        gallery: true,
+                        allowedTypes: ['image'],
+                        onSelect: function (media) {
+                            var list = Array.isArray(media) ? media : [media];
+                            setAttributes({ images: list.map(function (m) { return m.url; }) });
+                        },
+                        render: function (obj) {
+                            return el(Button, { onClick: obj.open, variant: 'secondary' }, __('Choose Image(s)', 'restart-registry'));
+                        },
+                    })
+                )
+            );
+        },
+        save: function () {
+            return null;
+        },
+    });
+
+    registerBlockType('restart-registry/favorites-row', {
+        edit: function (props) {
+            var attributes      = props.attributes;
+            var setAttributes   = props.setAttributes;
+            var innerBlocksProps = useInnerBlocksProps(useBlockProps(), {
+                allowedBlocks: ['restart-registry/favorites-item'],
+                template: [
+                    ['restart-registry/favorites-item', { tier: 'save' }],
+                    ['restart-registry/favorites-item', { tier: 'spend' }],
+                    ['restart-registry/favorites-item', { tier: 'splurge' }],
+                ],
+            });
+
+            return el(
+                'div',
+                {},
+                el(TextControl, {
+                    label: __('Row Title', 'restart-registry'),
+                    value: attributes.title,
+                    onChange: updateField(setAttributes, 'title'),
+                }),
+                el('div', innerBlocksProps)
+            );
+        },
+        save: function () {
+            return null;
+        },
+    });
+
+    registerBlockType('restart-registry/favorites-room', {
+        edit: function (props) {
+            var attributes      = props.attributes;
+            var setAttributes   = props.setAttributes;
+            var innerBlocksProps = useInnerBlocksProps(useBlockProps(), {
+                allowedBlocks: ['restart-registry/favorites-row'],
+                template: [
+                    ['restart-registry/favorites-row', {}],
+                ],
+            });
+
+            return el(
+                'div',
+                {},
+                el(TextControl, {
+                    label: __('Room Title', 'restart-registry'),
+                    value: attributes.title,
+                    onChange: updateField(setAttributes, 'title'),
+                }),
+                el('div', innerBlocksProps)
+            );
+        },
+        save: function () {
+            return null;
+        },
+    });
+
+    registerBlockType('restart-registry/favorites-filters', {
+        edit: function () {
+            return el(
+                'p',
+                { style: { fontStyle: 'italic', opacity: 0.7 } },
+                __('Favorites room/tier filter bar (renders on the front end)', 'restart-registry')
+            );
+        },
+        save: function () {
+            return null;
+        },
+    });
+})(window.wp.blocks, window.wp.element, window.wp.blockEditor, window.wp.components, window.wp.i18n);
+```
+
+- [ ] **Step 4: Run the JS test**
+
+Run: `cd plugin && npx jest restart-registry-favorites-blocks`
+Expected: PASS (4 tests).
+
+- [ ] **Step 5: Create the PHP registration class**
+
+Create `plugin/public/class-restart-registry-favorites-blocks.php`:
+
+```php
+<?php
+
+/**
+ * Registers the restart-registry/favorites-* blocks (Room > Row > Item,
+ * plus Filters) used on the Our Favorites page.
+ */
+class Restart_Registry_Favorites_Blocks
+{
+    public function register_blocks(): void
+    {
+        wp_register_script(
+            'restart-registry-favorites-blocks',
+            plugin_dir_url(__FILE__) . 'blocks/index.js',
+            ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n'],
+            RESTART_REGISTRY_VERSION,
+            true
+        );
+
+        foreach (['favorites-item', 'favorites-row', 'favorites-room', 'favorites-filters'] as $block) {
+            register_block_type(plugin_dir_path(__FILE__) . 'blocks/' . $block);
+        }
+    }
+}
+```
+
+- [ ] **Step 6: Hook it into the plugin bootstrap**
+
+In `plugin/includes/class-restart-registry.php`, add to `load_dependencies()` (after the `public/class-restart-registry-public.php` require, around line 43):
+
+```php
+        require_once plugin_dir_path(dirname(__FILE__)) . 'public/class-restart-registry-favorites-blocks.php';
+```
+
+Add a new private method, called from the constructor right after `$this->define_public_hooks();`:
+
+```php
+        $this->define_favorites_blocks_hooks();
+```
+
+```php
+    private function define_favorites_blocks_hooks(): void {
+        $favorites_blocks = new Restart_Registry_Favorites_Blocks();
+        $this->loader->add_action('init', $favorites_blocks, 'register_blocks');
+    }
+```
+
+- [ ] **Step 7: Manual smoke test in the browser**
+
+Run: `make up` (if the stack isn't already running), then in the WP admin, create a new draft Page, open the block inserter, search "Favorites Room" — confirm all four blocks appear, confirm dropping a "Favorites Row" block inside "Favorites Room" is allowed and dropping it at the top level (outside a Room) is also allowed (it's not restricted from being top-level, only Item is restricted to living inside a Row and Row is discouraged elsewhere via the Row's own placement — actually per this design only inner-nesting is restricted, not top-level placement of Room/Row), confirm an "Favorites Item" block cannot be inserted directly into the Room block's inserter (only inside a Row). Fill in one item's fields including picking an image via "Choose Image(s)" and preview the page front end to confirm the rendered card shows the image, title, and price.
+
+- [ ] **Step 8: Run the full test suites**
+
+Run: `make plugin-test-js && make plugin-test-php`
+Expected: both green.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add plugin/public/blocks/index.js plugin/public/class-restart-registry-favorites-blocks.php plugin/includes/class-restart-registry.php plugin/tests/js/restart-registry-favorites-blocks.test.js
+git commit -m "feat: register favorites blocks and their editor JS"
+```
+
+---
+
+### Task 7: Migration WP-CLI command
+
+**Files:**
+- Create: `plugin/includes/class-restart-registry-favorites-migration-command.php`
+- Modify: `plugin/restart-registry.php` (register the command when running under WP-CLI)
+- Test: `plugin/tests/unit/FavoritesMigrationCommandTest.php`
+
+**Interfaces:**
+- Consumes: nothing from other tasks directly (works against raw shortcode text), but its OUTPUT (block markup) must exactly match the block names/attributes Tasks 2-5 registered, so a follow-up manual run (Task 8) round-trips correctly.
+- Produces: `Restart_Registry_Favorites_Migration_Command::build_block_markup(array $rooms): string` and `::capture_tree(string $content): array` — both `public static`, tested directly (no WP-CLI runtime needed for these).
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `plugin/tests/unit/FavoritesMigrationCommandTest.php`:
+
+```php
+<?php
+declare(strict_types=1);
+
+use Brain\Monkey;
+use Brain\Monkey\Functions;
+use PHPUnit\Framework\TestCase;
+
+class FavoritesMigrationCommandTest extends TestCase {
+
+    protected function setUp(): void {
+        parent::setUp();
+        Monkey\setUp();
+        Functions\when('wp_json_encode')->alias('json_encode');
+    }
+
+    protected function tearDown(): void {
+        Monkey\tearDown();
+        parent::tearDown();
+    }
+
+    public function test_build_block_markup_produces_nested_block_comments(): void {
+        $rooms = [
+            [
+                'title' => 'Living Room',
+                'rows'  => [
+                    [
+                        'title' => 'Sofa',
+                        'items' => [
+                            ['tier' => 'save', 'title' => 'Budget Sofa', 'price' => '299.00', 'images' => ['https://a.test/1.jpg']],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $markup = Restart_Registry_Favorites_Migration_Command::build_block_markup($rooms);
+
+        $this->assertStringContainsString('<!-- wp:restart-registry/favorites-room {"title":"Living Room"} -->', $markup);
+        $this->assertStringContainsString('<!-- wp:restart-registry/favorites-row {"title":"Sofa"} -->', $markup);
+        $this->assertStringContainsString('"title":"Budget Sofa"', $markup);
+        $this->assertStringContainsString('<!-- /wp:restart-registry/favorites-room -->', $markup);
+
+        $blocks = parse_blocks_test_helper($markup);
+        $this->assertSame('restart-registry/favorites-room', $blocks[0]['blockName']);
+        $this->assertSame('restart-registry/favorites-row', $blocks[0]['innerBlocks'][0]['blockName']);
+        $this->assertSame('restart-registry/favorites-item', $blocks[0]['innerBlocks'][0]['innerBlocks'][0]['blockName']);
+        $this->assertSame('Budget Sofa', $blocks[0]['innerBlocks'][0]['innerBlocks'][0]['attrs']['title']);
+    }
+
+    public function test_capture_tree_parses_nested_shortcode_content(): void {
+        Functions\when('shortcode_atts')->alias(function (array $defaults, $atts) {
+            return array_merge($defaults, is_array($atts) ? $atts : []);
+        });
+        Functions\when('do_shortcode')->alias(function (string $content) {
+            $tags = [
+                'restart_item'           => 'test_capture_item_cb',
+                'restart_favorites_row'  => 'test_capture_row_cb',
+                'restart_favorites_room' => 'test_capture_room_cb',
+            ];
+            foreach ($tags as $tag => $fn) {
+                $content = preg_replace_callback(
+                    '/\[' . $tag . '\b([^\]]*)\](.*?\[\/' . $tag . '\]|)/s',
+                    function ($m) use ($tag, $fn) {
+                        preg_match_all('/(\w+)="([^"]*)"/', $m[1], $attrMatches, PREG_SET_ORDER);
+                        $atts = [];
+                        foreach ($attrMatches as $am) {
+                            $atts[$am[1]] = $am[2];
+                        }
+                        $inner = $m[2] !== '' ? preg_replace('/^\[[^\]]*\]|\[\/[^\]]*\]$/', '', $m[2]) : null;
+                        return call_user_func($fn, $atts, $inner);
+                    },
+                    $content
+                );
+            }
+            return $content;
+        });
+
+        $content = '[restart_favorites_room title="Living Room"][restart_favorites_row title="Sofa"][restart_item tier="save" title="Budget Sofa" price="299.00" image="https://a.test/1.jpg"][/restart_favorites_row][/restart_favorites_room]';
+
+        $rooms = Restart_Registry_Favorites_Migration_Command::capture_tree($content);
+
+        $this->assertSame('Living Room', $rooms[0]['title']);
+        $this->assertSame('Sofa', $rooms[0]['rows'][0]['title']);
+        $this->assertSame('Budget Sofa', $rooms[0]['rows'][0]['items'][0]['title']);
+        $this->assertSame(['https://a.test/1.jpg'], $rooms[0]['rows'][0]['items'][0]['images']);
+    }
+}
+
+function test_capture_item_cb(array $atts): string {
+    $raw    = !empty($atts['images']) ? $atts['images'] : ($atts['image'] ?? '');
+    $images = array_values(array_filter(array_map('trim', explode(',', $raw))));
+    return json_encode([
+        'tier' => $atts['tier'] ?? '', 'title' => $atts['title'] ?? '', 'price' => $atts['price'] ?? '',
+        'images' => $images, 'retailer' => $atts['retailer'] ?? '', 'description' => $atts['description'] ?? '',
+        'url' => $atts['url'] ?? '', 'notes' => $atts['notes'] ?? '', 'quantity' => $atts['quantity'] ?? '1',
+    ]);
+}
+
+function test_capture_row_cb(array $atts, ?string $inner): string {
+    $items = Restart_Registry_Favorites_Migration_Command::extract_json_objects(do_shortcode((string) $inner));
+    return json_encode(['title' => $atts['title'] ?? '', 'items' => $items]);
+}
+
+function test_capture_room_cb(array $atts, ?string $inner): string {
+    $rows = Restart_Registry_Favorites_Migration_Command::extract_json_objects(do_shortcode((string) $inner));
+    return json_encode(['title' => $atts['title'] ?? '', 'rows' => $rows]);
+}
+
+function parse_blocks_test_helper(string $markup): array {
+    return parse_blocks($markup);
+}
+```
+
+*Note: `parse_blocks()` is a real WordPress core function (pure PHP, no DB access), safe to call directly in these unit tests without stubbing — it's the same parser WordPress itself uses to read block markup back out of `post_content`, which is exactly what this test needs to verify round-trips correctly.*
+
+- [ ] **Step 2: Run it, verify it fails**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesMigrationCommandTest.php`
+Expected: FAIL — `Restart_Registry_Favorites_Migration_Command` does not exist yet.
+
+- [ ] **Step 3: Create the command class**
+
+Create `plugin/includes/class-restart-registry-favorites-migration-command.php`:
+
+```php
+<?php
+
+/**
+ * WP-CLI: wp restart-registry migrate-favorites-page <page_id>
+ *
+ * Converts a page's existing [restart_favorites_room]/[restart_favorites_row]/
+ * [restart_item]/[restart_favorites_filters] shortcode text into native
+ * restart-registry/favorites-* block markup, in place, on the same post.
+ */
+class Restart_Registry_Favorites_Migration_Command
+{
+    /**
+     * Converts a page's nested favorites shortcodes into native blocks.
+     *
+     * ## OPTIONS
+     *
+     * <page_id>
+     * : ID of the page whose content should be converted.
+     *
+     * [--dry-run]
+     * : Print the resulting block markup without saving.
+     *
+     * ## EXAMPLES
+     *
+     *     wp restart-registry migrate-favorites-page 52
+     *
+     * @when after_wp_load
+     */
+    public function __invoke(array $args, array $assoc_args): void
+    {
+        $page_id = (int) $args[0];
+        $post    = get_post($page_id);
+
+        if (!$post) {
+            WP_CLI::error("No post found with ID {$page_id}.");
+            return;
+        }
+
+        $has_filters = str_contains($post->post_content, '[restart_favorites_filters]');
+        $rooms       = self::capture_tree($post->post_content);
+
+        if (empty($rooms)) {
+            WP_CLI::error('No [restart_favorites_room] content found on that page.');
+            return;
+        }
+
+        $markup = self::build_block_markup($rooms);
+        if ($has_filters) {
+            $markup = "<!-- wp:restart-registry/favorites-filters /-->\n\n" . $markup;
+        }
+
+        if (!empty($assoc_args['dry-run'])) {
+            WP_CLI::log($markup);
+            return;
+        }
+
+        wp_update_post(['ID' => $page_id, 'post_content' => $markup]);
+        WP_CLI::success("Converted page {$page_id} to native favorites blocks.");
+    }
+
+    /**
+     * Temporarily swaps the real shortcode handlers for JSON-capturing ones
+     * and runs do_shortcode() on the raw content, reusing WordPress's own
+     * shortcode parser (attribute parsing, nesting) instead of reinventing
+     * one. Each capture handler returns a JSON-encoded object instead of
+     * HTML; extract_json_objects() splits an enclosing handler's expanded
+     * content back into the array of objects its children produced. This
+     * command runs once per WP-CLI invocation and the process exits
+     * immediately after, so the real handlers never need to be restored.
+     *
+     * @return array<int, array{title:string, rows:array}>
+     */
+    public static function capture_tree(string $content): array
+    {
+        remove_shortcode('restart_item');
+        remove_shortcode('restart_favorites_row');
+        remove_shortcode('restart_favorites_room');
+
+        add_shortcode('restart_item', function (array $atts) {
+            $a = shortcode_atts([
+                'title' => '', 'price' => '', 'image' => '', 'images' => '',
+                'description' => '', 'url' => '', 'retailer' => '', 'notes' => '',
+                'quantity' => '1', 'tier' => '',
+            ], $atts, 'restart_item');
+
+            $raw    = !empty($a['images']) ? $a['images'] : $a['image'];
+            $images = array_values(array_filter(array_map('trim', explode(',', $raw))));
+
+            return wp_json_encode([
+                'tier' => $a['tier'], 'title' => $a['title'], 'price' => $a['price'],
+                'images' => $images, 'retailer' => $a['retailer'],
+                'description' => $a['description'], 'url' => $a['url'],
+                'notes' => $a['notes'], 'quantity' => $a['quantity'],
+            ]);
+        });
+
+        add_shortcode('restart_favorites_row', function (array $atts, $inner = null) {
+            $a     = shortcode_atts(['title' => ''], $atts, 'restart_favorites_row');
+            $items = self::extract_json_objects(do_shortcode((string) $inner));
+            return wp_json_encode(['title' => $a['title'], 'items' => $items]);
+        });
+
+        add_shortcode('restart_favorites_room', function (array $atts, $inner = null) {
+            $a    = shortcode_atts(['title' => ''], $atts, 'restart_favorites_room');
+            $rows = self::extract_json_objects(do_shortcode((string) $inner));
+            return wp_json_encode(['title' => $a['title'], 'rows' => $rows]);
+        });
+
+        $expanded = do_shortcode($content);
+
+        return self::extract_json_objects($expanded);
+    }
+
+    /**
+     * Splits a string containing zero or more concatenated top-level JSON
+     * objects (produced back-to-back by capture-mode shortcode handlers,
+     * possibly with whitespace/stray markup between them) into the decoded
+     * array of each object. Tracks string-escaping and brace depth so JSON
+     * string values containing "{" or "}" don't throw off the split.
+     */
+    public static function extract_json_objects(string $str): array
+    {
+        $objects  = [];
+        $depth    = 0;
+        $inString = false;
+        $escaped  = false;
+        $start    = null;
+
+        for ($i = 0, $len = strlen($str); $i < $len; $i++) {
+            $ch = $str[$i];
+
+            if ($inString) {
+                if ($escaped) {
+                    $escaped = false;
+                } elseif ($ch === '\\') {
+                    $escaped = true;
+                } elseif ($ch === '"') {
+                    $inString = false;
+                }
+                continue;
+            }
+
+            if ($ch === '"') {
+                $inString = true;
+                continue;
+            }
+
+            if ($ch === '{') {
+                if ($depth === 0) {
+                    $start = $i;
+                }
+                $depth++;
+            } elseif ($ch === '}') {
+                $depth--;
+                if ($depth === 0 && $start !== null) {
+                    $decoded = json_decode(substr($str, $start, $i - $start + 1), true);
+                    if (is_array($decoded)) {
+                        $objects[] = $decoded;
+                    }
+                    $start = null;
+                }
+            }
+        }
+
+        return $objects;
+    }
+
+    /**
+     * @param array<int, array{title:string, rows:array}> $rooms
+     */
+    public static function build_block_markup(array $rooms): string
+    {
+        return implode("\n\n", array_map([self::class, 'room_markup'], $rooms));
+    }
+
+    private static function room_markup(array $room): string
+    {
+        $rows = implode("\n\n", array_map([self::class, 'row_markup'], $room['rows'] ?? []));
+        return self::block_markup('restart-registry/favorites-room', ['title' => $room['title'] ?? ''], $rows);
+    }
+
+    private static function row_markup(array $row): string
+    {
+        $items = implode("\n\n", array_map([self::class, 'item_markup'], $row['items'] ?? []));
+        return self::block_markup('restart-registry/favorites-row', ['title' => $row['title'] ?? ''], $items);
+    }
+
+    private static function item_markup(array $item): string
+    {
+        return self::block_markup('restart-registry/favorites-item', $item);
+    }
+
+    private static function block_markup(string $name, array $attrs, string $inner = ''): string
+    {
+        $json = $attrs ? ' ' . wp_json_encode($attrs) : '';
+        if ($inner === '') {
+            return '<!-- wp:' . $name . $json . ' /-->';
+        }
+        return '<!-- wp:' . $name . $json . ' -->' . "\n" . $inner . "\n" . '<!-- /wp:' . $name . ' -->';
+    }
+}
+```
+
+- [ ] **Step 4: Run the tests again**
+
+Run: `cd plugin && ./vendor/bin/phpunit tests/unit/FavoritesMigrationCommandTest.php`
+Expected: PASS (2 tests).
+
+- [ ] **Step 5: Register the command with WP-CLI**
+
+In `plugin/restart-registry.php`, after `run_restart_registry();`, add:
+
+```php
+if (defined('WP_CLI') && WP_CLI) {
+	require_once plugin_dir_path(__FILE__) . 'includes/class-restart-registry-favorites-migration-command.php';
+	WP_CLI::add_command('restart-registry migrate-favorites-page', 'Restart_Registry_Favorites_Migration_Command');
+}
+```
+
+- [ ] **Step 6: Run the full PHP suite**
+
+Run: `make plugin-test-php`
+Expected: green.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add plugin/includes/class-restart-registry-favorites-migration-command.php plugin/restart-registry.php plugin/tests/unit/FavoritesMigrationCommandTest.php
+git commit -m "feat: add wp restart-registry migrate-favorites-page CLI command"
+```
+
+---
+
+### Task 8: Migrate the live `/our-favorites` page and verify
+
+**Files:** none (operational task against the local dev database).
+
+**Interfaces:** none — this is the end-to-end verification that Tasks 1-7 work together correctly on real content.
+
+- [ ] **Step 1: Dry-run the migration against the real page**
+
+Run: `docker compose exec -T wordpress wp restart-registry migrate-favorites-page 52 --dry-run --allow-root`
+Expected: prints nested `<!-- wp:restart-registry/favorites-room {...} -->` markup for both "Living Room" and "Bathroom", each containing their rows and items, matching the structure in `restart_favorites_shortcodes.txt`. Read through it and confirm every item title from that file appears (Budget Sofa, Mid Sofa, Luxury Sofa, Basic Table, Oak Table, Designer Table, Basic Towels, Plush Towels, Turkish Towels) and that a `favorites-filters` block is prepended (the source page has `[restart_favorites_filters]`).
+
+- [ ] **Step 2: Take a "before" screenshot for comparison**
+
+Use the `/browse` skill: navigate to `http://localhost:8083/our-favorites`, take a full-page screenshot, save it as the "before" reference.
+
+- [ ] **Step 3: Run the migration for real**
+
+Run: `docker compose exec -T wordpress wp restart-registry migrate-favorites-page 52 --allow-root`
+Expected: `Success: Converted page 52 to native favorites blocks.`
+
+- [ ] **Step 4: Verify the page still renders identically on the front end**
+
+Use the `/browse` skill: navigate to `http://localhost:8083/our-favorites` again, take a screenshot, and diff against the "before" screenshot from Step 2 — the rendered HTML/CSS should be pixel-identical (same `render_room()`/`render_row()`/`render_item()`/`render_filters()` functions produce the output either way). Also check `$B console --errors` for no new JS errors.
+
+- [ ] **Step 5: Verify the block editor now shows real blocks, not Shortcode blocks**
+
+In wp-admin, open the Page editor for post 52. Confirm the content area shows "Favorites Filters", "Favorites Room" (x2), "Favorites Row" (x3), and "Favorites Item" (x9) blocks in the block list/outline view — not Shortcode blocks. Confirm editing one item's title in the block inspector and saving updates the front end correctly.
+
+- [ ] **Step 6: Run the full test suites one final time**
+
+Run: `make plugin-test-php && make plugin-test-js`
+Expected: both green.
+
+- [ ] **Step 7: Commit** (only if Step 5's manual edit-and-save left anything to commit in version control — the migration itself already changed the database, not tracked files; skip this step if there's nothing to `git add`)
+
+---
+
+## Todo
+
+- [ ] Task 1: Extract `Restart_Registry_Favorites_Renderer` from the four shortcode callbacks
+- [ ] Task 2: `favorites-item` block (block.json + render.php)
+- [ ] Task 3: `favorites-row` block (block.json + render.php)
+- [ ] Task 4: `favorites-room` block (block.json + render.php)
+- [ ] Task 5: `favorites-filters` block (block.json + render.php)
+- [ ] Task 6: Register all four blocks + editor JS (`public/blocks/index.js`)
+- [ ] Task 7: `wp restart-registry migrate-favorites-page` CLI command
+- [ ] Task 8: Migrate the live `/our-favorites` page (post 52) and verify front end + editor

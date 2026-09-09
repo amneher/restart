@@ -46,10 +46,12 @@ if (!defined('DAY_IN_SECONDS'))    define('DAY_IN_SECONDS', 86400);
 require_once dirname(__DIR__) . '/includes/class-restart-registry-activator.php';
 require_once dirname(__DIR__) . '/includes/class-retailer-api.php';
 require_once dirname(__DIR__) . '/includes/class-affiliate-converter.php';
+require_once dirname(__DIR__) . '/includes/class-restart-registry-favorites-renderer.php';
 require_once dirname(__DIR__) . '/includes/class-lambda-api-client.php';
 require_once dirname(__DIR__) . '/includes/class-restart-registry-controller.php';
 require_once dirname(__DIR__) . '/includes/class-llm-extractor.php';
 require_once dirname(__DIR__) . '/includes/class-product-scraper.php';
+require_once dirname(__DIR__) . '/includes/class-restart-registry-favorites-migration-command.php';
 require_once dirname(__DIR__) . '/admin/class-restart-registry-admin.php';
 require_once dirname(__DIR__) . '/public/class-restart-registry-public.php';
 

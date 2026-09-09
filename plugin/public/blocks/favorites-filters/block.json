@@ -1,0 +1,12 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "restart-registry/favorites-filters",
+    "title": "Favorites Filters",
+    "category": "widgets",
+    "icon": "filter",
+    "description": "Room/tier filter bar for the Our Favorites page. Place once, near the top.",
+    "supports": { "html": false, "multiple": false },
+    "editorScript": "restart-registry-favorites-blocks",
+    "render": "file:./render.php"
+}

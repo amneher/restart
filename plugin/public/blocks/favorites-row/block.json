@@ -1,0 +1,15 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "restart-registry/favorites-row",
+    "title": "Favorites Row",
+    "category": "widgets",
+    "icon": "grid-view",
+    "description": "A labeled row of Save/Spend/Splurge items for the Our Favorites page.",
+    "attributes": {
+        "title": { "type": "string", "default": "" }
+    },
+    "supports": { "html": false },
+    "editorScript": "restart-registry-favorites-blocks",
+    "render": "file:./render.php"
+}

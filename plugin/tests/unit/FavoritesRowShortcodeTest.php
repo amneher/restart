@@ -38,7 +38,7 @@ class FavoritesRowShortcodeTest extends TestCase {
         // item_shortcode() and depend on a large slice of WP (wp_login_url(),
         // nonces, etc.) unrelated to the tier/favorites-row feature under test.
         // Mark them already-printed so item_shortcode() skips that branch.
-        (new ReflectionProperty(Restart_Registry_Public::class, 'quick_add_modals_printed'))->setValue(null, true);
+        (new ReflectionProperty(Restart_Registry_Favorites_Renderer::class, 'quick_add_modals_printed'))->setValue(null, true);
     }
 
     protected function tearDown(): void {
