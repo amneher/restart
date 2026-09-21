@@ -34,6 +34,7 @@ services:
       RESTART_LAMBDA_URL: http://lambda:5000
     volumes:
       - wordpress:/var/www/html
+      - ./docker/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
       - ./plugin:/var/www/html/wp-content/plugins/restart-registry:rw
       - ./theme:/var/www/html/wp-content/themes/theRestart:ro
     networks:
