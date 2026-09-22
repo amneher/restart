@@ -131,9 +131,11 @@ install:
 	cd theme && composer install --no-interaction && npm ci
 
 lint:
-	cd plugin && ./vendor/bin/phpcs
-	cd lambda && uv run ruff check .
-	cd theme && ./vendor/bin/phpcs
+	@rc=0; \
+	echo "== plugin (phpcs)"; (cd plugin && ./vendor/bin/phpcs) || rc=1; \
+	echo "== theme (phpcs, via plugin's install: theme has none of its own)"; (cd theme && ../plugin/vendor/bin/phpcs) || rc=1; \
+	echo "== lambda (ruff)"; (cd lambda && uv run ruff check .) || rc=1; \
+	exit $$rc
 
 typecheck:
 	cd lambda && uv run mypy app/
@@ -166,6 +168,7 @@ docs-deploy:
 docs-screenshots:
 	@which node >/dev/null 2>&1 || (echo "Node.js required for screenshots"; exit 1)
 	@cd docs && npm install --silent
+	@npx playwright install --with-deps
 	node docs/scripts/screenshots.js
 
 # ── Deployment (delegates to lambda/Makefile) ─────────────────────────────────
