@@ -6,7 +6,7 @@
         theme-test theme-test-php theme-test-js \
         install lint typecheck clean \
         plugin-build lambda-build lambda-build-layer theme-pack \
-        docs docs-build docs-php-ref docs-deploy docs-screenshots \
+        docs docs-image docs-build docs-php-ref docs-deploy docs-screenshots \
         deploy-staging deploy-prod publish-layer configure-layer configure-efs configure-env \
         versions \
         bump-plugin-patch bump-plugin-minor bump-plugin-major \
@@ -147,12 +147,23 @@ clean:
 	cd theme && rm -rf vendor node_modules
 
 # ── Documentation ─────────────────────────────────────────────────────────────
+# docs, docs-build and docs-deploy run mkdocs in a container (docker/Dockerfile.docs)
+# instead of assuming a host mkdocs/mkdocs-material/mkdocstrings install.
 
-docs:
-	cd docs && mkdocs serve
+DOCS_IMAGE := restart-docs:dev
 
-docs-build:
-	cd docs && mkdocs build
+docs-image:
+	docker build -q -f docker/Dockerfile.docs -t $(DOCS_IMAGE) docs
+
+docs: docs-image
+	docker run --rm -p 8000:8000 \
+		-v "$(PWD):/repo" -w /repo/docs --user "$$(id -u):$$(id -g)" \
+		$(DOCS_IMAGE) serve -a 0.0.0.0:8000
+
+docs-build: docs-image
+	docker run --rm \
+		-v "$(PWD):/repo" -w /repo/docs --user "$$(id -u):$$(id -g)" \
+		$(DOCS_IMAGE) build
 
 docs-php-ref:
 	docker run --rm -v "$(PWD):/data" phpdoc/phpdoc:3 \
@@ -162,8 +173,11 @@ docs-php-ref:
 		-d theme \
 		-t docs/site/api-reference/theme --template=default
 
-docs-deploy:
-	cd docs && mkdocs gh-deploy
+docs-deploy: docs-image
+	docker run --rm \
+		-v "$(PWD):/repo" -w /repo/docs --user "$$(id -u):$$(id -g)" \
+		-e HOME=/tmp -v "$(HOME)/.gitconfig:/tmp/.gitconfig:ro" -v "$(HOME)/.ssh:/tmp/.ssh:ro" \
+		$(DOCS_IMAGE) gh-deploy
 
 docs-screenshots:
 	@which node >/dev/null 2>&1 || (echo "Node.js required for screenshots"; exit 1)
