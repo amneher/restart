@@ -70,6 +70,7 @@ services:
     environment:
       DATABASE_PATH: /data/registry.db
       WP_BASE_URL: http://nginx
+      UV_PROJECT_ENVIRONMENT: /opt/venv
     ports:
       - "5000:5000"
     volumes:
