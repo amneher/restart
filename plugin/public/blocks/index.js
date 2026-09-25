@@ -6,6 +6,7 @@
     var registerBlockType = blocks.registerBlockType;
     var useBlockProps = blockEditor.useBlockProps;
     var useInnerBlocksProps = blockEditor.useInnerBlocksProps;
+    var InnerBlocks = blockEditor.InnerBlocks;
     var MediaUpload = blockEditor.MediaUpload;
     var InspectorControls = blockEditor.InspectorControls;
     var TextControl = components.TextControl;
@@ -178,10 +179,12 @@
         // Row nests favorites-item children, so save() must include InnerBlocks
         // content — otherwise the block serializer has nowhere to write the
         // children's markup and they're silently dropped from post_content.
+        // No wrapper element here: render.php builds its own wrapper and
+        // inserts this block's rendered $content directly into
+        // .rr-favorites-row__cards, so a wrapper here would become the grid's
+        // only child instead of the 3 item cards being direct grid children.
         save: function () {
-            var blockProps = useBlockProps.save();
-            var innerBlocksProps = useInnerBlocksProps.save(blockProps);
-            return el('div', innerBlocksProps);
+            return el(InnerBlocks.Content);
         },
     });
 
@@ -208,11 +211,9 @@
             );
         },
         // Room nests favorites-row children — same InnerBlocks-serialization
-        // requirement as favorites-row above.
+        // requirement and no-wrapper reasoning as favorites-row above.
         save: function () {
-            var blockProps = useBlockProps.save();
-            var innerBlocksProps = useInnerBlocksProps.save(blockProps);
-            return el('div', innerBlocksProps);
+            return el(InnerBlocks.Content);
         },
     });
 

@@ -2789,5 +2789,30 @@ Today, adding a favorites item means inserting a block and manually typing Title
 - [x] `blocks/index.js`: "Fetch" button in `favorites-item` edit(), wired to `restart_registry_fetch_url`, fill-empty-only mapping, loading/error states
 - [x] `restart-registry-favorites-blocks.test.js`: fetch success / failure / no-clobber cases (9/9 pass)
 - [x] `make plugin-test-php && make plugin-test-js` green (324 PHP, 135 JS)
-- [ ] Manual test: paste a real product URL in the block inspector, click Fetch, confirm fields populate and front end renders correctly
+- [x] Manual test: paste a real product URL in the block inspector, click Fetch, confirm fields populate and front end renders correctly — done via real editor session (see next section)
 - [ ] Once this favorites work is finished: create a separate branch and commit `ideas/scrapfly-fallback-for-blocked-retailers.md` (currently untracked on this branch, deliberately kept out of this PR)
+
+---
+
+# Bug fix: favorites Row/Room save() wrapper div broke the 3-column grid
+
+## Symptom
+After PR #98 (InnerBlocks serialization fix) merged, Andrew re-added a Room/Row/3-Items test on the "Our Favorites" page. Items rendered this time (the #98 fix worked), but all 3 stacked in one column instead of a 3-column grid, and descriptions had a lot of trailing empty space.
+
+## Root cause
+PR #98's `save()` fix used `useBlockProps.save()` + `useInnerBlocksProps.save()`, which wraps the row/room's children in `<div class="wp-block-restart-registry-favorites-row">`. That wrapper isn't just cosmetic — WordPress's `render_block()` passes it as part of `$content` to the PHP render callback (the block's own `innerContent` with children spliced into the placeholder, wrapper included). Since `render_row()`/`render_room()` already build their own complete wrapper markup and insert `$content` directly inside `.rr-favorites-row__cards` (a CSS grid), the extra wrapper div became the grid's *only* child — 1 grid item containing 3 stacked cards, instead of 3 grid items. Confirmed via `curl` + `getComputedStyle()`: grid had `childCount: 1` (the wrapper) before the fix, 3 `.rr-article-item--tier` children with correct `grid-template-columns: repeat(3, 1fr)` after.
+
+The "whitespace at the end of the description" turned out to be unrelated and working as designed: `.rr-article-item__description { flex: 1 }` stretches short descriptions to match the tallest card in the row so footers/prices align — confirmed visually via screenshot. Flagged to Andrew as a design choice, not fixed here; can revisit if he'd rather top-align descriptions instead.
+
+## Fix
+`favorites-row` and `favorites-room`'s `save()` now return bare `InnerBlocks.Content` (imported from `blockEditor`) with no wrapping element — `render.php` already provides the wrapper, and `$content` needs to be exactly the children's markup.
+
+## Verification
+Through the real block editor (browse, with the Playwright/OS fix from earlier): cleared the test page, rebuilt Room → Row (title "Sheets") → 3 Items with varied-length descriptions via script (mirroring manual entry), clicked the real Save button, confirmed via `wp-cli` that `post_content` has no stray wrapper divs, and confirmed on the live front end via `getComputedStyle()` that `.rr-favorites-row__cards` is `display: grid` with 3 equal `grid-template-columns` and the 3 item cards as direct children. Screenshot confirms visually.
+
+## Todo
+- [x] Branch: `fix/favorites-row-innerblocks-wrapper`
+- [x] `blocks/index.js`: import `InnerBlocks`, change row/room `save()` to bare `InnerBlocks.Content`
+- [x] `restart-registry-favorites-blocks.test.js`: assert `save()` calls `createElement(InnerBlocks.Content)` directly, no wrapper
+- [x] `make plugin-test-php && make plugin-test-js` green (324 PHP, 136 JS)
+- [x] Verified through the real block editor + live front end (grid layout, no stray wrapper)
