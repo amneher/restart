@@ -2724,3 +2724,27 @@ Expected: both green.
 - [ ] Task 6: Register all four blocks + editor JS (`public/blocks/index.js`)
 - [ ] Task 7: `wp restart-registry migrate-favorites-page` CLI command
 - [ ] Task 8: Migrate the live `/our-favorites` page (post 52) and verify front end + editor
+
+---
+
+# Plan: Fetch-URL auto-populate for the favorites-item block
+
+## What
+Add a "Fetch" button to the `favorites-item` block editor (Our Favorites page), so admins can paste a product URL and auto-populate Title, Price, Description, and Image — instead of hand-typing every field per item. Mirrors the registry page's existing "paste a link → Fetch → autofill" flow (`rr-add-item-form` / `ajax_fetch_url` / `Restart_Registry_Product_Scraper`).
+
+## Why
+Today, adding a favorites item means inserting a block and manually typing Title, Price, Product URL, Description, and picking images one at a time in the block inspector (`plugin/public/blocks/index.js`). The registry page already solved this exact problem with a reusable, ownership-agnostic AJAX endpoint (`restart_registry_fetch_url` → `ajax_fetch_url()` → `Restart_Registry_Product_Scraper`), returning `name`/`price`/`image_url`/`description` from a pasted URL.
+
+## Scope
+1. `plugin/public/class-restart-registry-favorites-blocks.php` — `wp_localize_script` on the `restart-registry-favorites-blocks` handle with `ajaxUrl` (`admin_url('admin-ajax.php')`) and a `restart_registry_nonce`.
+2. `plugin/public/blocks/index.js` — in the `favorites-item` block's `edit()`, add a "Fetch" button next to the Product URL field. On click: POST `url` to `restart_registry_fetch_url`; on success map `name→title`, `price`, `description`, `image_url→images[0]` (only fill attributes that are currently empty, never clobber manual edits); show loading/error state on the button.
+3. `plugin/tests/js/restart-registry-favorites-blocks.test.js` — cases for: fetch success populates empty attributes, fetch failure surfaces an error, existing non-empty fields are not overwritten.
+4. No Lambda or theme changes. No changes to the front-end quick-add flow (registry visitors adding favorites items to their own registry) — that already works and isn't part of this request.
+
+## Todo
+- [x] Branch: `feat/favorites-fetch-url`
+- [x] `class-restart-registry-favorites-blocks.php`: localize `ajaxUrl` + nonce on the block editor script handle
+- [x] `blocks/index.js`: "Fetch" button in `favorites-item` edit(), wired to `restart_registry_fetch_url`, fill-empty-only mapping, loading/error states
+- [x] `restart-registry-favorites-blocks.test.js`: fetch success / failure / no-clobber cases (9/9 pass)
+- [x] `make plugin-test-php && make plugin-test-js` green (324 PHP, 135 JS)
+- [ ] Manual test: paste a real product URL in the block inspector, click Fetch, confirm fields populate and front end renders correctly
