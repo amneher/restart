@@ -16,6 +16,7 @@ describe('favorites blocks registration', () => {
             blockEditor: {
                 useBlockProps: Object.assign(jest.fn(() => ({})), { save: jest.fn(() => ({})) }),
                 useInnerBlocksProps: Object.assign(jest.fn((props) => props), { save: jest.fn((blockProps) => blockProps) }),
+                InnerBlocks: { Content: function InnerBlocksContent() { return null; } },
                 MediaUpload: function MediaUpload() { return null; },
                 InspectorControls: function InspectorControls() { return null; },
             },
@@ -50,12 +51,22 @@ describe('favorites blocks registration', () => {
         });
     });
 
-    it('container blocks (row, room) define edit() and a save() that serializes InnerBlocks content, not null', () => {
+    it('container blocks (row, room) define edit() and a save() that renders bare InnerBlocks.Content (no wrapper element)', () => {
         ['restart-registry/favorites-row', 'restart-registry/favorites-room'].forEach((name) => {
             const [, config] = registerBlockType.mock.calls.find(([n]) => n === name);
             expect(typeof config.edit).toBe('function');
-            expect(config.save()).not.toBeNull();
-            expect(global.wp.blockEditor.useInnerBlocksProps.save).toHaveBeenCalled();
+
+            global.wp.element.createElement.mockClear();
+            const result = config.save();
+
+            expect(result).not.toBeNull();
+            // No wrapper: render.php builds its own wrapper and expects $content
+            // to be exactly the children's markup, so save() must call
+            // createElement(InnerBlocks.Content) directly — not wrap it in a
+            // div — or the wrapper becomes the CSS grid's only child instead
+            // of the item/row cards being direct grid children.
+            expect(global.wp.element.createElement).toHaveBeenCalledWith(global.wp.blockEditor.InnerBlocks.Content);
+            expect(global.wp.element.createElement).toHaveBeenCalledTimes(1);
         });
     });
 

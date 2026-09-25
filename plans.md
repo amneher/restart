@@ -2789,7 +2789,7 @@ Today, adding a favorites item means inserting a block and manually typing Title
 - [x] `blocks/index.js`: "Fetch" button in `favorites-item` edit(), wired to `restart_registry_fetch_url`, fill-empty-only mapping, loading/error states
 - [x] `restart-registry-favorites-blocks.test.js`: fetch success / failure / no-clobber cases (9/9 pass)
 - [x] `make plugin-test-php && make plugin-test-js` green (324 PHP, 135 JS)
-- [ ] Manual test: paste a real product URL in the block inspector, click Fetch, confirm fields populate and front end renders correctly
+- [x] Manual test: paste a real product URL in the block inspector, click Fetch, confirm fields populate and front end renders correctly — done via real editor session (see next section)
 - [ ] Once this favorites work is finished: create a separate branch and commit `ideas/scrapfly-fallback-for-blocked-retailers.md` (currently untracked on this branch, deliberately kept out of this PR)
 
 ---
