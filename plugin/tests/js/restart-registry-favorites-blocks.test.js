@@ -11,8 +11,8 @@ describe('favorites blocks registration', () => {
             blocks: { registerBlockType },
             element: { createElement: jest.fn(() => ({})) },
             blockEditor: {
-                useBlockProps: jest.fn(() => ({})),
-                useInnerBlocksProps: jest.fn((props) => props),
+                useBlockProps: Object.assign(jest.fn(() => ({})), { save: jest.fn(() => ({})) }),
+                useInnerBlocksProps: Object.assign(jest.fn((props) => props), { save: jest.fn((blockProps) => blockProps) }),
                 MediaUpload: function MediaUpload() { return null; },
                 InspectorControls: function InspectorControls() { return null; },
             },
@@ -39,10 +39,20 @@ describe('favorites blocks registration', () => {
         ]);
     });
 
-    it('every block defines edit() and a save() that returns null (fully server-rendered)', () => {
-        registerBlockType.mock.calls.forEach(([, config]) => {
+    it('leaf blocks (item, filters) define edit() and a save() that returns null (fully server-rendered)', () => {
+        ['restart-registry/favorites-item', 'restart-registry/favorites-filters'].forEach((name) => {
+            const [, config] = registerBlockType.mock.calls.find(([n]) => n === name);
             expect(typeof config.edit).toBe('function');
             expect(config.save()).toBeNull();
+        });
+    });
+
+    it('container blocks (row, room) define edit() and a save() that serializes InnerBlocks content, not null', () => {
+        ['restart-registry/favorites-row', 'restart-registry/favorites-room'].forEach((name) => {
+            const [, config] = registerBlockType.mock.calls.find(([n]) => n === name);
+            expect(typeof config.edit).toBe('function');
+            expect(config.save()).not.toBeNull();
+            expect(global.wp.blockEditor.useInnerBlocksProps.save).toHaveBeenCalled();
         });
     });
 

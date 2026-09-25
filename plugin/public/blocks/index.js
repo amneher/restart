@@ -107,8 +107,13 @@
                 el('div', innerBlocksProps)
             );
         },
+        // Row nests favorites-item children, so save() must include InnerBlocks
+        // content — otherwise the block serializer has nowhere to write the
+        // children's markup and they're silently dropped from post_content.
         save: function () {
-            return null;
+            var blockProps = useBlockProps.save();
+            var innerBlocksProps = useInnerBlocksProps.save(blockProps);
+            return el('div', innerBlocksProps);
         },
     });
 
@@ -134,8 +139,12 @@
                 el('div', innerBlocksProps)
             );
         },
+        // Room nests favorites-row children — same InnerBlocks-serialization
+        // requirement as favorites-row above.
         save: function () {
-            return null;
+            var blockProps = useBlockProps.save();
+            var innerBlocksProps = useInnerBlocksProps.save(blockProps);
+            return el('div', innerBlocksProps);
         },
     });
 
