@@ -2724,3 +2724,36 @@ Expected: both green.
 - [ ] Task 6: Register all four blocks + editor JS (`public/blocks/index.js`)
 - [ ] Task 7: `wp restart-registry migrate-favorites-page` CLI command
 - [ ] Task 8: Migrate the live `/our-favorites` page (post 52) and verify front end + editor
+
+---
+
+# Bug fix: favorites Room/Row blocks drop nested children on save
+
+## Symptom
+Andrew added Filters, Room, Row, and 3 Item blocks to the "Our Favorites" page in the block editor, filled them in, and saved — but the items never rendered on the front end.
+
+## Root cause
+`favorites-row` and `favorites-room` (`plugin/public/blocks/index.js`) both declared `save: function () { return null; }`. That's correct for leaf blocks with no children (`favorites-item`, `favorites-filters`), but Row and Room hold nested child blocks via `useInnerBlocksProps`. Without an `InnerBlocks.Content` placeholder in `save()`, WordPress's block serializer has nowhere to write the children's markup when writing `post_content` — it silently serializes the parent as a self-closing tag and drops everything nested inside it.
+
+Confirmed against the live page (post ID 25) via WP-CLI: every saved revision showed `<!-- wp:restart-registry/favorites-room {"title":"Bedroom"} /-->` self-closing, with no Row or Items anywhere in `post_content`, not even the first autosave. Predates this branch — introduced in the original blocks migration (PR #91, commit `8cd8b68`), never caught because nobody had saved a fully-populated Room until now. Unrelated to the Fetch-URL work or the Pottery Barn/retailer-blocking issue (separate, already scoped in `ideas/scrapfly-fallback-for-blocked-retailers.md`).
+
+Secondary finding along the way: `Restart_Registry_Favorites_Renderer::render_row()` returns `''` when the Row has no title — but Room's block template auto-inserts a new Row with an empty title by default. So even after this fix, an admin who accepts the auto-templated Row without typing a title will still see nothing render. Not fixed here (existing, arguably-intentional behavior); worth a follow-up UX pass (e.g. default Row title, or a visible "give this row a name" prompt) if it trips people up again.
+
+## Fix
+`favorites-row` and `favorites-room`'s `save()` now use `useBlockProps.save()` + `useInnerBlocksProps.save()` — the standard WordPress pattern for a container block that needs its children serialized — instead of returning `null`.
+
+## Verification
+Playwright has no prebuilt Chromium for this sandbox's OS (`ubuntu26.04-x64` unsupported), so this was verified via WP-CLI instead of a live editor session:
+- `parse_blocks()` against hand-written markup shaped exactly like what `useInnerBlocksProps.save()` produces (per WP's documented serialization contract) correctly reconstructs the full Room → Row → 3 Items tree.
+- `apply_filters('the_content', ...)` (WP's real rendering pipeline) and a direct `curl` of the live front-end page both render the full nested structure end-to-end.
+- Jest test (`restart-registry-favorites-blocks.test.js`) asserts Row/Room's `save()` actually calls `useInnerBlocksProps.save()` and returns non-null, while leaf blocks still return `null`.
+- Not verified: the literal React editor UI end-to-end (blocked by the Playwright/OS issue above). Residual risk is low since `useInnerBlocksProps.save()` is documented, widely-used core WP API, not something exotic.
+
+## Todo
+- [x] Branch: `fix/favorites-innerblocks-serialization`
+- [x] `blocks/index.js`: `favorites-row` and `favorites-room` `save()` use `useBlockProps.save()` + `useInnerBlocksProps.save()`
+- [x] `restart-registry-favorites-blocks.test.js`: split the old "every block returns null" assertion into leaf-blocks-return-null vs container-blocks-serialize-InnerBlocks
+- [x] `make plugin-test-php && make plugin-test-js` green (324 PHP, 131 JS)
+- [x] Verified via WP-CLI (`parse_blocks`, `apply_filters('the_content', ...)`, front-end curl) — see Verification above
+- [ ] Manual click-through in the real block editor once available (blocked on Playwright/OS support in this sandbox — do this from a normal browser)
+- [ ] Restore or intentionally leave the local dev "Our Favorites" page test content (currently: Bedroom room / Sheets row / 3 test items) — check with Andrew
