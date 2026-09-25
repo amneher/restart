@@ -2769,33 +2769,25 @@ Expected: both green.
 
 ---
 
-# Bug fix: favorites Room/Row blocks drop nested children on save
+# Plan: Fetch-URL auto-populate for the favorites-item block
 
-## Symptom
-Andrew added Filters, Room, Row, and 3 Item blocks to the "Our Favorites" page in the block editor, filled them in, and saved — but the items never rendered on the front end.
+## What
+Add a "Fetch" button to the `favorites-item` block editor (Our Favorites page), so admins can paste a product URL and auto-populate Title, Price, Description, and Image — instead of hand-typing every field per item. Mirrors the registry page's existing "paste a link → Fetch → autofill" flow (`rr-add-item-form` / `ajax_fetch_url` / `Restart_Registry_Product_Scraper`).
 
-## Root cause
-`favorites-row` and `favorites-room` (`plugin/public/blocks/index.js`) both declared `save: function () { return null; }`. That's correct for leaf blocks with no children (`favorites-item`, `favorites-filters`), but Row and Room hold nested child blocks via `useInnerBlocksProps`. Without an `InnerBlocks.Content` placeholder in `save()`, WordPress's block serializer has nowhere to write the children's markup when writing `post_content` — it silently serializes the parent as a self-closing tag and drops everything nested inside it.
+## Why
+Today, adding a favorites item means inserting a block and manually typing Title, Price, Product URL, Description, and picking images one at a time in the block inspector (`plugin/public/blocks/index.js`). The registry page already solved this exact problem with a reusable, ownership-agnostic AJAX endpoint (`restart_registry_fetch_url` → `ajax_fetch_url()` → `Restart_Registry_Product_Scraper`), returning `name`/`price`/`image_url`/`description` from a pasted URL.
 
-Confirmed against the live page (post ID 25) via WP-CLI: every saved revision showed `<!-- wp:restart-registry/favorites-room {"title":"Bedroom"} /-->` self-closing, with no Row or Items anywhere in `post_content`, not even the first autosave. Predates this branch — introduced in the original blocks migration (PR #91, commit `8cd8b68`), never caught because nobody had saved a fully-populated Room until now. Unrelated to the Fetch-URL work or the Pottery Barn/retailer-blocking issue (separate, already scoped in `ideas/scrapfly-fallback-for-blocked-retailers.md`).
-
-Secondary finding along the way: `Restart_Registry_Favorites_Renderer::render_row()` returns `''` when the Row has no title — but Room's block template auto-inserts a new Row with an empty title by default. So even after this fix, an admin who accepts the auto-templated Row without typing a title will still see nothing render. Not fixed here (existing, arguably-intentional behavior); worth a follow-up UX pass (e.g. default Row title, or a visible "give this row a name" prompt) if it trips people up again.
-
-## Fix
-`favorites-row` and `favorites-room`'s `save()` now use `useBlockProps.save()` + `useInnerBlocksProps.save()` — the standard WordPress pattern for a container block that needs its children serialized — instead of returning `null`.
-
-## Verification
-Playwright has no prebuilt Chromium for this sandbox's OS (`ubuntu26.04-x64` unsupported), so this was verified via WP-CLI instead of a live editor session:
-- `parse_blocks()` against hand-written markup shaped exactly like what `useInnerBlocksProps.save()` produces (per WP's documented serialization contract) correctly reconstructs the full Room → Row → 3 Items tree.
-- `apply_filters('the_content', ...)` (WP's real rendering pipeline) and a direct `curl` of the live front-end page both render the full nested structure end-to-end.
-- Jest test (`restart-registry-favorites-blocks.test.js`) asserts Row/Room's `save()` actually calls `useInnerBlocksProps.save()` and returns non-null, while leaf blocks still return `null`.
-- Not verified: the literal React editor UI end-to-end (blocked by the Playwright/OS issue above). Residual risk is low since `useInnerBlocksProps.save()` is documented, widely-used core WP API, not something exotic.
+## Scope
+1. `plugin/public/class-restart-registry-favorites-blocks.php` — `wp_localize_script` on the `restart-registry-favorites-blocks` handle with `ajaxUrl` (`admin_url('admin-ajax.php')`) and a `restart_registry_nonce`.
+2. `plugin/public/blocks/index.js` — in the `favorites-item` block's `edit()`, add a "Fetch" button next to the Product URL field. On click: POST `url` to `restart_registry_fetch_url`; on success map `name→title`, `price`, `description`, `image_url→images[0]` (only fill attributes that are currently empty, never clobber manual edits); show loading/error state on the button.
+3. `plugin/tests/js/restart-registry-favorites-blocks.test.js` — cases for: fetch success populates empty attributes, fetch failure surfaces an error, existing non-empty fields are not overwritten.
+4. No Lambda or theme changes. No changes to the front-end quick-add flow (registry visitors adding favorites items to their own registry) — that already works and isn't part of this request.
 
 ## Todo
-- [x] Branch: `fix/favorites-innerblocks-serialization`
-- [x] `blocks/index.js`: `favorites-row` and `favorites-room` `save()` use `useBlockProps.save()` + `useInnerBlocksProps.save()`
-- [x] `restart-registry-favorites-blocks.test.js`: split the old "every block returns null" assertion into leaf-blocks-return-null vs container-blocks-serialize-InnerBlocks
-- [x] `make plugin-test-php && make plugin-test-js` green (324 PHP, 131 JS)
-- [x] Verified via WP-CLI (`parse_blocks`, `apply_filters('the_content', ...)`, front-end curl) — see Verification above
-- [ ] Manual click-through in the real block editor once available (blocked on Playwright/OS support in this sandbox — do this from a normal browser)
-- [ ] Restore or intentionally leave the local dev "Our Favorites" page test content (currently: Bedroom room / Sheets row / 3 test items) — check with Andrew
+- [x] Branch: `feat/favorites-fetch-url`
+- [x] `class-restart-registry-favorites-blocks.php`: localize `ajaxUrl` + nonce on the block editor script handle
+- [x] `blocks/index.js`: "Fetch" button in `favorites-item` edit(), wired to `restart_registry_fetch_url`, fill-empty-only mapping, loading/error states
+- [x] `restart-registry-favorites-blocks.test.js`: fetch success / failure / no-clobber cases (9/9 pass)
+- [x] `make plugin-test-php && make plugin-test-js` green (324 PHP, 135 JS)
+- [ ] Manual test: paste a real product URL in the block inspector, click Fetch, confirm fields populate and front end renders correctly
+- [ ] Once this favorites work is finished: create a separate branch and commit `ideas/scrapfly-fallback-for-blocked-retailers.md` (currently untracked on this branch, deliberately kept out of this PR)

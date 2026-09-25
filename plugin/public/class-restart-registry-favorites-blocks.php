@@ -16,6 +16,11 @@ class Restart_Registry_Favorites_Blocks
             true
         );
 
+        wp_localize_script('restart-registry-favorites-blocks', 'restartRegistryFavoritesBlocks', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce'   => wp_create_nonce('restart_registry_nonce'),
+        ]);
+
         foreach (['favorites-item', 'favorites-row', 'favorites-room', 'favorites-filters'] as $block) {
             register_block_type(plugin_dir_path(__FILE__) . 'blocks/' . $block);
         }

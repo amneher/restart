@@ -2,6 +2,7 @@
 
 (function (blocks, element, blockEditor, components, i18n) {
     var el = element.createElement;
+    var useState = element.useState;
     var registerBlockType = blocks.registerBlockType;
     var useBlockProps = blockEditor.useBlockProps;
     var useInnerBlocksProps = blockEditor.useInnerBlocksProps;
@@ -22,11 +23,65 @@
         };
     }
 
+    // Fetches product data for the given URL and fills in only the
+    // attributes that are still empty — mirrors the registry page's
+    // "paste a link → Fetch → autofill" flow without clobbering fields
+    // an admin has already typed in by hand.
+    function fetchProductData(url, attributes, setAttributes, setStatus) {
+        var settings = window.restartRegistryFavoritesBlocks || {};
+        if (!url) {
+            setStatus({ state: 'error', message: __('Enter a product URL first.', 'restart-registry') });
+            return;
+        }
+        if (!settings.ajaxUrl) {
+            setStatus({ state: 'error', message: __('Fetch is unavailable right now.', 'restart-registry') });
+            return;
+        }
+
+        setStatus({ state: 'loading', message: '' });
+
+        return window.fetch(settings.ajaxUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+                action: 'restart_registry_fetch_url',
+                nonce:  settings.nonce || '',
+                url:    url,
+            }),
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (response) {
+                if (!response || !response.success) {
+                    setStatus({
+                        state: 'error',
+                        message: (response && response.data && response.data.message) || __('Could not fetch that URL.', 'restart-registry'),
+                    });
+                    return;
+                }
+
+                var data = response.data || {};
+                var next = {};
+                if (!attributes.title && data.name) next.title = data.name;
+                if (!attributes.price && data.price) next.price = String(data.price);
+                if (!attributes.description && data.description) next.description = data.description;
+                if ((!attributes.images || !attributes.images.length) && data.image_url) next.images = [data.image_url];
+                if (!attributes.retailer && data.retailer) next.retailer = data.retailer;
+
+                setAttributes(next);
+                setStatus({ state: 'idle', message: '' });
+            })
+            .catch(function () {
+                setStatus({ state: 'error', message: __('Could not fetch that URL.', 'restart-registry') });
+            });
+    }
+
     registerBlockType('restart-registry/favorites-item', {
         edit: function (props) {
             var attributes    = props.attributes;
             var setAttributes = props.setAttributes;
             var images        = attributes.images || [];
+            var fetchStatus   = useState({ state: 'idle', message: '' });
+            var status        = fetchStatus[0];
+            var setStatus     = fetchStatus[1];
 
             return el(
                 'div',
@@ -55,7 +110,20 @@
                 ),
                 el(TextControl, { label: __('Title', 'restart-registry'), value: attributes.title, onChange: updateField(setAttributes, 'title') }),
                 el(TextControl, { label: __('Price', 'restart-registry'), value: attributes.price, onChange: updateField(setAttributes, 'price') }),
-                el(TextControl, { label: __('Product URL', 'restart-registry'), value: attributes.url, onChange: updateField(setAttributes, 'url') }),
+                el(
+                    'div',
+                    { className: 'rr-block-fetch-url' },
+                    el(TextControl, { label: __('Product URL', 'restart-registry'), value: attributes.url, onChange: updateField(setAttributes, 'url') }),
+                    el(Button, {
+                        variant: 'secondary',
+                        isBusy: status.state === 'loading',
+                        disabled: status.state === 'loading',
+                        onClick: function () {
+                            return fetchProductData(attributes.url, attributes, setAttributes, setStatus);
+                        },
+                    }, status.state === 'loading' ? __('Fetching…', 'restart-registry') : __('Fetch', 'restart-registry')),
+                    status.state === 'error' ? el('p', { className: 'rr-block-fetch-url__error' }, status.message) : null
+                ),
                 el(TextareaControl, { label: __('Description', 'restart-registry'), value: attributes.description, onChange: updateField(setAttributes, 'description') }),
                 el(
                     'div',
