@@ -1,3 +1,45 @@
+# Plan: Local dev environment fixes (upload limits, Makefile, docs)
+
+## Done (merged)
+- [x] Raise local dev upload limits to 64M — `client_max_body_size` in both nginx
+      configs + `uploads.ini` (upload_max_filesize/post_max_size) mounted into
+      the WordPress container. PR #93, commit `db1b470`.
+- [x] Fix Makefile lint/test targets — `phpcs.xml.dist` for plugin/theme
+      (WordPress standard, formatting sniffs excluded, vendor/node_modules
+      skipped), `lint` runs all three linters and reports failures at the end,
+      `lambda-test` calls pytest directly, lambda `ruff`/`mypy` added as dev
+      deps. PR #94, commit `8f1fa97`.
+- [x] Removed custom source-built PHP (`/usr/local/bin/php`), installed
+      `php8.5-cli`, `php8.5-mbstring`, `php8.5-xml` via apt — fixes
+      `plugin-test-php` / `theme-test-php` (mbstring/dom/xmlwriter were
+      missing). No code change; environment-only, done by Andrew.
+
+## Open (PRs awaiting review)
+- [ ] PR #95 — Dockerize `docs`/`docs-build`/`docs-deploy` (new
+      `docker/Dockerfile.docs`, `docs-image` Makefile target). Verified
+      `docs-build` and `docs` (serve, live reload) locally; `docs-deploy`
+      not run (would push to GitHub Pages) — verify after merge.
+- [ ] PR #96 — `UV_PROJECT_ENVIRONMENT=/opt/venv` for the `lambda` compose
+      service, so `uv sync` doesn't leave a root-owned `.venv` on the host
+      bind mount. Verified `typecheck` and `lambda-test` pass with it.
+
+## Still broken / not addressed
+- [ ] `make lint` still fails on real findings, left intentionally
+      unfixed per Andrew's call:
+  - plugin phpcs: WordPress security/escaping sniffs — 211
+    `UnsafePrintingFunction`, 75 `MissingUnslash`, 42 `InputNotSanitized`,
+    35 `OutputNotEscaped`, plus smaller misc (unused params, post-increment
+    style, etc.)
+  - theme phpcs: a couple of unused-parameter findings
+  - lambda ruff: 159 errors, 109 auto-fixable with `--fix`
+- [ ] `make typecheck` (lambda mypy): 4 errors in 3 files — an implicit-
+      Optional default in `app/routes/items.py:34`, and missing stubs for
+      `wp_python.exceptions` in `app/routes/registry.py:20`.
+- [ ] `docs-screenshots` Makefile target — added `npx playwright install
+      --with-deps` but never exercised end-to-end.
+
+---
+
 # Plan: User notes field on registry items (GH #22)
 
 ## What
