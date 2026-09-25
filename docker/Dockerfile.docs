@@ -1,0 +1,7 @@
+# Runs mkdocs (with the material theme + mkdocstrings) without needing a
+# matching Python/mkdocs setup on the host. Build context is docs/, so
+# requirements.txt tracks the same versions `pip install`ing on the host would.
+FROM squidfunk/mkdocs-material:9
+
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
