@@ -45,6 +45,18 @@ class FavoritesRendererTest extends TestCase {
         $this->assertStringNotContainsString('rr-article-item__tier-badge', $html);
     }
 
+    public function test_render_item_renders_media_placeholder_without_images(): void {
+        // The tier badge is absolutely positioned relative to the whole card
+        // (top:12px, left:12px), expecting the media block to occupy that
+        // space. Without this placeholder, the badge overlaps the title for
+        // any item with no image (e.g. a Fetch that failed to find one).
+        $html = Restart_Registry_Favorites_Renderer::render_item(['title' => 'No Photo Item', 'tier' => 'save']);
+
+        $this->assertStringContainsString('rr-article-item__media', $html);
+        $this->assertStringNotContainsString('rr-article-item__img', $html);
+        $this->assertStringNotContainsString('rr-article-item__carousel', $html);
+    }
+
     public function test_render_item_renders_multiple_images_as_carousel(): void {
         $html = Restart_Registry_Favorites_Renderer::render_item([
             'title'  => 'Sofa',

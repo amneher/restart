@@ -2791,3 +2791,30 @@ Today, adding a favorites item means inserting a block and manually typing Title
 - [x] `make plugin-test-php && make plugin-test-js` green (324 PHP, 135 JS)
 - [ ] Manual test: paste a real product URL in the block inspector, click Fetch, confirm fields populate and front end renders correctly
 - [ ] Once this favorites work is finished: create a separate branch and commit `ideas/scrapfly-fallback-for-blocked-retailers.md` (currently untracked on this branch, deliberately kept out of this PR)
+
+---
+
+# Bug fix: favorites tier badge overlaps item title when item has no image
+
+## Symptom
+Andrew reported the tier badge (Save/Spend/Splurge) hiding the item title on the "Our Favorites" page, reproducing at every screen size tested.
+
+## Root cause
+`.rr-article-item__tier-badge` is `position: absolute; top: 12px; left: 12px;` relative to the whole card (`.rr-article-item--tier { position: relative; }`), expecting the `.rr-article-item__media` block (~180-220px tall) to occupy that top area. `render_item()` (`class-restart-registry-favorites-renderer.php`) only emits the media wrapper `if (count($images) >= 1)` — when an item has no image (e.g. a Pottery Barn item whose Fetch never found one, per the retailer-blocking issue from earlier), the wrapper is skipped entirely, the title becomes the first thing in the card, and the badge lands directly on top of it.
+
+Confirmed via `getComputedStyle()`/`getBoundingClientRect()` on a live page with 3 test items (1 with an image, 2 without): the 2 image-less items showed badge/title bounding-box overlap, the 1 with an image didn't. Screenshot before/after confirms visually.
+
+## Fix
+`render_item()` now always renders the `.rr-article-item__media` wrapper div, even with zero images — it already has a neutral `background: var(--rr-mint-bg)` in CSS, so an empty wrapper reads as an intentional placeholder rather than a layout bug.
+
+## Verification
+- New regression test (`FavoritesRendererTest::test_render_item_renders_media_placeholder_without_images`) asserts the wrapper is present with no `<img>`/carousel inside for a title-only item.
+- Live browser check: all 3 test cards (1 with image, 2 without) show `hasMedia: true` and `overlap: false` after the fix; before, both image-less cards overlapped.
+- Screenshot: titles fully readable, badges sitting cleanly on the photo or the placeholder block.
+
+## Todo
+- [x] Branch: `fix/favorites-badge-overlap-no-image`
+- [x] `class-restart-registry-favorites-renderer.php`: always render `.rr-article-item__media` wrapper, even with no images
+- [x] `FavoritesRendererTest.php`: regression test for the no-image case
+- [x] `make plugin-test-php && make plugin-test-js` green (325 PHP, 136 JS)
+- [x] Verified live via browser: no overlap with or without an image, screenshot confirms
