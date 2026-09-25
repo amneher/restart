@@ -27,7 +27,12 @@ class Restart_Registry_Favorites_Renderer
         $images = array_values(array_filter((array) ($item['images'] ?? [])));
 
         // ── Image / carousel section ──────────────────────────────────────
-        $media_html = '';
+        // Always render the media wrapper, even with no image — the tier
+        // badge is absolutely positioned relative to the whole card, so
+        // omitting this container entirely collapses the space it needs to
+        // clear the title (.rr-article-item__media has a neutral background,
+        // so an empty wrapper reads as an intentional placeholder, not a bug).
+        $media_html = '<div class="rr-article-item__media"></div>';
         if (count($images) === 1) {
             $media_html = '<div class="rr-article-item__media">'
                 . '<img class="rr-article-item__img" src="' . esc_url($images[0]) . '" alt="' . esc_attr($item['title']) . '" loading="lazy">'

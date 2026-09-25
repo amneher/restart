@@ -2794,25 +2794,27 @@ Today, adding a favorites item means inserting a block and manually typing Title
 
 ---
 
-# Bug fix: favorites Row/Room save() wrapper div broke the 3-column grid
+# Bug fix: favorites tier badge overlaps item title when item has no image
 
 ## Symptom
-After PR #98 (InnerBlocks serialization fix) merged, Andrew re-added a Room/Row/3-Items test on the "Our Favorites" page. Items rendered this time (the #98 fix worked), but all 3 stacked in one column instead of a 3-column grid, and descriptions had a lot of trailing empty space.
+Andrew reported the tier badge (Save/Spend/Splurge) hiding the item title on the "Our Favorites" page, reproducing at every screen size tested.
 
 ## Root cause
-PR #98's `save()` fix used `useBlockProps.save()` + `useInnerBlocksProps.save()`, which wraps the row/room's children in `<div class="wp-block-restart-registry-favorites-row">`. That wrapper isn't just cosmetic — WordPress's `render_block()` passes it as part of `$content` to the PHP render callback (the block's own `innerContent` with children spliced into the placeholder, wrapper included). Since `render_row()`/`render_room()` already build their own complete wrapper markup and insert `$content` directly inside `.rr-favorites-row__cards` (a CSS grid), the extra wrapper div became the grid's *only* child — 1 grid item containing 3 stacked cards, instead of 3 grid items. Confirmed via `curl` + `getComputedStyle()`: grid had `childCount: 1` (the wrapper) before the fix, 3 `.rr-article-item--tier` children with correct `grid-template-columns: repeat(3, 1fr)` after.
+`.rr-article-item__tier-badge` is `position: absolute; top: 12px; left: 12px;` relative to the whole card (`.rr-article-item--tier { position: relative; }`), expecting the `.rr-article-item__media` block (~180-220px tall) to occupy that top area. `render_item()` (`class-restart-registry-favorites-renderer.php`) only emits the media wrapper `if (count($images) >= 1)` — when an item has no image (e.g. a Pottery Barn item whose Fetch never found one, per the retailer-blocking issue from earlier), the wrapper is skipped entirely, the title becomes the first thing in the card, and the badge lands directly on top of it.
 
-The "whitespace at the end of the description" turned out to be unrelated and working as designed: `.rr-article-item__description { flex: 1 }` stretches short descriptions to match the tallest card in the row so footers/prices align — confirmed visually via screenshot. Flagged to Andrew as a design choice, not fixed here; can revisit if he'd rather top-align descriptions instead.
+Confirmed via `getComputedStyle()`/`getBoundingClientRect()` on a live page with 3 test items (1 with an image, 2 without): the 2 image-less items showed badge/title bounding-box overlap, the 1 with an image didn't. Screenshot before/after confirms visually.
 
 ## Fix
-`favorites-row` and `favorites-room`'s `save()` now return bare `InnerBlocks.Content` (imported from `blockEditor`) with no wrapping element — `render.php` already provides the wrapper, and `$content` needs to be exactly the children's markup.
+`render_item()` now always renders the `.rr-article-item__media` wrapper div, even with zero images — it already has a neutral `background: var(--rr-mint-bg)` in CSS, so an empty wrapper reads as an intentional placeholder rather than a layout bug.
 
 ## Verification
-Through the real block editor (browse, with the Playwright/OS fix from earlier): cleared the test page, rebuilt Room → Row (title "Sheets") → 3 Items with varied-length descriptions via script (mirroring manual entry), clicked the real Save button, confirmed via `wp-cli` that `post_content` has no stray wrapper divs, and confirmed on the live front end via `getComputedStyle()` that `.rr-favorites-row__cards` is `display: grid` with 3 equal `grid-template-columns` and the 3 item cards as direct children. Screenshot confirms visually.
+- New regression test (`FavoritesRendererTest::test_render_item_renders_media_placeholder_without_images`) asserts the wrapper is present with no `<img>`/carousel inside for a title-only item.
+- Live browser check: all 3 test cards (1 with image, 2 without) show `hasMedia: true` and `overlap: false` after the fix; before, both image-less cards overlapped.
+- Screenshot: titles fully readable, badges sitting cleanly on the photo or the placeholder block.
 
 ## Todo
-- [x] Branch: `fix/favorites-row-innerblocks-wrapper`
-- [x] `blocks/index.js`: import `InnerBlocks`, change row/room `save()` to bare `InnerBlocks.Content`
-- [x] `restart-registry-favorites-blocks.test.js`: assert `save()` calls `createElement(InnerBlocks.Content)` directly, no wrapper
-- [x] `make plugin-test-php && make plugin-test-js` green (324 PHP, 136 JS)
-- [x] Verified through the real block editor + live front end (grid layout, no stray wrapper)
+- [x] Branch: `fix/favorites-badge-overlap-no-image`
+- [x] `class-restart-registry-favorites-renderer.php`: always render `.rr-article-item__media` wrapper, even with no images
+- [x] `FavoritesRendererTest.php`: regression test for the no-image case
+- [x] `make plugin-test-php && make plugin-test-js` green (325 PHP, 136 JS)
+- [x] Verified live via browser: no overlap with or without an image, screenshot confirms
