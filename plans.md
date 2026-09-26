@@ -2817,4 +2817,33 @@ Confirmed via `getComputedStyle()`/`getBoundingClientRect()` on a live page with
 - [x] `class-restart-registry-favorites-renderer.php`: always render `.rr-article-item__media` wrapper, even with no images
 - [x] `FavoritesRendererTest.php`: regression test for the no-image case
 - [x] `make plugin-test-php && make plugin-test-js` green (325 PHP, 136 JS)
+
+---
+
+# Bug fix: new favorites room reverted to the 1-column grid bug (813fd68) via stale cached JS
+
+## Symptom
+Andrew added a new "Bathroom" room to the Our Favorites page; its items rendered in one column with lots of whitespace, the exact symptom 813fd68 already fixed.
+
+## Root cause
+`RESTART_REGISTRY_VERSION` (`plugin/restart-registry.php`) stayed at `1.2.10` through three later commits that edited `plugin/public/blocks/index.js` — `ea19623`, `24fa879`, and `813fd68` itself. `wp_register_script()` for the block-editor bundle (`class-restart-registry-favorites-blocks.php`) uses that constant as its `?ver=` cache-busting query string, so any browser that had already cached `index.js` under `?ver=1.2.10` kept serving the **pre-813fd68** bundle — the one whose row/room `save()` wraps children in a `<div class="wp-block-...">`, which becomes the CSS grid's only child.
+
+Confirmed by pulling the Our Favorites page's `post_content` from the DB: the older "Bedroom" room (saved with a fresh JS load) has bare, wrapper-less block markup; the new "Bathroom" room had `<div class="wp-block-restart-registry-favorites-room">` / `...-favorites-row">` wrappers baked in — proof the editor session that saved it was still running the old bundle.
+
+## Fix
+- Bumped `RESTART_REGISTRY_VERSION` (and the plugin header `Version:`) to `1.2.11` so the corrected `index.js` cache-busts for every browser going forward.
+- Data fix: stripped the two stray wrapper divs from the already-saved "Bathroom" room's `post_content` directly (bumping the version doesn't retroactively repair markup already in the DB) — verified via `wp post get`/`wp post update`.
+
+## Verification
+- `wp post get 25 --field=post_content` — 0 occurrences of the wrapper class after the fix.
+- Rendered `/our-favorites/` front end: `.rr-favorites-row__cards` for "Towels" has exactly 3 direct `.rr-article-item` children, no wrapper div — matches the working "Bedroom" room's structure.
+- `make plugin-test-php && make plugin-test-js` green (325 PHP, 136 JS).
+
+## Todo
+- [x] Branch: `fix/favorites-stale-js-version-bump`
+- [x] `restart-registry.php`: bump `RESTART_REGISTRY_VERSION` / `Version:` header to 1.2.11
+- [x] Data fix: strip stray wrapper divs from the "Bathroom" room's `post_content` via wp-cli
+- [x] Verified rendered front end shows a 3-column grid for the new room
+- [x] `make plugin-test-php && make plugin-test-js` green (325 PHP, 136 JS)
+- [ ] Consider a CI/lint check or Makefile reminder to bump `RESTART_REGISTRY_VERSION` whenever `plugin/public/blocks/index.js` changes — this is the second time a JS fix shipped without a version bump
 - [x] Verified live via browser: no overlap with or without an image, screenshot confirms
