@@ -1,11 +1,11 @@
 .DEFAULT_GOAL := help
 
 .PHONY: help up down logs reset seed seed-reset \
-        test plugin-test plugin-test-php plugin-test-js plugin-test-scraper \
+        test plugin-test plugin-test-php plugin-test-js plugin-test-assets-min plugin-test-scraper \
         lambda-test lambda-test-staging lambda-test-prod \
-        theme-test theme-test-php theme-test-js \
+        theme-test theme-test-php theme-test-js theme-test-assets-min \
         install lint typecheck clean \
-        plugin-build lambda-build lambda-build-layer theme-pack \
+        plugin-build plugin-build-assets lambda-build lambda-build-layer theme-pack theme-build-assets build-assets \
         docs docs-image docs-build docs-php-ref docs-deploy docs-screenshots \
         deploy-staging deploy-prod publish-layer configure-layer configure-efs configure-env \
         versions \
@@ -86,6 +86,9 @@ plugin-test-php:
 plugin-test-js:
 	cd plugin && npm test
 
+plugin-test-assets-min:
+	cd plugin && $(MAKE) test-assets-min
+
 plugin-test-scraper:
 	cd plugin && ./vendor/bin/phpunit --testsuite scraper
 
@@ -109,10 +112,16 @@ theme-test-php:
 theme-test-js:
 	cd theme && npm test
 
+theme-test-assets-min:
+	cd theme && $(MAKE) test-assets-min
+
 # ── Building ──────────────────────────────────────────────────────────────────
 
 plugin-build:
 	cd plugin && $(MAKE) build
+
+plugin-build-assets:
+	cd plugin && $(MAKE) build-assets
 
 lambda-build:
 	$(MAKE) -C lambda/ build
@@ -122,6 +131,11 @@ lambda-build-layer:
 
 theme-pack:
 	cd theme && $(MAKE) pack
+
+theme-build-assets:
+	cd theme && $(MAKE) build-assets
+
+build-assets: plugin-build-assets theme-build-assets
 
 # ── Code quality ──────────────────────────────────────────────────────────────
 
@@ -288,6 +302,7 @@ help:
 	@echo "  plugin-test          Run plugin PHP + JS tests"
 	@echo "  plugin-test-php      Run plugin PHPUnit suite"
 	@echo "  plugin-test-js       Run plugin JS tests"
+	@echo "  plugin-test-assets-min  Rebuild + run plugin JS tests against the minified build"
 	@echo "  plugin-test-scraper  Run plugin scraper integration tests (makes real HTTP requests)"
 	@echo "  lambda-test          Run lambda unit tests (in-memory SQLite)"
 	@echo "  lambda-test-local    Run lambda WP integration/e2e tests against local stack"
@@ -296,12 +311,16 @@ help:
 	@echo "  theme-test           Run theme PHP + JS tests"
 	@echo "  theme-test-php       Run theme PHPUnit suite"
 	@echo "  theme-test-js        Run theme JS tests"
+	@echo "  theme-test-assets-min   Rebuild + run theme JS tests against the minified build"
 	@echo ""
 	@echo "Building:"
 	@echo "  plugin-build         Build the plugin distribution"
+	@echo "  plugin-build-assets  Minify plugin JS/CSS into .min files"
 	@echo "  lambda-build         Build the lambda zip"
 	@echo "  lambda-build-layer   Build the lambda deps layer zip"
 	@echo "  theme-pack           Pack the theme distribution"
+	@echo "  theme-build-assets   Minify theme JS/CSS into .min files"
+	@echo "  build-assets         Minify plugin + theme JS/CSS"
 	@echo ""
 	@echo "Code quality:"
 	@echo "  install              Install plugin, lambda, and theme dependencies"

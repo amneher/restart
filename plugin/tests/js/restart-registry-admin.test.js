@@ -42,9 +42,11 @@ function buildDOM() {
     `;
 }
 
+const { requireScript } = require('./require-source');
+
 function loadModule() {
     jest.isolateModules(() => {
-        require('../../admin/js/restart-registry-admin.js');
+        requireScript(__dirname, '../../admin/js/restart-registry-admin.js');
     });
 }
 

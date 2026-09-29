@@ -63,10 +63,12 @@ function buildDOM({ noImage = false, inViewRegistry = false } = {}) {
 // and attaches all handlers via event delegation on `document`, so a single
 // require() is enough — handlers survive DOM rebuilds in beforeEach.
 
+const { requireScript } = require('./require-source');
+
 beforeAll(() => {
     global.fetch = jest.fn();
     buildDOM();
-    require('../../public/js/restart-registry-public.js');
+    requireScript(__dirname, '../../public/js/restart-registry-public.js');
 });
 
 beforeEach(() => {

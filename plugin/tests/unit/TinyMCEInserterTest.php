@@ -38,7 +38,7 @@ class TinyMCEInserterTest extends TestCase {
         $result = $this->admin()->mce_external_plugins([]);
 
         $this->assertArrayHasKey('restart_item', $result);
-        $this->assertStringEndsWith('restart-registry-tinymce.js', $result['restart_item']);
+        $this->assertStringEndsWith('restart-registry-tinymce.min.js', $result['restart_item']);
     }
 
     public function test_plugin_registered_on_page_screen(): void {

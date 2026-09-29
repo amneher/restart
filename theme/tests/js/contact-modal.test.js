@@ -27,7 +27,7 @@ describe('contact-modal.js', () => {
 
     const loadScript = () => {
         jest.resetModules();
-        require('../../assets/js/contact-modal.js');
+        require('./require-source').requireScript(__dirname, '../../assets/js/contact-modal.js');
     };
 
     beforeEach(() => {

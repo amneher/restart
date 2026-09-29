@@ -18,7 +18,7 @@ beforeEach(() => {
 });
 
 function loadScript() {
-    require('../../assets/js/header-current-nav.js');
+    require('./require-source').requireScript(__dirname, '../../assets/js/header-current-nav.js');
 }
 
 function buildDOM(links) {

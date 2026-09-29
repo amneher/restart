@@ -1,3 +1,109 @@
+# Plan: Minify JS/CSS assets to speed LCP
+
+## Problem
+Neither `plugin/` nor `theme/` has a build step — all JS/CSS is enqueued
+unminified straight from source. Assets that load on every front-end page:
+`theme/assets/js/nav-user-state.js` (8K), `contact-modal.js` (8K),
+`header-current-nav.js` (4K), `theme/style.css` (32K). Registry pages add
+`plugin/public/js/restart-registry-public.js` (64K) and
+`restart-registry-public.css` (48K), also unminified. Google Fonts is
+enqueued as a render-blocking `<link>` with no `preconnect` hint, adding a
+DNS+TLS round trip before the font request even starts.
+
+## Approach
+1. Add `terser` (JS) and `clean-css-cli` (CSS) as devDependencies in both
+   `plugin/package.json` and `theme/package.json`.
+2. Add an npm `build` script to each that emits `*.min.js` / `*.min.css`
+   next to each source file (standard WP convention).
+3. Update PHP enqueue calls (`class-restart-registry-public.php`,
+   `class-restart-registry-admin.php`, `theme/functions.php`) to load the
+   `.min` file, falling back to the unminified source when
+   `SCRIPT_DEBUG` is true (matches WP core's own convention, so local dev
+   with `SCRIPT_DEBUG` on still serves readable files).
+4. Add `plugin-build-assets` / `theme-build-assets` Makefile targets (and a
+   top-level `build-assets` target) so this is a repeatable, documented
+   step — not a manual one-off.
+5. Add `<link rel="preconnect">` for `fonts.googleapis.com` and
+   `fonts.gstatic.com` in `theme/functions.php`'s font enqueue, ahead of
+   the stylesheet tag.
+6. Commit both the source and the generated `.min` files (no CI build step
+   exists yet, so the built files must be checked in to take effect in
+   production).
+
+## Out of scope
+- Server-level gzip/brotli compression (Bluehost hosting config, not code).
+- Bundling/concatenating files across plugin+theme (kept minification
+  per-file to keep the diff small and avoid changing load order/handles).
+- Converting to a webpack/esbuild pipeline — terser/clean-css CLI is
+  enough for this asset volume and keeps the build simple.
+
+## Todo
+- [x] Add terser + clean-css to plugin/package.json, theme/package.json —
+      via `scripts/build-assets.js` in each (terser for JS, clean-css lib
+      for CSS; style.css header comment preserved in style.min.css since
+      WP reads it for theme identification)
+- [x] Add `build` npm script to each (minify js/*.js, css/*.css → .min)
+- [x] Generate .min.js/.min.css for all current assets
+- [x] Update plugin enqueue calls to use .min with SCRIPT_DEBUG fallback
+      (public + admin + TinyMCE plugin script)
+- [x] Update theme enqueue calls to use .min with SCRIPT_DEBUG fallback
+      (style.css, header-current-nav, nav-user-state, start-registry,
+      auth, contact-modal) via shared `restart_asset_suffix()` helper
+- [x] Add preconnect hints for Google Fonts (fonts.googleapis.com,
+      fonts.gstatic.com)
+- [x] Add Makefile build-assets targets (plugin/theme/top-level)
+- [x] Verify: `make plugin-test-php`/`theme-test-php`/`npm test` (both
+      packages) all pass; phpcs error counts unchanged vs. pre-change
+      baseline (no new lint debt introduced)
+- [ ] Commit the source + generated `.min` files (holding for explicit
+      go-ahead — not committed yet)
+
+## Follow-up: prove minified builds are functionally identical, wire into release
+Requested after initial review. Two asks: (1) a reliable way to confirm the
+`.min` builds behave the same as source, (2) make releases always rebuild +
+verify minified assets rather than relying on whoever ran `npm run build`
+last.
+
+### JS parity
+- [x] `tests/js/require-source.js` (plugin + theme) — `requireScript(dir,
+      relPath)` swaps to the `.min.js` sibling when `ASSET_BUILD=min` is set
+- [x] Updated all 9 test files that `require()` a minified-in-scope script
+      to go through the helper instead of a hardcoded path
+- [x] `npm run test:min` (both packages) — `pretest:min` rebuilds assets,
+      then runs the *same* Jest suite against the `.min` build
+- [x] Sanity-checked the harness is real: corrupted a `.min.js` file by hand
+      → `test:min` failed with 31/31 tests red; restored → green again
+
+### CSS parity
+- [x] `scripts/verify-css-parity.js` (plugin + theme, identical copies) —
+      parses source + minified CSS with postcss, canonicalizes each
+      selector/value the same way clean-css's safe (level 1) transforms do
+      (hex shortening, leading-zero stripping, `background:none`→`0 0`,
+      `outline:none`→`0`, `font-weight:normal`→`400`, quote/whitespace
+      stripping, `*::before`→`::before`), then diffs the resulting
+      selector→declarations maps. A byte/text diff was tried first and
+      rejected — clean-css's legitimate reordering and value rewrites made
+      it unusably noisy (100+ false positives on first run).
+- [x] Wired into `build-assets.js`: every CSS minify is verified inline;
+      build throws non-zero if any rule doesn't match
+- [x] Sanity-checked: hand-changed a color value in a `.min.css` → caught
+      immediately; restored → 333/48/202 rules match across all three
+      stylesheets
+
+### Tied into releases
+- [x] `scripts/bump.sh`: `bump_plugin()` and `bump_theme()` now run
+      `make -C plugin/theme test-assets-min` (rebuild + JS min-parity tests
+      + CSS parity check) before `git add`/commit/tag, and add the
+      regenerated `.min` files to the bump commit. `set -euo pipefail`
+      means a failed rebuild or parity check aborts the release before
+      anything is committed or tagged.
+- [ ] Not dry-run end-to-end (would create a real commit/tag on this repo)
+      — verified the `make -C plugin/theme test-assets-min` step directly
+      and `bash -n`'d the script; suggest testing the full `release-*`
+      flow once on a throwaway branch before trusting it in anger
+
+---
+
 # Plan: Local dev environment fixes (upload limits, Makefile, docs)
 
 ## Done (merged)

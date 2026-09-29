@@ -98,9 +98,11 @@ function buildTwoRoomPage() {
         + quickAddModals();
 }
 
+const { requireScript } = require('./require-source');
+
 function loadModule() {
     jest.isolateModules(() => {
-        require('../../public/js/restart-registry-public.js');
+        requireScript(__dirname, '../../public/js/restart-registry-public.js');
     });
 }
 

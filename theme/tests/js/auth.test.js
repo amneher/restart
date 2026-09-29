@@ -16,7 +16,7 @@ window.location = { href: '' };
 // auth.js uses event delegation on document so handlers survive DOM rebuilds.
 // Load once; reset DOM + fetch mock in beforeEach.
 beforeAll(() => {
-    require('../../assets/js/auth.js');
+    require('./require-source').requireScript(__dirname, '../../assets/js/auth.js');
 });
 
 beforeEach(() => {

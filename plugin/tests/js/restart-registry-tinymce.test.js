@@ -60,7 +60,7 @@ global.tinymce = {
 };
 
 // Load plugin — triggers PluginManager.add → factory → addButton (captures both buttons)
-require('../../admin/js/restart-registry-tinymce.js');
+require('./require-source').requireScript(__dirname, '../../admin/js/restart-registry-tinymce.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

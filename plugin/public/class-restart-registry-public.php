@@ -105,9 +105,10 @@ class Restart_Registry_Public
 
     public function enqueue_styles(): void
     {
+        $suffix = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
         wp_enqueue_style(
             $this->plugin_name,
-            plugin_dir_url(__FILE__) . 'css/restart-registry-public.css',
+            plugin_dir_url(__FILE__) . "css/restart-registry-public{$suffix}.css",
             [],
             $this->version,
             'all'
@@ -126,9 +127,10 @@ class Restart_Registry_Public
             wp_enqueue_media();
         }
 
+        $suffix = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
         wp_enqueue_script(
             $this->plugin_name,
-            plugin_dir_url(__FILE__) . 'js/restart-registry-public.js',
+            plugin_dir_url(__FILE__) . "js/restart-registry-public{$suffix}.js",
             [],
             $this->version,
             true

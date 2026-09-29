@@ -35,7 +35,8 @@ class Restart_Registry_Admin {
         if (!$screen || !in_array($screen->base, ['post', 'page'], true)) {
             return $plugins;
         }
-        $plugins['restart_item'] = plugin_dir_url(__FILE__) . 'js/restart-registry-tinymce.js';
+        $suffix = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
+        $plugins['restart_item'] = plugin_dir_url(__FILE__) . "js/restart-registry-tinymce{$suffix}.js";
         return $plugins;
     }
 
@@ -52,12 +53,13 @@ class Restart_Registry_Admin {
     }
 
     public function enqueue_styles($hook) {
-        wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/restart-registry-admin.css', array(), $this->version, 'all');
+        $suffix = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
+        wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . "css/restart-registry-admin{$suffix}.css", array(), $this->version, 'all');
 
         if (isset($_GET['page']) && $_GET['page'] === 'restart-registry-edit') {
             wp_enqueue_style(
                 $this->plugin_name . '-public',
-                plugin_dir_url(dirname(__FILE__)) . 'public/css/restart-registry-public.css',
+                plugin_dir_url(dirname(__FILE__)) . "public/css/restart-registry-public{$suffix}.css",
                 array(),
                 $this->version,
                 'all'
@@ -66,7 +68,8 @@ class Restart_Registry_Admin {
     }
 
     public function enqueue_scripts($hook) {
-        wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/restart-registry-admin.js', array(), $this->version, true);
+        $suffix = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
+        wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . "js/restart-registry-admin{$suffix}.js", array(), $this->version, true);
         wp_localize_script($this->plugin_name, 'rrAdmin', array(
             'ajaxurl'     => admin_url('admin-ajax.php'),
             'nonce'       => wp_create_nonce('restart_registry_admin_nonce'),
