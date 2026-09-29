@@ -30,7 +30,7 @@ describe('start-registry.js', () => {
 
     const loadScript = () => {
         jest.resetModules();
-        require('../../assets/js/start-registry.js');
+        require('./require-source').requireScript(__dirname, '../../assets/js/start-registry.js');
     };
 
     beforeEach(() => {

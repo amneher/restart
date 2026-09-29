@@ -26,7 +26,16 @@ bump_plugin() {
     next=$(bump_semver "$current" "$PART")
     sed -i "s/^ \* Version: .*/ * Version: ${next}/" "$file"
     sed -i "s/define( 'RESTART_REGISTRY_VERSION', '.*' );/define( 'RESTART_REGISTRY_VERSION', '${next}' );/" "$file"
-    git add "$file"
+
+    # Rebuild .min JS/CSS and run the JS suite + CSS structural-equivalence
+    # check against them, so a release never ships a stale or broken
+    # minified build. Aborts the bump (set -e) if either check fails.
+    echo "Rebuilding and verifying minified plugin assets..."
+    make -C plugin test-assets-min
+
+    git add "$file" \
+        plugin/public/js/*.min.js plugin/admin/js/*.min.js \
+        plugin/public/css/*.min.css plugin/admin/css/*.min.css
     git commit -m "chore(plugin): bump version to ${next}"
     git tag "plugin/v${next}"
     echo "plugin: ${current} → ${next}  (tag: plugin/v${next})"
@@ -51,7 +60,15 @@ bump_theme() {
     current=$(grep '^Version:' "$file" | sed 's/Version: //' | tr -d '[:space:]')
     next=$(bump_semver "$current" "$PART")
     sed -i "s/^Version: .*/Version: ${next}/" "$file"
-    git add "$file"
+
+    # Rebuild .min JS/CSS (style.min.css picks up the new version header)
+    # and run the JS suite + CSS structural-equivalence check against them,
+    # so a release never ships a stale or broken minified build. Aborts the
+    # bump (set -e) if either check fails.
+    echo "Rebuilding and verifying minified theme assets..."
+    make -C theme test-assets-min
+
+    git add "$file" theme/style.min.css theme/assets/js/*.min.js
     git commit -m "chore(theme): bump version to ${next}"
     git tag "theme/v${next}"
     echo "theme: ${current} → ${next}  (tag: theme/v${next})"

@@ -2,9 +2,22 @@
 
 $fonts_url = 'https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,400;0,500;0,700;0,900;1,400;1,500;1,700;1,900&display=swap';
 
+// Loads the .min build unless SCRIPT_DEBUG is on, matching WP core's own convention.
+if (!function_exists('restart_asset_suffix')) {
+function restart_asset_suffix(): string {
+    return (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
+}
+}
+
 add_action('wp_enqueue_scripts', function () use ($fonts_url) {
+    $suffix = restart_asset_suffix();
     wp_enqueue_style('therestart-fonts', $fonts_url, [], null);
-    wp_enqueue_style('therestart-style', get_stylesheet_uri(), ['therestart-fonts'], wp_get_theme()->get('Version'));
+    wp_enqueue_style(
+        'therestart-style',
+        get_stylesheet_directory_uri() . "/style{$suffix}.css",
+        ['therestart-fonts'],
+        wp_get_theme()->get('Version')
+    );
     wp_add_inline_style('therestart-style', 'html,body{overflow-x:hidden}'
         . '@media(min-width:600px) and (max-width:1023px){'
         . '.wp-block-navigation__responsive-container-open:not(.always-shown){display:flex!important}'
@@ -12,7 +25,7 @@ add_action('wp_enqueue_scripts', function () use ($fonts_url) {
         . '}');
     wp_enqueue_script(
         'therestart-header-current-nav',
-        get_stylesheet_directory_uri() . '/assets/js/header-current-nav.js',
+        get_stylesheet_directory_uri() . "/assets/js/header-current-nav{$suffix}.js",
         [],
         wp_get_theme()->get('Version'),
         true
@@ -22,6 +35,14 @@ add_action('wp_enqueue_scripts', function () use ($fonts_url) {
 add_action('admin_enqueue_scripts', function () use ($fonts_url) {
     wp_enqueue_style('therestart-fonts', $fonts_url, [], null);
 });
+
+// Preconnect to the Google Fonts hosts before the render-blocking stylesheet
+// link is emitted, so the DNS+TLS handshake overlaps with the rest of the
+// page load instead of only starting once the <link> is parsed.
+add_action('wp_head', function () {
+    echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
+    echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
+}, 0);
 
 add_filter('show_admin_bar', function ($show) {
     return $show && current_user_can('edit_posts');
@@ -33,7 +54,7 @@ add_filter('show_admin_bar', function ($show) {
 add_action('wp_enqueue_scripts', function () {
     wp_enqueue_script(
         'therestart-nav-user-state',
-        get_stylesheet_directory_uri() . '/assets/js/nav-user-state.js',
+        get_stylesheet_directory_uri() . '/assets/js/nav-user-state' . restart_asset_suffix() . '.js',
         [],
         wp_get_theme()->get('Version'),
         true
@@ -194,7 +215,7 @@ add_action('wp_enqueue_scripts', function () {
 
     wp_enqueue_script(
         'restart-start-registry',
-        get_stylesheet_directory_uri() . '/assets/js/start-registry.js',
+        get_stylesheet_directory_uri() . '/assets/js/start-registry' . restart_asset_suffix() . '.js',
         [],
         wp_get_theme()->get('Version'),
         true
@@ -709,7 +730,7 @@ add_action('wp_enqueue_scripts', function () {
 
     wp_enqueue_script(
         'restart-auth',
-        get_stylesheet_directory_uri() . '/assets/js/auth.js',
+        get_stylesheet_directory_uri() . '/assets/js/auth' . restart_asset_suffix() . '.js',
         [],
         wp_get_theme()->get('Version'),
         true
@@ -759,7 +780,7 @@ add_action('wp_footer', function () {
 add_action('wp_enqueue_scripts', function () {
     wp_enqueue_script(
         'restart-contact-modal',
-        get_stylesheet_directory_uri() . '/assets/js/contact-modal.js',
+        get_stylesheet_directory_uri() . '/assets/js/contact-modal' . restart_asset_suffix() . '.js',
         [],
         wp_get_theme()->get('Version'),
         true

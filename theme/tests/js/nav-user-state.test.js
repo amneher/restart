@@ -29,7 +29,7 @@ function buildDOM() {
 }
 
 function loadScript() {
-    require('../../assets/js/nav-user-state.js');
+    require('./require-source').requireScript(__dirname, '../../assets/js/nav-user-state.js');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
