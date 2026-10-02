@@ -201,7 +201,19 @@
 
             return el(
                 'div',
-                useBlockProps(),
+                useBlockProps({
+                    // Editor-only boundary so it's obvious where this room's
+                    // nesting ends — without it, a new row added via the
+                    // wrong "+" inserter can land as a sibling of the room
+                    // instead of a child, and silently fall outside its
+                    // filter (render.php ignores edit-time block props, so
+                    // this has no effect on the front end).
+                    style: {
+                        border: '1px dashed #47b4b0',
+                        borderRadius: '4px',
+                        padding: '12px',
+                    },
+                }),
                 el(TextControl, {
                     label: __('Room Title', 'restart-registry'),
                     value: attributes.title,
