@@ -2,7 +2,7 @@
 
 *Last updated: May 3, 2026*
 
-This Privacy Policy explains how The Restart Co ("we," "us," or "our") collects, uses, and protects your information when you use reStart at the-restart.co (the "Site"). By using the Site, you agree to the practices described here.
+This Privacy Policy explains how reStart Group, LLC ("we," "us," or "our") collects, uses, and protects your information when you use reStart at the-restart.com (the "Site"). By using the Site, you agree to the practices described here.
 
 ---
 
@@ -80,7 +80,7 @@ Depending on where you live, you may have the right to:
 - Object to or restrict certain uses of your information
 - Receive a copy of your information in a portable format
 
-To exercise any of these rights, contact us at hello@the-restart.co. We will respond within 30 days.
+To exercise any of these rights, contact us at hello@the-restart.com. We will respond within 30 days.
 
 ---
 
@@ -106,5 +106,5 @@ We may update this Privacy Policy from time to time. When we do, we will revise 
 
 If you have any questions or concerns about this Privacy Policy, please contact us at:
 
-**The Restart Co**
-hello@the-restart.co
+**reStart Group, LLC**
+hello@the-restart.com

@@ -86,6 +86,16 @@ echo "→ Activating theme and plugin..."
 $WP theme activate theRestart 2>/dev/null || true
 $WP plugin activate restart-registry 2>/dev/null || true
 
+# Yoast SEO runs in production (Bluehost) and owns the schema.org graph, the
+# sitemap, and llms.txt. Pinned to the production version so schema changes
+# can be tested locally before they ship. Bump this when prod updates.
+YOAST_VERSION="${YOAST_VERSION:-28.7}"
+echo "→ Installing Yoast SEO ${YOAST_VERSION}..."
+if [ "$($WP plugin get wordpress-seo --field=version 2>/dev/null)" != "$YOAST_VERSION" ]; then
+    $WP plugin install wordpress-seo --version="$YOAST_VERSION" --force >/dev/null
+fi
+$WP plugin activate wordpress-seo 2>/dev/null || true
+
 # ── Demo user ─────────────────────────────────────────────────────────────────
 
 echo "→ Creating demo user..."

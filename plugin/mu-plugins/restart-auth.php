@@ -58,7 +58,7 @@ add_filter('authenticate', function ($user, string $username, string $password) 
     if (get_user_meta($user->ID, 'restart_account_deactivated', true) === '1') {
         return new WP_Error(
             'account_deactivated',
-            'Your account has been deactivated. Please contact us at hello@the-restart.co to reactivate it.'
+            'Your account has been deactivated. Please contact us at hello@the-restart.com to reactivate it.'
         );
     }
     return $user;
@@ -127,7 +127,7 @@ add_action('wp_ajax_restart_delete_account', function (): void {
         $user->user_email,
         sprintf('[%s] Your account has been deleted', $site_name),
         sprintf(
-            "Hi %s,\n\nYour account and all associated data have been permanently deleted from %s.\n\nIf you did not request this, please contact us at hello@the-restart.co.\n\nTake care,\nThe %s team",
+            "Hi %s,\n\nYour account and all associated data have been permanently deleted from %s.\n\nIf you did not request this, please contact us at hello@the-restart.com.\n\nTake care,\nThe %s team",
             $user->display_name,
             $site_name,
             $site_name

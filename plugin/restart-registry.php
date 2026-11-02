@@ -8,17 +8,17 @@
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
- * @link              https://the-restart.co
+ * @link              https://the-restart.com
  * @since             1.0.0
  * @package           Restart_Registry
  *
  * @wordpress-plugin
  * Plugin Name:       Restart Registry
- * Plugin URI:        http://the-restart.co/restart-registry-uri/
+ * Plugin URI:        http://the-restart.com/restart-registry-uri/
  * Description:       Provides a gift registry custom post type, add item function, and associated features.
  * Version: 1.2.15
  * Author:            Andrew Neher
- * Author URI:        http://the-restart.co/
+ * Author URI:        http://the-restart.com/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       restart-registry
