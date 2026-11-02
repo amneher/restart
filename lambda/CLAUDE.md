@@ -68,7 +68,7 @@ make clean
 
 ## Architecture
 
-This is an AWS Lambda API for **the-restart.co Registry app** — a gift registry platform that integrates with a WordPress backend via the `wp-python` library.
+This is an AWS Lambda API for **the-restart.com Registry app** — a gift registry platform that integrates with a WordPress backend via the `wp-python` library.
 
 **Request flow:** API Gateway → Mangum (ASGI adapter) → FastAPI → SQLite
 

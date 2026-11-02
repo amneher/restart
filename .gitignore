@@ -49,3 +49,5 @@ docs/site/
 docs/site/
 .gstack/
 scripts/issues_*.txt
+
+impact-api-key.txt

@@ -1,3 +1,132 @@
+# Plan: LLM/AI readability — "AI doesn't know we're a divorce registry" (Jira)
+
+## Findings (verified 2026-11-01)
+1. **CORRECTED: the block is selective, not total.** The Cloudflare edge
+   belongs to Bluehost, not us: 66.235.200.146 is registered to Newfold
+   Digital (Bluehost's parent) but announced by Cloudflare AS13335, and the
+   `host-header` decodes to `shared.bluehost.com`. That explains why the
+   Bluehost dashboard says "Cloudflare not enabled": that toggle is the
+   customer add-on. A fetch from Anthropic's infrastructure got 200 and the
+   real FAQ. curl from this machine gets challenged, and GPTBot/ClaudeBot
+   UAs get hard-blocked. Original (overstated) note below:
+   **Cloudflare challenges every HTML page.** `/`, `/faq/`, `/about-us/`,
+   and `/sitemap_index.xml` all return `403` + `cf-mitigated: challenge`
+   ("Just a moment..." page with `noindex,nofollow`), even with a normal
+   browser UA. Only the cached `robots.txt` comes back 200. AI fetchers
+   (Gemini/ChatGPT/Claude/Perplexity live fetches) don't run JS, so they
+   get the challenge page and nothing else. That matches Gemini saying it
+   "wasn't able to access the exact URL." This is the main cause. The
+   content changes below won't help until it's fixed.
+2. **The FAQ the ticket asks for mostly exists already.** The live page is
+   seeded from `theme/assets/copy/faq.html` (activator `read_copy`). It
+   already has "What is…", "Is it free?", "How do I create/share…", and
+   "How do people buy…".
+3. **But the divorce-registry version never shipped.** `faq.md` has
+   "What is a divorce registry?", "Is a divorce registry appropriate?",
+   etc., with answers that lead with the definition. `faq.html` and
+   `patterns/faq-content.php` have generic copy that never says
+   "divorce registry."
+4. **No structured data in the repo, but production runs Yoast SEO
+   v28.7.** The live `/llms.txt` is Yoast-generated (and doesn't list
+   `/faq/`). Yoast probably already emits a schema graph, which can't be
+   checked through the challenge. Any FAQPage schema must hook into
+   Yoast (`wpseo_schema_graph_pieces`), not duplicate it.
+4b. **AI training bots are hard-blocked.** GPTBot and ClaudeBot UAs get
+   `403 text/plain "Your request was blocked."` (no challenge), which
+   points to Cloudflare's AI-bot block setting.
+5. **The brand name is inconsistent:** "the reStart" (header/html copy),
+   "reStart" (faq.md), "The ReStart" (how Gemini refers to us).
+
+## Approach
+1. **Edge blocking (Bluehost-controlled, not ours):**
+   a. Google Search Console: run URL Inspection (live test) on `/faq/` and
+      `/`. This is what real Googlebot sees, and Gemini answers come from
+      Google's index.
+   b. Bluehost support ticket: ask whether their platform Cloudflare
+      blocks AI crawler UAs (GPTBot, ClaudeBot) and whether that can be
+      turned off for the-restart.com. Attach cf-ray IDs.
+   c. Long term: hosting where we control the edge (outside this ticket).
+2. **FAQ copy:** make `faq.md` the source and regenerate `faq.html` and
+   `patterns/faq-content.php` from it. Every answer opens with one
+   self-contained sentence. Keep only claims that are true today (no
+   "ships to your new address," etc. from the Gemini text). Push it to
+   the live page with WP admin or wp-cli, because the activator only
+   seeds pages on create.
+3. **FAQPage JSON-LD:** a `wp_head` hook on `is_page('faq')` that builds
+   the schema from the page's own `<details>/<summary>` blocks, so the
+   schema can't drift from the visible text. Add sitewide
+   `Organization` + `WebSite` schema with one canonical name plus
+   `alternateName`s. Note: Google stopped showing FAQ rich results for
+   most sites in 2023. The value here is machine readability, not
+   SERP snippets.
+4. **`llms.txt`:** already exists (Yoast-generated). Get `/faq/` and the
+   divorce-registry pages into it via Yoast settings, and fix the brand
+   name it uses.
+5. Unit tests for the schema builder (`make theme-test-php`).
+
+## Decisions
+- Canonical brand name: **"The reStart"** (decided 2026-11-01). Use it in
+  visible copy, schema `name`, and `llms.txt`. "reStart", "the reStart",
+  "The ReStart", "The Restart" go in schema `alternateName` only.
+
+- Site may also say "The reStart.com". Legal entity is
+  "reStart Group, LLC" (owner, 2026-11-01). All domains are `.com`.
+- Naming scope (2026-11-01): fix spelling on the pages in this ticket now;
+  inventory everything else in `audit/brand-name-inventory.md` for a
+  follow-up PR.
+- Local dev is Docker at `localhost:8083` and never goes through
+  Bluehost's edge.
+- Production troubleshooting (2026-11-01): curl, headless and headed
+  Chromium from the dev machine all get the Bluehost/Cloudflare
+  challenge. Verify prod with Andrew's own Chrome plus Google tools
+  (Search Console URL Inspection, Rich Results Test, PageSpeed
+  Insights). No Bluehost IP-allowlist ticket for now.
+
+## Open questions
+- AI crawler policy: allow search/user-fetch bots (OAI-SearchBot,
+  ChatGPT-User, Claude-SearchBot, Claude-User, PerplexityBot) but block
+  training bots (GPTBot, ClaudeBot, Google-Extended)? Or allow all?
+
+## Todo
+Branch: `fix/llm-readability`
+- [x] Brand-name inventory → `audit/brand-name-inventory.md`
+- [x] Yoast SEO 28.7 (prod version) in local dev via `scripts/seed.sh`,
+      pinned with `YOAST_VERSION`, idempotent (verified: second run
+      skips). Local `/faq/` now emits Yoast's WebPage/BreadcrumbList/
+      WebSite graph. Not committed yet.
+- [~] Rewrite `faq.md`: "The reStart" throughout; each answer opens with
+      a self-contained sentence; only claims true today. Done except
+      "Is The reStart free?" (owner writing it). Claims fixed against
+      code: private registries need login + invite (not "anyone with
+      the link"); no un-mark or reorder features; account deletion is
+      self-service (My Account → Delete account), not email. Dropped 4
+      budgeting Qs (article content, not platform FAQ) and merged the
+      two duplicate "how do people buy" Qs.
+      **Affiliate note:** the plugin converts links to affiliate links
+      (`class-affiliate-converter.php`, option
+      `restart_registry_affiliate_disclosure`). "We don't take a cut" /
+      "no commissions" must not be stated as-is.
+      "Is The reStart free?" answer written by owner (discloses
+      referral commissions).
+- [x] All domains → `.com` (owner decision 2026-11-01): replaced
+      `the-restart.co` in 12 source files (legal copy, plugin/theme
+      headers, account deactivate/delete emails, lambda metadata);
+      rebuilt `style.min.css`. Left `lambda/tests/fixtures/wp-clean.sql`
+      (DB dump; regenerate).
+- [x] Legal entity → "reStart Group, LLC" in terms + privacy (.md and
+      .html, 10 lines; replaced "The Restart Co" and "The Restart.com").
+      Footer already correct. Live pages need a manual WP update.
+- [ ] Regenerate `faq.html` + `patterns/faq-content.php` from `faq.md`
+- [ ] FAQPage schema via Yoast `wpseo_schema_graph_pieces`, built from
+      the page's `<details>/<summary>` blocks; unit tests
+- [ ] Run `make theme-test-php` / `make plugin-test-php`
+- [ ] (User, live) Update FAQ page content, Site Title → "The reStart",
+      Yoast llms.txt settings to include `/faq/`
+- [ ] (User) Search Console URL Inspection on `/` and `/faq/`
+- [ ] (User) Bluehost support ticket re: AI crawler block, if wanted
+
+---
+
 # Plan: Minify JS/CSS assets to speed LCP
 
 ## Problem

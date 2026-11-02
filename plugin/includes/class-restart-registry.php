@@ -3,7 +3,7 @@
 /**
  * The file that defines the core plugin class
  *
- * @link       https://the-restart.co
+ * @link       https://the-restart.com
  * @since      1.0.0
  *
  * @package    Restart_Registry

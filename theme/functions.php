@@ -467,7 +467,7 @@ add_shortcode('restart_my_account', function () {
             <div class="restart-modal__dialog">
                 <button class="restart-modal__close" aria-label="Close">&times;</button>
                 <h2 class="restart-modal__title">Deactivate your account?</h2>
-                <p>You will be logged out and unable to log back in. Your registries will be set to private. All data is preserved — contact us at hello@the-restart.co to reactivate.</p>
+                <p>You will be logged out and unable to log back in. Your registries will be set to private. All data is preserved — contact us at hello@the-restart.com to reactivate.</p>
                 <div class="restart-form__actions">
                     <button type="button" class="restart-btn" id="rr-deactivate-confirm-btn">Deactivate My Account</button>
                     <button type="button" class="restart-btn restart-btn--ghost rr-modal-dismiss">Cancel</button>

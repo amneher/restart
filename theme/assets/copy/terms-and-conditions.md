@@ -8,7 +8,7 @@ Please read these Terms and Conditions carefully before using reStart. By creati
 
 ## 1. Who We Are
 
-reStart ("we," "us," or "our") is a gift registry platform designed to support people rebuilding their lives after divorce. We are operated by The Restart Co. These terms govern your use of our website at the-restart.co (the "Site").
+reStart ("we," "us," or "our") is a gift registry platform designed to support people rebuilding their lives after divorce. We are operated by reStart Group, LLC. These terms govern your use of our website at the-restart.com (the "Site").
 
 ---
 
@@ -20,7 +20,7 @@ By accessing or using the Site, you confirm that you are at least 18 years old, 
 
 ## 3. Your Account
 
-You must create an account to use certain features, including creating and managing registries. You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account. Please notify us immediately at hello@the-restart.co if you suspect unauthorized access to your account.
+You must create an account to use certain features, including creating and managing registries. You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account. Please notify us immediately at hello@the-restart.com if you suspect unauthorized access to your account.
 
 We reserve the right to suspend or terminate accounts that violate these Terms or that have been inactive for an extended period.
 
@@ -78,7 +78,7 @@ The Site is provided "as is" and "as available" without warranties of any kind, 
 
 ## 10. Limitation of Liability
 
-To the fullest extent permitted by law, The Restart Co shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Site or inability to use it, even if we have been advised of the possibility of such damages.
+To the fullest extent permitted by law, reStart Group, LLC shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Site or inability to use it, even if we have been advised of the possibility of such damages.
 
 Our total liability to you for any claim arising from these Terms or your use of the Site shall not exceed the greater of $100 or the amount you paid us in the twelve months preceding the claim.
 
@@ -100,5 +100,5 @@ These Terms are governed by the laws of the State of [Your State], without regar
 
 If you have any questions about these Terms, please contact us at:
 
-**The Restart Co**
-hello@the-restart.co
+**reStart Group, LLC**
+hello@the-restart.com

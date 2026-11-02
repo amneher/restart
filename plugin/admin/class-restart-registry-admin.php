@@ -3,7 +3,7 @@
 /**
  * The admin-specific functionality of the plugin.
  *
- * @link       https://the-restart.co
+ * @link       https://the-restart.com
  * @since      1.0.0
  *
  * @package    Restart_Registry
