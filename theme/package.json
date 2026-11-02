@@ -6,7 +6,8 @@
         "test:watch": "jest --watch",
         "pretest:min": "npm run build",
         "test:min": "ASSET_BUILD=min jest",
-        "build": "node scripts/build-assets.js"
+        "build": "node scripts/build-assets.js",
+        "build:faq": "node scripts/build-faq.js"
     },
     "devDependencies": {
         "clean-css": "^5.3.3",
