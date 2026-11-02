@@ -89,12 +89,12 @@
 
 ## Todo
 Branch: `fix/llm-readability`
-- [x] Brand-name inventory → `audit/brand-name-inventory.md`
+- [x] Brand-name inventory → `audit/brand-name-inventory.md` (aab08a5)
 - [x] Yoast SEO 28.7 (prod version) in local dev via `scripts/seed.sh`,
       pinned with `YOAST_VERSION`, idempotent (verified: second run
       skips). Local `/faq/` now emits Yoast's WebPage/BreadcrumbList/
-      WebSite graph. Not committed yet.
-- [~] Rewrite `faq.md`: "The reStart" throughout; each answer opens with
+      WebSite graph. (aab08a5)
+- [x] Rewrite `faq.md`: "The reStart" throughout; each answer opens with
       a self-contained sentence; only claims true today. Done except
       "Is The reStart free?" (owner writing it). Claims fixed against
       code: private registries need login + invite (not "anyone with
@@ -116,12 +116,26 @@ Branch: `fix/llm-readability`
 - [x] Legal entity → "reStart Group, LLC" in terms + privacy (.md and
       .html, 10 lines; replaced "The Restart Co" and "The Restart.com").
       Footer already correct. Live pages need a manual WP update.
-- [ ] Regenerate `faq.html` + `patterns/faq-content.php` from `faq.md`
-- [ ] FAQPage schema via Yoast `wpseo_schema_graph_pieces`, built from
-      the page's `<details>/<summary>` blocks; unit tests
-- [ ] Run `make theme-test-php` / `make plugin-test-php`
-- [ ] (User, live) Update FAQ page content, Site Title → "The reStart",
-      Yoast llms.txt settings to include `/faq/`
+      Savepoint commit: aab08a5 (also covers FAQ copy, .com, Yoast).
+- [x] FAQ generator: `theme/scripts/build-faq.js` (`npm run build:faq`)
+      builds `faq.html` from `faq.md`; the pattern now reads `faq.html`
+      (one source, one generated file). Jest test fails if `faq.html` is
+      stale. (2a6309e)
+- [x] Schema via Yoast per-piece filters in `theme/functions.php` (not a
+      graph-piece class, so it's unit-testable without Yoast loaded):
+      `wpseo_schema_webpage` adds FAQPage + 17 Questions on /faq/ only;
+      `wpseo_schema_organization` / `_website` set name "The reStart",
+      legalName "reStart Group, LLC", alternateName list. 8 PHPUnit
+      tests. Verified against real Yoast 28.7 locally. (a1355cb)
+- [x] Tests: theme PHP 53/53, theme JS 94/94, plugin PHP 325/325.
+      phpcs: errors at baseline (6); +1 warning (file_get_contents on a
+      local theme file in faq-content.php, false positive, left as is).
+- [ ] (User, live) Update FAQ page content (paste faq.html in code
+      editor), Terms + Privacy pages, Site Title → "The reStart"
+- [ ] (User, live) Yoast → Site representation: Organization, name
+      "The reStart", **and a logo** (Yoast omits Organization without
+      one); Yoast llms.txt settings to include `/faq/`
+- [ ] (User) After deploy: Rich Results Test on /faq/ (FAQPage valid)
 - [ ] (User) Search Console URL Inspection on `/` and `/faq/`
 - [ ] (User) Bluehost support ticket re: AI crawler block, if wanted
 
