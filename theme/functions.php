@@ -1176,3 +1176,80 @@ add_filter('query_loop_block_query_vars', function (array $query, WP_Block $bloc
     }
     return $query;
 }, 10, 3);
+
+// ── Schema.org (Yoast SEO graph) ──────────────────────────────────────────────
+// Yoast (production) owns the JSON-LD graph. These filters extend its pieces
+// rather than printing a second graph, so search engines and LLMs see one
+// connected entity: the brand, its legal name, and the FAQ that describes it.
+
+if (!defined('RESTART_BRAND_NAME')) {
+    define('RESTART_BRAND_NAME', 'The reStart');
+    define('RESTART_LEGAL_NAME', 'reStart Group, LLC');
+    define('RESTART_ALTERNATE_NAMES', ['The reStart.com', 'reStart', 'the reStart', 'The Restart', 'the-restart.com']);
+}
+
+// Extracts question/answer pairs from core/details blocks (the FAQ page is
+// built from faq.md as one details block per question). Answers keep only the
+// HTML tags Google allows in Answer.text.
+if (!function_exists('restart_faq_items_from_content')) {
+function restart_faq_items_from_content(string $content): array {
+    preg_match_all('#<details\b[^>]*>\s*<summary>(.*?)</summary>(.*?)</details>#s', $content, $matches, PREG_SET_ORDER);
+
+    $items = [];
+    foreach ($matches as [, $question, $answer]) {
+        $question = trim(html_entity_decode(wp_strip_all_tags($question), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $answer   = preg_replace('/<!--.*?-->/s', '', $answer);
+        $answer   = trim(preg_replace('/\s+/', ' ', strip_tags($answer, '<h1><h2><h3><h4><h5><h6><br><ol><ul><li><a><p><b><strong><i><em>')));
+        if ($question === '' || $answer === '') {
+            continue;
+        }
+        $items[] = ['question' => $question, 'answer' => $answer];
+    }
+    return $items;
+}
+}
+
+// Marks /faq/ as an FAQPage and attaches its questions as mainEntity.
+add_filter('wpseo_schema_webpage', function ($piece, $context = null) {
+    $post = $context->post ?? null;
+    if (!is_array($piece) || !$post || $post->post_type !== 'page' || $post->post_name !== 'faq') {
+        return $piece;
+    }
+
+    $items = restart_faq_items_from_content((string) $post->post_content);
+    if (!$items) {
+        return $piece;
+    }
+
+    $types = (array) ($piece['@type'] ?? 'WebPage');
+    if (!in_array('FAQPage', $types, true)) {
+        $types[] = 'FAQPage';
+    }
+    $piece['@type']      = $types;
+    $piece['mainEntity'] = array_map(fn(array $item): array => [
+        '@type'          => 'Question',
+        'name'           => $item['question'],
+        'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item['answer']],
+    ], $items);
+
+    return $piece;
+}, 10, 2);
+
+add_filter('wpseo_schema_organization', function ($piece) {
+    if (!is_array($piece)) {
+        return $piece;
+    }
+    $piece['name']          = RESTART_BRAND_NAME;
+    $piece['legalName']     = RESTART_LEGAL_NAME;
+    $piece['alternateName'] = RESTART_ALTERNATE_NAMES;
+    return $piece;
+});
+
+add_filter('wpseo_schema_website', function ($piece) {
+    if (!is_array($piece)) {
+        return $piece;
+    }
+    $piece['name']          = RESTART_BRAND_NAME;
+    $piece['alternateName'] = RESTART_ALTERNATE_NAMES;
+    return $piece;
+});
