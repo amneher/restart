@@ -49,7 +49,7 @@
 - [x] Theme: My Registries button + dropdown + footer link + tests (94647b9)
 - [x] Green: plugin 338 PHP / 142 JS, theme 65 PHP / 98 JS (+ test:min); .min assets rebuilt
 - [x] Local check with temp user (2 registries, since deleted): header link, dropdown order, list page button desktop+390px, footer link, picker opened focused, keyboard choice landed item in chosen registry only. Bulk + 1-registry path covered by Jest only.
-- [ ] PR
+- [x] PR: https://github.com/amneher/restart/pull/110 (header label pluralized in ca3c1b8)
 
 ---
 
