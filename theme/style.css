@@ -165,10 +165,13 @@ body {
     justify-content: center;
     font-size: 13px;
     line-height: 22px;
-    min-width: 44px;
-    min-height: 44px;
+    /* 36px ≈ 44px × √(2/3): two-thirds of the original tap area. */
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
     margin: 0;
-    padding: 10px;
+    padding: 9px;
     border: 0;
     border-radius: 3px;
     background: transparent;
@@ -183,25 +186,58 @@ body {
 
 .site-header .rr-header-search .wp-block-search__button svg {
     fill: currentColor;
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
 }
 
+/* Same height, font and background as the nav links so the open field reads
+   as part of the bar. Absolutely positioned: it overlays the links instead of
+   reflowing them. The mint underline is the only edge on the dark bar. */
 .site-header .rr-header-search .wp-block-search__input {
     position: absolute;
     top: 50%;
     right: 100%;
     transform: translateY(-50%);
-    width: min(280px, 70vw);
-    height: 40px;
-    padding: 0 0.75rem;
+    box-sizing: border-box;
+    width: min(260px, 65vw);
+    height: 22px;
+    min-height: 0;
+    padding: 0 0.5rem;
     border: 0;
-    border-radius: 3px;
-    background: #ffffff;
-    color: #193540;
+    border-bottom: 1px solid var(--wp--preset--color--primary);
+    border-radius: 0;
+    background: #193540;
+    color: #ffffff;
     font-family: var(--wp--preset--font-family--montserrat);
-    font-size: 14px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    font-size: 13px;
+    line-height: 22px;
+    letter-spacing: 0.04em;
+    outline: none;
+}
+
+.site-header .rr-header-search .wp-block-search__input::placeholder {
+    color: rgba(255,255,255,0.6);
+}
+
+/* Chrome/Safari's clear (×) button defaults to bright blue. */
+.site-header .rr-header-search .wp-block-search__input::-webkit-search-cancel-button {
+    filter: grayscale(1) brightness(2.5);
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+/* The field overlays the links without moving them, so whichever link sits
+   under its left edge gets cut mid-word. Fade into the field instead. */
+.site-header .rr-header-search:not(.wp-block-search__searchfield-hidden)::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: calc(100% + min(260px, 65vw));
+    transform: translateY(-50%);
+    width: 40px;
+    height: 24px;
+    background: linear-gradient(to right, rgba(25,53,64,0), #193540);
+    pointer-events: none;
 }
 
 /* Collapse, don't hide: core's view script calls input.focus() the moment the
