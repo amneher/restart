@@ -1,3 +1,42 @@
+# Plan: Site search (everything except registries)
+
+## Findings (verified 2026-11-08)
+1. No search UI anywhere (no `wp:search` block, no `search.html` template).
+2. `/?s=term` falls back to `templates/index.html`, whose query loop has no
+   `"inherit":true`, so it ignores the term and lists latest posts under a
+   "From the Blog" hero. Search is effectively broken today.
+3. `restart-registry` CPT (mu-plugin) does not set `exclude_from_search`, so
+   public registries are included in default WP search.
+   `exclude_from_search` would also drop registries from category/tag archives
+   (registries use `category`/`post_tag`), so filter the search query instead.
+4. Searchable content locally: 6 posts, 13 pages. Utility pages that should not
+   appear: home, login, register, my-account, my-registries, start-a-registry,
+   find-a-registry, sample-page.
+
+## Approach (agreed 2026-11-08)
+- `pre_get_posts` (theme/functions.php): on front-end main search query, force
+  `post_type = ['post','page']` (ignores any `?post_type=` override) and exclude
+  utility pages by slug (resolved to IDs).
+- New `templates/search.html`: hero with search field + "Results for “term”",
+  inherited query loop reusing the existing card grid, "no results" message.
+- Search entry point: core search block in the header bar after the nav,
+  `buttonPosition: button-only` + `isSearchFieldHidden` (icon expands to a field).
+- Tests: unit tests for the pre_get_posts rule (search vs non-search, admin,
+  post_type override, utility page exclusion).
+
+## Todo
+- [x] Branch: `feat/site-search`
+- [x] `pre_get_posts` search scope (posts + content pages, no registries); also applied in `query_loop_block_query_vars` since the results loop runs its own query (ec5daa3)
+- [x] Unit tests for the scope rule (ec5daa3)
+- [x] `templates/search.html` (ec5daa3)
+- [x] Header search icon + styles: aligned to nav text (≥1024) and hamburger (<1024); fixed focus + stacking bugs found in browser (ec5daa3)
+- [x] `make theme-test` green (57 PHP, 94 JS; `test:min` 94)
+- [x] Verified locally: results, public registry excluded (plain WP search returns it), `?post_type=restart-registry` ignored, utility pages excluded, empty state, keyboard open/submit/Escape, 1280/1024/900/390 widths
+- [x] Design pass from Andrew: icon 36px, field 22px/nav bg/mint underline, overlay with edge fade; nav positions verified unchanged on open (9da5af1)
+- [x] PR: https://github.com/amneher/restart/pull/109
+
+---
+
 # Plan: Context-aware registry link in the header nav
 
 ## Findings (verified 2026-11-08)

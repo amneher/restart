@@ -17,6 +17,7 @@ abstract class ThemeTestCase extends TestCase
     protected static array $enqueueCallbacks = [];
     protected static array $footerCallbacks = [];
     protected static array $filters = [];
+    protected static array $actions = [];
 
     protected function setUp(): void
     {
@@ -27,6 +28,7 @@ abstract class ThemeTestCase extends TestCase
         self::$enqueueCallbacks = [];
         self::$footerCallbacks = [];
         self::$filters = [];
+        self::$actions = [];
 
         Functions\when('add_shortcode')->alias(function ($tag, $cb) {
             self::$shortcodes[$tag] = $cb;
@@ -38,6 +40,7 @@ abstract class ThemeTestCase extends TestCase
             } elseif ($hook === 'wp_footer') {
                 self::$footerCallbacks[] = $cb;
             }
+            self::$actions[$hook][] = $cb;
         });
 
         Functions\when('add_filter')->alias(function ($hook, $cb) {
