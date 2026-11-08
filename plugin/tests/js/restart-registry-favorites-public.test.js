@@ -71,6 +71,16 @@ function quickAddModals() {
         <div class="rr-modal rr-quick-add-modal" id="rr-qa-no-registry-modal" aria-inert="true">
             <div class="rr-modal__body"><p>No registry.</p></div>
         </div>
+        <div class="rr-modal rr-quick-add-modal" id="rr-qa-pick-modal" aria-inert="true">
+            <div class="rr-modal__backdrop"></div>
+            <div class="rr-modal__body">
+                <button type="button" class="rr-modal__close">×</button>
+                <p class="rr-qa-modal__item-name"></p>
+                <fieldset class="rr-qa-pick__options"><legend>Your registries</legend></fieldset>
+                <button type="button" id="rr-qa-pick-confirm">Add</button>
+                <button type="button" class="rr-modal-cancel">Cancel</button>
+            </div>
+        </div>
     `;
 }
 
@@ -100,6 +110,19 @@ function buildTwoRoomPage() {
 
 const { requireScript } = require('./require-source');
 
+// Each loadModule() re-runs the script, which adds fresh document-level
+// listeners. Track and remove them after every test so earlier tests' copies
+// don't also handle this test's clicks.
+const addedDocListeners = [];
+const realDocAdd = document.addEventListener.bind(document);
+document.addEventListener = (type, fn, opts) => {
+    addedDocListeners.push([type, fn, opts]);
+    realDocAdd(type, fn, opts);
+};
+afterEach(() => {
+    addedDocListeners.splice(0).forEach(([type, fn, opts]) => document.removeEventListener(type, fn, opts));
+});
+
 function loadModule() {
     jest.isolateModules(() => {
         requireScript(__dirname, '../../public/js/restart-registry-public.js');
@@ -108,9 +131,14 @@ function loadModule() {
 
 beforeEach(() => {
     jest.clearAllMocks();
-    global.fetch = jest.fn();
+    // Real fetch always returns a promise. Quick-add now posts after the
+    // registry picker resolves, so a bare jest.fn() returning undefined would
+    // surface as an unhandled rejection instead of a swallowed sync throw.
+    global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve({ success: true }) }));
     restartRegistry.isLoggedIn  = true;
     restartRegistry.hasRegistry = true;
+    restartRegistry.registries  = [{ id: 11, title: 'Only Registry' }];
+    window.sessionStorage.clear();
 });
 
 // ── Filter pills ─────────────────────────────────────────────────────────────
@@ -340,5 +368,95 @@ describe('single quick-add button (unchanged behavior after addItemToRegistry ex
         expect(body.get('price')).toBe('299');
         expect(btn.textContent).toBe('Added!');
         expect(btn.classList.contains('rr-quick-add--added')).toBe(true);
+    });
+});
+
+// ── Registry picker (more than one registry) ─────────────────────────────────
+
+describe('registry picker', () => {
+    const pickModal = () => document.getElementById('rr-qa-pick-modal');
+    const sentRegistryIds = () =>
+        fetch.mock.calls.map(([, opts]) => new URLSearchParams(opts.body).get('registry_id'));
+
+    beforeEach(() => {
+        restartRegistry.registries = [
+            { id: 21, title: 'New Place' },
+            { id: 22, title: 'Fresh Start' },
+        ];
+        buildTwoRoomPage();
+        loadModule();
+        fetch.mockResolvedValue({ json: () => Promise.resolve({ success: true }) });
+    });
+
+    it('does not open with one registry and sends no registry_id', async () => {
+        restartRegistry.registries = [{ id: 11, title: 'Only Registry' }];
+
+        document.querySelector('.rr-quick-add[data-name="Budget Sofa"]').click();
+        await flushPromises();
+
+        expect(pickModal().classList.contains('is-open')).toBe(false);
+        expect(sentRegistryIds()).toEqual([null]);
+    });
+
+    it('opens with one option per registry, first selected, without sending yet', () => {
+        document.querySelector('.rr-quick-add[data-name="Budget Sofa"]').click();
+
+        expect(pickModal().classList.contains('is-open')).toBe(true);
+        expect(pickModal().querySelector('.rr-qa-modal__item-name').textContent).toBe('Budget Sofa');
+        const radios = [...pickModal().querySelectorAll('input[name="rr-qa-pick"]')];
+        expect(radios.map((r) => r.value)).toEqual(['21', '22']);
+        expect(radios[0].checked).toBe(true);
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('renders registry titles as text, not HTML', () => {
+        restartRegistry.registries = [
+            { id: 21, title: '<img src=x onerror=alert(1)>' },
+            { id: 22, title: 'Fresh Start' },
+        ];
+        document.querySelector('.rr-quick-add[data-name="Budget Sofa"]').click();
+
+        expect(pickModal().querySelector('img')).toBeNull();
+        expect(pickModal().textContent).toContain('<img src=x onerror=alert(1)>');
+    });
+
+    it('sends the chosen registry_id and remembers it for the next add', async () => {
+        document.querySelector('.rr-quick-add[data-name="Budget Sofa"]').click();
+        pickModal().querySelector('input[value="22"]').checked = true;
+        document.getElementById('rr-qa-pick-confirm').click();
+        await flushPromises();
+
+        expect(sentRegistryIds()).toEqual(['22']);
+        expect(pickModal().classList.contains('is-open')).toBe(false);
+
+        document.querySelector('.rr-quick-add[data-name="Mid Sofa"]').click();
+        expect(pickModal().querySelector('input[value="22"]').checked).toBe(true);
+    });
+
+    it('sends nothing when the picker is cancelled, closed, or escaped', async () => {
+        const btn = document.querySelector('.rr-quick-add[data-name="Budget Sofa"]');
+
+        btn.click();
+        pickModal().querySelector('.rr-modal-cancel').click();
+        btn.click();
+        pickModal().querySelector('.rr-modal__close').click();
+        btn.click();
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        await flushPromises();
+
+        expect(fetch).not.toHaveBeenCalled();
+        expect(btn.disabled).toBe(false);
+    });
+
+    it('bulk-add asks once and sends every item to the chosen registry', async () => {
+        document.querySelector('.rr-favorites-room[data-room="Living Room"] .rr-bulk-add[data-tier="save"]').click();
+        expect(pickModal().querySelector('.rr-qa-modal__item-name').textContent).toBe('2 items');
+
+        pickModal().querySelector('input[value="22"]').checked = true;
+        document.getElementById('rr-qa-pick-confirm').click();
+        await flushPromises();
+        await flushPromises();
+
+        expect(sentRegistryIds()).toEqual(['22', '22']);
     });
 });

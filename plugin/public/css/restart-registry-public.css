@@ -1535,6 +1535,39 @@ body.rr-modal-open { overflow: hidden; }
     margin-top: 20px;
 }
 
+/* Registry picker (users with more than one registry) */
+.rr-qa-pick__options {
+    border: 0;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.rr-qa-pick__option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #d5e3e1;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--rr-dark);
+}
+
+.rr-qa-pick__option:has(input:checked) {
+    border-color: var(--rr-teal);
+    background: rgba(71, 180, 176, 0.08);
+}
+
+.rr-qa-pick__option input {
+    margin: 0;
+    accent-color: var(--rr-teal);
+}
+
 /* ── Copy address button in registry header ──────────────────────────────── */
 .rr-header-copy-address {
     margin-top: 16px;

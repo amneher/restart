@@ -206,6 +206,29 @@ class Restart_Registry_Favorites_Renderer
             </div>
         </div>
 
+        <!-- Quick-add: registry picker (logged in, more than one registry).
+             Options are filled in by restart-registry-public.js from
+             restartRegistry.registries. -->
+        <div class="rr-modal rr-quick-add-modal" id="rr-qa-pick-modal" aria-inert="true">
+            <div class="rr-modal__backdrop"></div>
+            <div class="rr-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="rr-qa-pick-title">
+                <div class="rr-modal__header">
+                    <h3 id="rr-qa-pick-title" class="rr-modal__title"><?php esc_html_e('Add to Which Registry?', 'restart-registry'); ?></h3>
+                    <button type="button" class="rr-modal__close" aria-label="<?php esc_attr_e('Close', 'restart-registry'); ?>">&times;</button>
+                </div>
+                <div class="rr-modal__body">
+                    <p class="rr-qa-modal__item-name"></p>
+                    <fieldset class="rr-qa-pick__options">
+                        <legend class="screen-reader-text"><?php esc_html_e('Your registries', 'restart-registry'); ?></legend>
+                    </fieldset>
+                    <div class="rr-modal__actions rr-qa-modal__actions">
+                        <button type="button" class="rr-button" id="rr-qa-pick-confirm"><?php esc_html_e('Add', 'restart-registry'); ?></button>
+                        <button type="button" class="rr-btn-ghost rr-modal-cancel"><?php esc_html_e('Cancel', 'restart-registry'); ?></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Quick-add: no-registry modal (logged in, no registry) -->
         <div class="rr-modal rr-quick-add-modal" id="rr-qa-no-registry-modal" aria-inert="true">
             <div class="rr-modal__backdrop"></div>
