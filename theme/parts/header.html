@@ -13,7 +13,8 @@
 
         <!-- wp:navigation {"overlayMenu":"mobile","overlayBackgroundColor":"dark","overlayTextColor":"mint","textColor":"base","style":{"typography":{"fontFamily":"var(--wp--preset--font-family--montserrat)","fontWeight":"700","fontSize":"13px","textTransform":"uppercase","letterSpacing":"0.08em"}},"layout":{"type":"flex","justifyContent":"right","flexWrap":"nowrap"}} -->
 
-            <!-- wp:navigation-link {"label":"Find a Registry","url":"/registry/","kind":"custom","isTopLevelLink":true} /-->
+            <!-- Label/URL are swapped at render time by restart_nav_registry_link() in functions.php. -->
+            <!-- wp:navigation-link {"label":"Find a Registry","url":"/registry/","kind":"custom","isTopLevelLink":true,"className":"rr-nav-registry"} /-->
             <!-- wp:navigation-link {"label":"Articles","url":"/category/articles/","kind":"custom","isTopLevelLink":true} /-->
             <!-- wp:navigation-link {"label":"Gift Guides","url":"/category/guides/gifts/","kind":"custom","isTopLevelLink":true} /-->
             <!-- wp:navigation-link {"label":"Our Favorites","url":"/our-favorites/","kind":"custom","isTopLevelLink":true} /-->
