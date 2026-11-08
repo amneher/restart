@@ -1046,6 +1046,45 @@ add_filter('render_block_data', function (array $block): array {
     return $block;
 });
 
+// The header's registry link (className "rr-nav-registry") points each visitor
+// at the next useful step: their own registry if they have one, otherwise the
+// create flow. Footer/hero "Find a Registry" links are untouched.
+if (!function_exists('restart_nav_registry_link')) {
+function restart_nav_registry_link(): array {
+    $has_registry = false;
+    if (is_user_logged_in()) {
+        // ID-only lookup. controller->get_user_registry() also loads items via
+        // Lambda, which is too heavy to run on every page render.
+        $has_registry = !empty(get_posts([
+            'post_type'      => 'restart-registry',
+            'author'         => get_current_user_id(),
+            'posts_per_page' => 1,
+            'post_status'    => ['publish', 'private', 'draft'],
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+        ]));
+    }
+
+    return $has_registry
+        ? ['label' => 'My Registry',       'url' => '/my-registries/']
+        : ['label' => 'Create a Registry', 'url' => '/start-a-registry/'];
+}
+}
+
+add_filter('render_block_data', function (array $block): array {
+    if ($block['blockName'] !== 'core/navigation-link') {
+        return $block;
+    }
+    $classes = preg_split('/\s+/', (string) ($block['attrs']['className'] ?? ''));
+    if (!in_array('rr-nav-registry', $classes, true)) {
+        return $block;
+    }
+    $link = restart_nav_registry_link();
+    $block['attrs']['label'] = $link['label'];
+    $block['attrs']['url']   = $link['url'];
+    return $block;
+});
+
 // Inject category-specific single templates into the block theme hierarchy.
 // WP doesn't natively support single-category-{slug}.html, so we add them here.
 add_filter('block_template_hierarchy', function (array $templates): array {
