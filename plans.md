@@ -795,7 +795,6 @@ The current scraper uses Chrome desktop UA for West Elm and Pottery Barn → **s
 | **Diffbot Product API** | Any product URL, dedicated product model | Free tier (10k/mo) or $299/mo | ✅ Good; free tier tight |
 | **Playwright on Lambda** | JS-rendered pages, full browser | ~$6–12/mo compute | ⚠️ High setup cost, moderate bot evasion |
 | **Zinc API** | Amazon/Walmart only | $0.01/req | ❌ Wrong retailers |
-| **Haunt API** | Unknown — no public pricing/benchmarks | Unknown | ⚠️ Unverified |
 
 **Note:** Amazon PA-API 5.0 was deprecated April 30, 2026 and retires May 15, 2026. Any Amazon affiliate integration must target the new **Creators API**.
 
