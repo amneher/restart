@@ -1,3 +1,48 @@
+# Plan: Owner can mark an item fulfilled with zero purchases
+
+## Findings (verified 2026-11-08)
+1. **"Fulfilled" is derived, not stored.** An item is fulfilled when
+   `quantity_purchased >= quantity_needed`. Marking an item fulfilled clamps
+   `quantity_needed` down to `quantity_purchased`
+   (`ajax_update_item`, plugin/public/class-restart-registry-public.php ~L1465).
+2. **Three layers block the zero-purchase case:**
+   - UI: the row checkbox gets `disabled` when `qty_purchased < 1`
+     (`render_item_row`, ~L960, plus the tooltip "At least one must be purchased…").
+   - PHP handler: the clamp only runs `if ($qty_purchased > 0)`.
+   - Controller: `update_item` forces `quantity_needed = max(1, …)` (controller L419).
+   - Lambda: `ItemUpdate.quantity_needed` is `Field(None, ge=1)` (lambda/app/models/item.py L49).
+3. **Existing bug, same root cause:** ticking "Mark as fulfilled" in the edit
+   modal does nothing when 0 are purchased. The handler skips the clamp and
+   the save reports success anyway. Fixing the handler fixes both paths.
+4. **Zero is safe downstream.** Nothing divides by `quantity_needed`; every
+   check is `remaining <= 0` / `purchased >= needed` (public row, guest card,
+   admin view, `mark_item_purchased`). A 0/0 item renders as ✓ and guests
+   can't buy it (remaining = 0).
+
+## Approach (agreed 2026-11-08)
+Owner's call: if an owner marks an item fulfilled and keeps it on the list,
+assume at least one was purchased. (Not wanted at all → delete the item.)
+So marking fulfilled with 0 purchased sets `quantity_purchased = 1` and
+`quantity_needed = 1`. In general: `p = max(1, purchased)`, then needed = purchased = p.
+No Lambda/schema changes. Lambda `ItemUpdate` already accepts `quantity_purchased`.
+
+- Controller: new `mark_item_fulfilled(int $item_id)` holding this rule (testable with LambdaClientFake).
+- Handler `ajax_update_item`: route `mark_fulfilled` through it (fixes both the row checkbox and the edit modal).
+- `render_item_row`: remove the disabled/"at least one" gate.
+
+## Todo
+- [x] Branch: `feat/fulfill-without-purchase`
+- [x] Controller `mark_item_fulfilled` + PHPUnit tests (0 purchased, partial, missing field, not found, Lambda error) (3e92751)
+- [x] Handler uses it; other modal edits still saved first (3e92751)
+- [x] `render_item_row`: remove disabled/tooltip gate; update comment (3e92751)
+- [x] `make plugin-test-php && make plugin-test-js` green (330 PHP, 136 JS)
+- [x] Verified against local Lambda via wp eval: temp item 0/3 → 1/1, then deleted
+- [x] Click-through in browser on local env (row checkbox + edit modal), verified by Andrew
+- [x] Cleanup: dead `.rr-fulfilled-toggle input[disabled]` CSS rules commented out, min.css rebuilt
+- [ ] Bump plugin version + PR
+
+---
+
 # Plan: LLM/AI readability — "AI doesn't know we're a divorce registry" (Jira)
 
 ## Findings (verified 2026-11-01)
