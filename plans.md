@@ -31,7 +31,7 @@
 - [x] `make theme-test-php` green (58 tests)
 - [x] Verified in local env via wp eval render of header part: all three states correct; no DB template-part overrides locally
 - [ ] Check prod for a Site Editor override of the header part
-- [ ] PR
+- [x] PR: https://github.com/amneher/restart/pull/108
 
 ---
 
