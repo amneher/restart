@@ -990,7 +990,89 @@
         if (!document.querySelector('.rr-modal.is-open')) {
             document.body.classList.remove('rr-modal-open');
         }
+        // Any dismissal of the picker (×, backdrop, Cancel, Escape) = no choice.
+        if (id === 'rr-qa-pick-modal') {
+            pendingPick = null;
+        }
     }
+
+    // ── Registry picker (users with more than one registry) ─────────────────
+    // chooseRegistry(label, proceed) calls proceed(registryId):
+    //   0  → user has one registry; called synchronously, no picker, and the
+    //        server uses that registry (same path as before multi-registry)
+    //   id → the registry the user picked in the picker
+    // If the picker is dismissed, proceed is never called.
+
+    var PICK_STORAGE_KEY = 'rrQuickAddRegistry';
+    var pendingPick = null;
+
+    function userRegistries() {
+        return Array.isArray(restartRegistry.registries) ? restartRegistry.registries : [];
+    }
+
+    function rememberedRegistryId() {
+        try {
+            return parseInt(window.sessionStorage.getItem(PICK_STORAGE_KEY), 10) || 0;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    function rememberRegistryId(id) {
+        try {
+            window.sessionStorage.setItem(PICK_STORAGE_KEY, String(id));
+        } catch (_) {}
+    }
+
+    function chooseRegistry(itemLabel, proceed) {
+        var registries = userRegistries();
+        var modal      = document.getElementById('rr-qa-pick-modal');
+        if (registries.length <= 1 || !modal) {
+            proceed(0);
+            return;
+        }
+
+        var nameEl = modal.querySelector('.rr-qa-modal__item-name');
+        if (nameEl) nameEl.textContent = itemLabel;
+
+        var remembered = rememberedRegistryId();
+        var selected   = registries.some(function (r) { return r.id === remembered; })
+            ? remembered
+            : registries[0].id;
+
+        var options = modal.querySelector('.rr-qa-pick__options');
+        options.querySelectorAll('.rr-qa-pick__option').forEach(function (el) { el.remove(); });
+        registries.forEach(function (r) {
+            var label = document.createElement('label');
+            label.className = 'rr-qa-pick__option';
+            var input = document.createElement('input');
+            input.type    = 'radio';
+            input.name    = 'rr-qa-pick';
+            input.value   = String(r.id);
+            input.checked = r.id === selected;
+            var text = document.createElement('span');
+            text.textContent = r.title;
+            label.appendChild(input);
+            label.appendChild(text);
+            options.appendChild(label);
+        });
+
+        pendingPick = proceed;
+        openQAModal('rr-qa-pick-modal');
+        var checked = options.querySelector('input:checked');
+        if (checked) checked.focus();
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('#rr-qa-pick-confirm')) return;
+        var checked = document.querySelector('#rr-qa-pick-modal input[name="rr-qa-pick"]:checked');
+        if (!checked || !pendingPick) return;
+        var id      = parseInt(checked.value, 10);
+        var proceed = pendingPick;
+        rememberRegistryId(id);
+        closeQAModal('rr-qa-pick-modal');
+        proceed(id);
+    });
 
     document.addEventListener('click', function (e) {
         var trigger = e.target.closest('.rr-quick-add-modal .rr-modal__backdrop, .rr-quick-add-modal .rr-modal__close, .rr-quick-add-modal .rr-modal-cancel');
@@ -1010,13 +1092,15 @@
     // "Add all <tier> items" handler below, so there's one code path for the
     // actual network call.
 
-    function addItemToRegistry(data) {
+    function addItemToRegistry(data, registryId) {
+        var params = Object.assign({
+            action: 'restart_registry_quick_add',
+            nonce:  restartRegistry.nonce,
+        }, data);
+        if (registryId) params.registry_id = String(registryId);
         return fetch(restartRegistry.ajaxUrl, {
             method: 'POST',
-            body: new URLSearchParams(Object.assign({
-                action: 'restart_registry_quick_add',
-                nonce:  restartRegistry.nonce,
-            }, data)),
+            body: new URLSearchParams(params),
         }).then(function (r) { return r.json(); });
     }
 
@@ -1050,7 +1134,9 @@
             return;
         }
 
-        // Logged in with registry — fire AJAX
+        // Logged in with registry — pick one if there are several, then fire AJAX
+        chooseRegistry(name, function (registryId) {
+
         var originalText = btn.textContent;
         btn.disabled    = true;
         btn.textContent = restartRegistry.strings.loading;
@@ -1063,7 +1149,7 @@
             description: btn.dataset.description  || '',
             notes:       btn.dataset.notes        || '',
             quantity:    btn.dataset.quantity      || '1',
-        })
+        }, registryId)
         .then(function (response) {
             if (response.success) {
                 btn.textContent = restartRegistry.strings.added;
@@ -1087,6 +1173,7 @@
             btn.disabled    = false;
             btn.textContent = originalText;
             alert(restartRegistry.strings.error);
+        });
         });
     });
 
@@ -1124,6 +1211,9 @@
             return;
         }
 
+        // Ask once for the whole batch.
+        chooseRegistry(itemBtns.length + ' items', function (registryId) {
+
         var originalText = bulkBtn.textContent;
         bulkBtn.disabled    = true;
         bulkBtn.textContent = restartRegistry.strings.loading;
@@ -1140,7 +1230,7 @@
                 description: btn.dataset.description  || '',
                 notes:       btn.dataset.notes        || '',
                 quantity:    btn.dataset.quantity      || '1',
-            })
+            }, registryId)
             .then(function (response) {
                 if (response.success) {
                     succeeded++;
@@ -1169,6 +1259,7 @@
                 bulkBtn.classList.remove('rr-bulk-add--added');
                 bulkBtn.disabled = false;
             }, 3500);
+        });
         });
     });
 

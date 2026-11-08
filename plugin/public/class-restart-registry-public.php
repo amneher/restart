@@ -136,19 +136,17 @@ class Restart_Registry_Public
             true
         );
 
-        $user_id = get_current_user_id();
+        $user_id         = get_current_user_id();
+        $user_registries = $this->controller->get_user_registries($user_id);
         wp_localize_script($this->plugin_name, 'restartRegistry', [
             'ajaxUrl'           => admin_url('admin-ajax.php'),
             'nonce'             => wp_create_nonce('restart_registry_nonce'),
             'myRegistriesUrl'   => home_url('/my-registries/'),
             'isLoggedIn'        => is_user_logged_in(),
-            'hasRegistry'       => $user_id ? !empty(get_posts([
-                'post_type'      => 'restart-registry',
-                'author'         => $user_id,
-                'posts_per_page' => 1,
-                'post_status'    => ['publish', 'private', 'draft'],
-                'fields'         => 'ids',
-            ])) : false,
+            // Active registries (newest first) for the quick-add picker.
+            // hasRegistry kept for existing callers.
+            'registries'        => $user_registries,
+            'hasRegistry'       => !empty($user_registries),
             'loginUrl'          => wp_login_url(get_permalink() ?: home_url('/')),
             'createRegistryUrl' => home_url('/start-a-registry/'),
             'strings' => [
@@ -253,14 +251,8 @@ class Restart_Registry_Public
             return $this->render_login_prompt();
         }
 
-        $user_id  = get_current_user_id();
-        $registry = $this->controller->get_user_registry($user_id);
-
-        if ($registry) {
-            return '<p class="rr-notice">' .
-                __('You already have a registry.', 'restart-registry') . ' ' .
-                '<a href="' . esc_url($registry['permalink']) . '">' . __('View your registry', 'restart-registry') . '</a>' .
-                '</p>';
+        if ($this->controller->has_reached_registry_limit(get_current_user_id())) {
+            return '<p class="rr-notice">' . esc_html($this->controller->registry_limit_message()) . '</p>';
         }
 
         return $this->render_create_form();
@@ -1877,13 +1869,14 @@ class Restart_Registry_Public
             return;
         }
 
-        $registry = $this->controller->get_user_registry(get_current_user_id());
-        if (!$registry) {
-            wp_send_json_error(['code' => 'no_registry', 'message' => __("You don't have a registry yet.", 'restart-registry')]);
+        $registry_id = $this->controller->resolve_target_registry(
+            get_current_user_id(),
+            (int) ($_POST['registry_id'] ?? 0)
+        );
+        if (is_wp_error($registry_id)) {
+            wp_send_json_error(['code' => $registry_id->get_error_code(), 'message' => $registry_id->get_error_message()]);
             return;
         }
-
-        $registry_id = (int) $registry['id'];
 
         $name = sanitize_text_field($_POST['name'] ?? '');
         $url  = esc_url_raw($_POST['url'] ?? '');

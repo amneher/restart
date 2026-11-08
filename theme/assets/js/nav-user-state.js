@@ -39,13 +39,11 @@
             return;
         }
 
-        // Build submenu items.
+        // Build submenu items. Users can own several registries, so the first
+        // two items are the same for everyone: the list, then create.
         var items = [];
-        if (state.registryUrl) {
-            items.push({ label: 'My Registry',      url: state.registryUrl });
-        } else {
-            items.push({ label: 'Start a Registry', url: state.startRegistryUrl });
-        }
+        items.push({ label: 'My Registries',     url: state.myRegistriesUrl });
+        items.push({ label: 'Create a Registry', url: state.startRegistryUrl });
         items.push({ label: 'My Account', url: state.myAccountUrl });
         items.push({ label: 'Logout',     url: state.logoutUrl });
         items.push({ label: 'Contact',    url: '#contact' });
@@ -98,9 +96,10 @@
     }
 
     // ── Footer "Start a Registry" link ────────────────────────────────────────
+    // Owners get "My Registries" (the list page, same as the header link).
 
     function updateFooterNav() {
-        if (!state.registryUrl) return;
+        if (!state.hasRegistry) return;
 
         document.querySelectorAll(
             '.site-footer .wp-block-navigation-item__content'
@@ -108,8 +107,8 @@
             try {
                 var path = new URL(a.href, window.location.origin).pathname;
                 if (path === '/start-a-registry/' || path === '/start-a-registry') {
-                    a.textContent = 'My Registry';
-                    a.href = state.registryUrl;
+                    a.textContent = 'My Registries';
+                    a.href = state.myRegistriesUrl;
                 }
             } catch (_) {}
         });

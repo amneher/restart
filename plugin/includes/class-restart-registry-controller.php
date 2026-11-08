@@ -122,6 +122,79 @@ class Restart_Registry_Controller {
     }
 
     /**
+     * Most active registries a user may own at once. Archived registries
+     * don't count, so archiving one frees a slot.
+     */
+    public const MAX_REGISTRIES_PER_USER = 10;
+
+    /** Statuses that make a registry "active" for ownership purposes. */
+    private const ACTIVE_STATUSES = ['publish', 'private', 'draft'];
+
+    /**
+     * A user's active registries, newest first, as [['id' => int, 'title' => string], ...].
+     * Lightweight (no Lambda item fetch): safe to call on every page render.
+     */
+    public function get_user_registries(int $user_id): array {
+        if ($user_id <= 0) {
+            return [];
+        }
+        $posts = get_posts([
+            'post_type'      => 'restart-registry',
+            'author'         => $user_id,
+            'post_status'    => self::ACTIVE_STATUSES,
+            'posts_per_page' => self::MAX_REGISTRIES_PER_USER,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+            'no_found_rows'  => true,
+        ]);
+        return array_map(
+            fn($p) => ['id' => (int) $p->ID, 'title' => (string) $p->post_title],
+            $posts
+        );
+    }
+
+    public function has_reached_registry_limit(int $user_id): bool {
+        return count($this->get_user_registries($user_id)) >= self::MAX_REGISTRIES_PER_USER;
+    }
+
+    /**
+     * Which registry a quick-add should go to.
+     *
+     * - Explicit $requested_id: used if the user can edit it.
+     * - None requested, one active registry: that one.
+     * - None requested, several: WP_Error 'choose_registry'. Never guess,
+     *   so a stale client can't silently add to the wrong registry.
+     * - None owned: WP_Error 'no_registry'.
+     *
+     * @return int|WP_Error Registry post ID.
+     */
+    public function resolve_target_registry(int $user_id, int $requested_id = 0) {
+        if ($requested_id > 0) {
+            if (!$this->can_edit_registry($requested_id, $user_id)) {
+                return new WP_Error('forbidden', __('You cannot edit this registry.', 'restart-registry'));
+            }
+            return $requested_id;
+        }
+
+        $owned = $this->get_user_registries($user_id);
+        if (empty($owned)) {
+            return new WP_Error('no_registry', __("You don't have a registry yet.", 'restart-registry'));
+        }
+        if (count($owned) > 1) {
+            return new WP_Error('choose_registry', __('Choose which registry to add this to.', 'restart-registry'));
+        }
+        return $owned[0]['id'];
+    }
+
+    public function registry_limit_message(): string {
+        return sprintf(
+            /* translators: %d = maximum number of active registries */
+            __('You can have up to %d active registries. Archive one to start another.', 'restart-registry'),
+            self::MAX_REGISTRIES_PER_USER
+        );
+    }
+
+    /**
      * Get the first registry belonging to a WP user (with items).
      */
     public function get_user_registry(int $user_id): ?array {
@@ -181,15 +254,8 @@ class Restart_Registry_Controller {
      * Returns ['id' => post_id, 'share_key' => post_id] or WP_Error.
      */
     public function create_registry(int $user_id, string $title, string $description = '', bool $is_public = false, array $meta = []) {
-        $existing = get_posts([
-            'post_type'      => 'restart-registry',
-            'author'         => $user_id,
-            'posts_per_page' => 1,
-            'post_status'    => ['publish', 'private', 'draft'],
-        ]);
-
-        if (!empty($existing)) {
-            return new WP_Error('registry_exists', __('You already have a registry.', 'restart-registry'));
+        if ($this->has_reached_registry_limit($user_id)) {
+            return new WP_Error('registry_limit', $this->registry_limit_message());
         }
 
         $post_id = wp_insert_post([

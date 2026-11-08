@@ -71,4 +71,58 @@ final class MyRegistriesTest extends ThemeTestCase
 
         $this->assertStringContainsString('My Registry', $output);
     }
+
+    /** Owned query returns $ownedCount registries; invited/archived return none. */
+    private function renderWithOwned(int $ownedCount): string
+    {
+        Functions\when('is_user_logged_in')->justReturn(true);
+        $user = new WP_User();
+        $user->ID = 1;
+        $user->user_login = 'alex';
+        $user->user_email = 'alex@example.com';
+        Functions\when('wp_get_current_user')->justReturn($user);
+
+        $owned = [];
+        for ($i = 1; $i <= $ownedCount; $i++) {
+            $p = new stdClass();
+            $p->ID = $i;
+            $p->post_title = "Registry $i";
+            $p->post_status = 'private';
+            $p->post_author = 1;
+            $owned[] = $p;
+        }
+        $callCount = 0;
+        Functions\when('get_posts')->alias(function () use ($owned, &$callCount) {
+            return ++$callCount === 1 ? $owned : [];
+        });
+        Functions\when('get_post_meta')->justReturn('');
+        Functions\when('get_permalink')->justReturn('#');
+        Functions\when('home_url')->alias(fn($path = '') => 'https://example.test' . $path);
+
+        return $this->invokeShortcode('restart_my_registries');
+    }
+
+    public function test_create_button_shown_with_no_registries(): void
+    {
+        $output = $this->renderWithOwned(0);
+
+        $this->assertStringContainsString('href="https://example.test/start-a-registry/"', $output);
+        $this->assertStringContainsString('Create a Registry', $output);
+    }
+
+    public function test_create_button_shown_below_the_limit(): void
+    {
+        $output = $this->renderWithOwned(9);
+
+        $this->assertStringContainsString('restart-my-registries__create', $output);
+        $this->assertStringNotContainsString('restart-my-registries__limit', $output);
+    }
+
+    public function test_limit_note_replaces_button_at_the_limit(): void
+    {
+        $output = $this->renderWithOwned(10);
+
+        $this->assertStringNotContainsString('restart-my-registries__create', $output);
+        $this->assertStringContainsString('You can have up to 10 active registries', $output);
+    }
 }
