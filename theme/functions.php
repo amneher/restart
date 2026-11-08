@@ -1078,7 +1078,7 @@ function restart_nav_registry_link(): array {
     }
 
     return $has_registry
-        ? ['label' => 'My Registry',       'url' => '/my-registries/']
+        ? ['label' => 'My Registries',     'url' => '/my-registries/']
         : ['label' => 'Create a Registry', 'url' => '/start-a-registry/'];
 }
 }

@@ -44,7 +44,7 @@ final class NavRegistryLinkTest extends ThemeTestCase
         $this->assertSame('/start-a-registry/', $block['attrs']['url']);
     }
 
-    public function test_logged_in_with_registry_shows_my_registry(): void
+    public function test_logged_in_with_registry_shows_my_registries(): void
     {
         Functions\when('is_user_logged_in')->justReturn(true);
         Functions\when('get_current_user_id')->justReturn(7);
@@ -57,7 +57,7 @@ final class NavRegistryLinkTest extends ThemeTestCase
 
         $block = $this->invokeFilter('render_block_data', $this->navBlock());
 
-        $this->assertSame('My Registry', $block['attrs']['label']);
+        $this->assertSame('My Registries', $block['attrs']['label']);
         $this->assertSame('/my-registries/', $block['attrs']['url']);
     }
 
