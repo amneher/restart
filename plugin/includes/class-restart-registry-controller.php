@@ -427,6 +427,28 @@ class Restart_Registry_Controller {
     }
 
     /**
+     * Owner marks an item "fulfilled / no more needed".
+     *
+     * Fulfilled is derived (purchased >= needed), so this sets both counts to
+     * the same value. If nothing has been reported purchased, assume one was:
+     * an owner who didn't want the item at all would delete it instead.
+     * Returns the updated item or WP_Error.
+     */
+    public function mark_item_fulfilled(int $item_id) {
+        $item = $this->lambda->get_item($item_id);
+        if (!$item || is_wp_error($item)) {
+            return new WP_Error('not_found', __('Item not found.', 'restart-registry'));
+        }
+
+        $quantity = max(1, (int) ($item['quantity_purchased'] ?? 0));
+
+        return $this->lambda->update_item($item_id, [
+            'quantity_needed'    => $quantity,
+            'quantity_purchased' => $quantity,
+        ]);
+    }
+
+    /**
      * Delete a Lambda item and remove it from the registry meta.
      */
     public function delete_item(int $item_id, int $registry_id): bool {
