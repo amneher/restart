@@ -33,7 +33,7 @@
 - [x] `make theme-test` green (57 PHP, 94 JS; `test:min` 94)
 - [x] Verified locally: results, public registry excluded (plain WP search returns it), `?post_type=restart-registry` ignored, utility pages excluded, empty state, keyboard open/submit/Escape, 1280/1024/900/390 widths
 - [x] Design pass from Andrew: icon 36px, field 22px/nav bg/mint underline, overlay with edge fade; nav positions verified unchanged on open (9da5af1)
-- [ ] PR
+- [x] PR: https://github.com/amneher/restart/pull/109
 
 ---
 
