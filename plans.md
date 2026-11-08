@@ -1,3 +1,58 @@
+# Plan: Multiple registries per user + "Create a Registry" entry points
+
+## Findings (verified 2026-11-08)
+1. One-registry rule lives in exactly one place: `controller->create_registry()`
+   (plugin/includes/class-restart-registry-controller.php ~L183) returns
+   `registry_exists` if the user owns any publish/private/draft registry.
+   Archived registries don't count. Lambda has no per-user constraint (items
+   keyed by `registry_id`; registries are WP posts only).
+2. Already multi-registry safe: single registry pages (`[restart_registry]` on
+   `is_singular`, loads by post ID); `/my-registries/` (`[restart_my_registries]`
+   lists all owned); post-create redirect goes to the new registry's permalink.
+3. Assumes one registry:
+   - `ajax_quick_add` uses `get_user_registry()` (first match), no registry_id.
+   - JS quick-add + bulk-add ("Add all <tier> items") check `restartRegistry.hasRegistry` only.
+   - `registry_create_shortcode` refuses when the user has one (not used by a template).
+4. My Account dropdown is built client-side in `theme/assets/js/nav-user-state.js`:
+   [My Registry → newest registry | Start a Registry], My Account, Logout, Contact.
+   Footer JS swaps "Start a Registry" → "My Registry" (newest registry permalink).
+
+## Approach (agreed 2026-11-08)
+**Plugin**
+- `create_registry()`: replace the one-registry guard with a cap of 10 active
+  (publish/private/draft) registries per user (`RESTART_MAX_REGISTRIES_PER_USER`);
+  archived don't count. Error `registry_limit`: "You can have up to 10 active
+  registries. Archive one to start another."
+- Localize `restartRegistry.registries = [{id, title}]` (owned, publish/private/draft,
+  newest first); keep `hasRegistry` derived from it for back-compat.
+- `ajax_quick_add`: accept optional `registry_id`. Resolve: given → must pass
+  `can_edit_registry`; absent + exactly one owned → that one; absent + several →
+  error `choose_registry`; none → `no_registry` (unchanged).
+- Quick-add picker modal (printed with the other quick-add modals): radio list of
+  the user's registries + Add. Single-item and bulk-add both open it when the user
+  has >1 registry; bulk-add asks once and sends every item to the chosen registry.
+  Last choice preselected for the session (sessionStorage, try/catch).
+- `registry_create_shortcode`: always show the create form.
+**Theme**
+- `[restart_my_registries]`: "Create a Registry" button beside the "My Registries"
+  heading (at the cap: the limit note instead); empty-state text no longer duplicates the link.
+- Dropdown: My Registries (/my-registries/), Create a Registry (/start-a-registry/),
+  My Account, Logout, Contact.
+- Footer swap points to /my-registries/ ("My Registries") instead of newest permalink.
+
+## Todo
+- [x] Branch: `feat/multiple-registries`
+- [x] Plugin: 10-registry cap replaces one-registry guard + PHPUnit (2nd succeeds, 11th fails) (6eca045)
+- [x] Plugin: `registries` localize + quick-add resolution + PHPUnit (explicit id, not owner, one owned, several owned, none) (6eca045)
+- [x] Plugin: picker modal + JS (single + bulk) + Jest; fixed test isolation (stale document listeners) (316fbf4)
+- [x] Plugin: create shortcode renders form unless at cap (6eca045)
+- [x] Theme: My Registries button + dropdown + footer link + tests (94647b9)
+- [x] Green: plugin 338 PHP / 142 JS, theme 65 PHP / 98 JS (+ test:min); .min assets rebuilt
+- [x] Local check with temp user (2 registries, since deleted): header link, dropdown order, list page button desktop+390px, footer link, picker opened focused, keyboard choice landed item in chosen registry only. Bulk + 1-registry path covered by Jest only.
+- [ ] PR
+
+---
+
 # Plan: Site search (everything except registries)
 
 ## Findings (verified 2026-11-08)
