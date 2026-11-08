@@ -625,6 +625,28 @@ a:hover { color: var(--wp--preset--color--primary); }
     margin-bottom: 1.25rem;
 }
 
+/* Heading + "Create a Registry" button (or the limit note) on one row;
+   wraps under the heading on narrow screens. */
+.restart-my-registries__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.restart-my-registries__header .restart-my-registries__heading {
+    margin: 0;
+}
+
+.restart-my-registries__limit {
+    margin: 0;
+    color: #8a9ea0;
+    font-family: var(--wp--preset--font-family--montserrat);
+    font-size: 13px;
+}
+
 .restart-my-registries__empty {
     color: #8a9ea0;
     font-family: var(--wp--preset--font-family--montserrat);

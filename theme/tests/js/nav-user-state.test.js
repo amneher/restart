@@ -585,3 +585,67 @@ describe('nav-user-state - navigation structure', () => {
         }).not.toThrow();
     });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Submenu contents and footer link (multiple registries per user)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('nav-user-state - submenu items and footer link', () => {
+    const submenuItems = () =>
+        [...document.querySelectorAll('.rr-submenu a')].map((a) => [a.textContent, a.getAttribute('href')]);
+
+    function buildDOMWithFooter() {
+        buildDOM();
+        document.body.insertAdjacentHTML('beforeend', `
+            <footer class="site-footer">
+                <a class="wp-block-navigation-item__content" href="/start-a-registry/">Start a Registry</a>
+            </footer>
+        `);
+    }
+
+    function state(overrides) {
+        return Object.assign({
+            isLoggedIn: true,
+            hasRegistry: false,
+            loginUrl: '/login/',
+            myAccountUrl: '/my-account/',
+            myRegistriesUrl: '/my-registries/',
+            startRegistryUrl: '/start-a-registry/',
+            logoutUrl: '/logout/',
+        }, overrides);
+    }
+
+    beforeEach(() => {
+        jest.resetModules();
+        buildDOMWithFooter();
+    });
+
+    it.each([[false], [true]])('lists My Registries then Create a Registry first (hasRegistry=%s)', (hasRegistry) => {
+        global.rrNavState = state({ hasRegistry });
+        loadScript();
+
+        expect(submenuItems().slice(0, 3)).toEqual([
+            ['My Registries', '/my-registries/'],
+            ['Create a Registry', '/start-a-registry/'],
+            ['My Account', '/my-account/'],
+        ]);
+    });
+
+    it('points the footer link at the My Registries list for owners', () => {
+        global.rrNavState = state({ hasRegistry: true });
+        loadScript();
+
+        const link = document.querySelector('.site-footer a');
+        expect(link.textContent).toBe('My Registries');
+        expect(link.getAttribute('href')).toBe('/my-registries/');
+    });
+
+    it('leaves the footer Start a Registry link alone for users without one', () => {
+        global.rrNavState = state({ hasRegistry: false });
+        loadScript();
+
+        const link = document.querySelector('.site-footer a');
+        expect(link.textContent).toBe('Start a Registry');
+        expect(link.getAttribute('href')).toBe('/start-a-registry/');
+    });
+});

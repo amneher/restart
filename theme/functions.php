@@ -60,25 +60,21 @@ add_action('wp_enqueue_scripts', function () {
         true
     );
 
-    $registry_url = '';
-    if (is_user_logged_in()) {
-        $owned = get_posts([
-            'post_type'      => 'restart-registry',
-            'post_status'    => ['publish', 'private'],
-            'author'         => get_current_user_id(),
-            'posts_per_page' => 1,
-            'orderby'        => 'date',
-            'order'          => 'DESC',
-            'fields'         => 'ids',
-        ]);
-        if (!empty($owned)) {
-            $registry_url = (string) get_permalink($owned[0]);
-        }
-    }
+    // Same rule as the header link (restart_nav_registry_link): any active
+    // (publish/private/draft) registry counts.
+    $has_registry = is_user_logged_in() && !empty(get_posts([
+        'post_type'      => 'restart-registry',
+        'post_status'    => ['publish', 'private', 'draft'],
+        'author'         => get_current_user_id(),
+        'posts_per_page' => 1,
+        'fields'         => 'ids',
+        'no_found_rows'  => true,
+    ]));
 
     wp_localize_script('therestart-nav-user-state', 'rrNavState', [
         'isLoggedIn'      => is_user_logged_in(),
-        'registryUrl'     => $registry_url,
+        'hasRegistry'     => $has_registry,
+        'myRegistriesUrl' => home_url('/my-registries/'),
         'loginUrl'        => home_url('/login/'),
         'logoutUrl'       => wp_logout_url(home_url('/')),
         'myAccountUrl'    => home_url('/my-account/'),
@@ -606,6 +602,12 @@ add_shortcode('restart_my_registries', function () {
     $user    = wp_get_current_user();
     $user_id = $user->ID;
 
+    // The plugin enforces the cap; mirror it here so the page shows the limit
+    // note instead of a button that would only lead to an error.
+    $max_registries = class_exists('Restart_Registry_Controller')
+        ? Restart_Registry_Controller::MAX_REGISTRIES_PER_USER
+        : 10;
+
     $owned = get_posts([
         'post_type'      => 'restart-registry',
         'post_status'    => ['publish', 'private', 'draft'],
@@ -642,9 +644,19 @@ add_shortcode('restart_my_registries', function () {
     <div class="restart-my-registries">
 
         <section class="restart-my-registries__section">
-            <h2 class="restart-my-registries__heading">My Registries</h2>
+            <div class="restart-my-registries__header">
+                <h2 class="restart-my-registries__heading">My Registries</h2>
+                <?php if (count($owned) >= $max_registries) : ?>
+                    <p class="restart-my-registries__limit"><?php echo esc_html(sprintf(
+                        'You can have up to %d active registries. Archive one to start another.',
+                        $max_registries
+                    )); ?></p>
+                <?php else : ?>
+                    <a class="restart-btn restart-my-registries__create" href="<?php echo esc_url(home_url('/start-a-registry/')); ?>">Create a Registry</a>
+                <?php endif; ?>
+            </div>
             <?php if (empty($owned)) : ?>
-                <p class="restart-my-registries__empty">You haven't created any registries yet. <a href="<?php echo esc_url(home_url('/start-a-registry/')); ?>">Start one now</a>.</p>
+                <p class="restart-my-registries__empty">You haven't created any registries yet.</p>
             <?php else : ?>
                 <ul class="restart-registry-list">
                     <?php foreach ($owned as $post) :
