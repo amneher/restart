@@ -1151,10 +1151,53 @@ add_shortcode('internal_links', function () {
         . '</div>';
 });
 
+// ── Site search ───────────────────────────────────────────────────────────────
+// Search covers articles and content pages only. Registries are never returned
+// (they have their own Find a Registry flow, and owners don't expect them to
+// surface in general search), and account/registry-flow pages are left out.
+// Applied to the main query (feeds, title, ?post_type= overrides) and to the
+// query loop block, which runs its own query (see query_loop_block_query_vars).
+
+if (!defined('RESTART_SEARCH_EXCLUDED_PAGE_SLUGS')) {
+    define('RESTART_SEARCH_EXCLUDED_PAGE_SLUGS', [
+        'home', 'login', 'register', 'my-account', 'my-registries',
+        'start-a-registry', 'find-a-registry', 'sample-page',
+    ]);
+}
+
+if (!function_exists('restart_search_scope')) {
+function restart_search_scope(): array {
+    $excluded = get_posts([
+        'post_type'      => 'page',
+        'post_name__in'  => RESTART_SEARCH_EXCLUDED_PAGE_SLUGS,
+        'posts_per_page' => count(RESTART_SEARCH_EXCLUDED_PAGE_SLUGS),
+        'fields'         => 'ids',
+        'no_found_rows'  => true,
+    ]);
+
+    return [
+        'post_type'    => ['post', 'page'],
+        'post__not_in' => array_map('intval', $excluded),
+    ];
+}
+}
+
+add_action('pre_get_posts', function ($query): void {
+    if (is_admin() || !$query->is_main_query() || !$query->is_search()) {
+        return;
+    }
+    foreach (restart_search_scope() as $key => $value) {
+        $query->set($key, $value);
+    }
+});
+
 // Fix: WP strips inherit:true from query block context (it equals the default), so
 // category/taxonomy archives don't filter the query loop. Inject the term filter here.
 add_filter('query_loop_block_query_vars', function (array $query, WP_Block $block, int $page): array {
-    if (is_category()) {
+    if (is_search()) {
+        $query['s'] = get_search_query(false);
+        $query      = array_merge($query, restart_search_scope());
+    } elseif (is_category()) {
         $term = get_queried_object();
         if ($term instanceof WP_Term) {
             $query['cat'] = $term->term_id;

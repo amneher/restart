@@ -124,6 +124,129 @@ body {
     padding: 10px;
 }
 
+/* ── Header search (icon that expands into a field) ──
+   The bar is space-between; with a third item the nav would drift to the
+   middle, so pin it right and sit the search icon after it. The expanded
+   field overlays the nav (to the icon's left) instead of pushing it, because
+   the bar never wraps. */
+.site-header__bar > .wp-block-navigation {
+    margin-left: auto;
+}
+
+.site-header .rr-header-search {
+    position: relative;
+    /* The bar is baseline-aligned (logo vs nav). Giving the button a text
+       baseline (inline-flex + line-height below) lines the icon up with the
+       hamburger toggle below 1024px with no offsets. */
+    align-self: baseline;
+    margin: 0 0 0 0.5rem;
+    /* Nav links are positioned; without this they paint (and take clicks)
+       over the expanded field. */
+    z-index: 2;
+}
+
+/* ≥1024px the text links show instead of the hamburger; they carry extra
+   vertical padding, so the icon sits 7px high. Measured, not derived. */
+@media (min-width: 1024px) {
+    .site-header .rr-header-search {
+        top: 7px;
+    }
+}
+
+.site-header .rr-header-search .wp-block-search__inside-wrapper {
+    border: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.site-header .rr-header-search .wp-block-search__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    line-height: 22px;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.site-header .rr-header-search .wp-block-search__button:hover,
+.site-header .rr-header-search .wp-block-search__button:focus-visible {
+    color: var(--wp--preset--color--primary);
+}
+
+.site-header .rr-header-search .wp-block-search__button svg {
+    fill: currentColor;
+    width: 22px;
+    height: 22px;
+}
+
+.site-header .rr-header-search .wp-block-search__input {
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    transform: translateY(-50%);
+    width: min(280px, 70vw);
+    height: 40px;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: 3px;
+    background: #ffffff;
+    color: #193540;
+    font-family: var(--wp--preset--font-family--montserrat);
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Collapse, don't hide: core's view script calls input.focus() the moment the
+   icon is clicked, before this class is removed. A visibility:hidden input
+   can't take focus, which strands keyboard users on the button. */
+.site-header .rr-header-search.wp-block-search__searchfield-hidden .wp-block-search__input {
+    width: 0;
+    padding: 0;
+    box-shadow: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ── Search results hero field ── */
+.rr-search-hero {
+    max-width: 520px;
+    margin-inline: auto;
+}
+
+.rr-search-hero .wp-block-search__inside-wrapper {
+    border: 0;
+    border-radius: 3px;
+    background: #ffffff;
+    padding: 4px;
+}
+
+.rr-search-hero .wp-block-search__input {
+    border: 0;
+    color: #193540;
+    font-family: var(--wp--preset--font-family--montserrat);
+    font-size: 15px;
+}
+
+.rr-search-hero .wp-block-search__button {
+    margin-left: 4px;
+    border: 0;
+    border-radius: 3px;
+    background: #193540;
+    color: #ffffff;
+}
+
+.rr-search-hero .wp-block-search__button svg {
+    fill: currentColor;
+}
+
 /* ── Footer ── */
 .site-footer__brand {
     display: inline-block;

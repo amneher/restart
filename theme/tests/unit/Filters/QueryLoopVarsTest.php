@@ -11,6 +11,13 @@ use WP_Term;
 
 final class QueryLoopVarsTest extends ThemeTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Search handling runs first in this filter; see SearchScopeTest.
+        Functions\when('is_search')->justReturn(false);
+    }
+
     public function test_adds_cat_on_category_archive(): void
     {
         Functions\when('is_category')->justReturn(true);
