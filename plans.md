@@ -37,6 +37,43 @@
 
 ---
 
+# Plan: Context-aware registry link in the header nav
+
+## Findings (verified 2026-11-08)
+1. Header nav is block markup in `theme/parts/header.html` L16:
+   `navigation-link` "Find a Registry" → `/registry/` (CPT archive / search).
+   Same link also in `parts/footer.html`, `patterns/footer-default.php`, front-page hero, 404.
+2. `/my-registries/` (restart_registry shortcode) already renders the manage view
+   if the user has a registry, or the create form if not. `/start-a-registry/`
+   renders the create form (or login prompt when logged out).
+3. `controller->get_user_registry()` also fetches items (Lambda). Too heavy for
+   every page render, so the nav needs its own lightweight ID-only check.
+4. Precedent: `render_block_data` filter already used in `theme/functions.php` (~L1033).
+
+## Approach (agreed 2026-11-08)
+- Tag the header link with `"className":"rr-nav-registry"` so only it is swapped
+  (footer and hero keep "Find a Registry" so search stays reachable).
+- `render_block_data` filter in `theme/functions.php`: for `core/navigation-link`
+  with that class, set label + url from a small helper:
+  - has registry (publish/private/draft, authored by current user) → "My Registry" → `/my-registries/`
+  - logged in, no registry → "Create a Registry" → `/start-a-registry/`
+  - logged out → "Create a Registry" → `/start-a-registry/` (page shows login prompt)
+- Helper uses `get_posts(['fields'=>'ids','posts_per_page'=>1,...])`, memoized per request.
+- Caveat: if the header template part was customized in the Site Editor on prod,
+  the DB copy overrides the file and won't carry the className. Check before deploy.
+
+## Todo
+- [x] Branch: `feat/nav-registry-link`
+- [x] Header link gets `rr-nav-registry` className (86f41dd)
+- [x] Helper + `render_block_data` filter in theme/functions.php (86f41dd)
+- [x] Theme unit tests for the three states (86f41dd)
+- [x] `make theme-test-php` green (58 tests)
+- [x] Verified in local env via wp eval render of header part: all three states correct; no DB template-part overrides locally
+- [ ] Check prod for a Site Editor override of the header part
+- [x] PR: https://github.com/amneher/restart/pull/108
+
+---
+
 # Plan: Owner can mark an item fulfilled with zero purchases
 
 ## Findings (verified 2026-11-08)
