@@ -39,7 +39,8 @@ No Lambda/schema changes. Lambda `ItemUpdate` already accepts `quantity_purchase
 - [x] Verified against local Lambda via wp eval: temp item 0/3 → 1/1, then deleted
 - [x] Click-through in browser on local env (row checkbox + edit modal), verified by Andrew
 - [x] Cleanup: dead `.rr-fulfilled-toggle input[disabled]` CSS rules commented out, min.css rebuilt
-- [ ] Bump plugin version + PR
+- [x] PR: https://github.com/amneher/restart/pull/107
+- [ ] After merge: `make bump-plugin-patch` on main (→ 1.2.16)
 
 ---
 
